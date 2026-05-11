@@ -522,7 +522,7 @@ jobs:
         if: ${{ needs.tag.outputs.releaseKind == 'nightly' }}
         uses: ncipollo/release-action@v1
         with:
-          token: ${{ secrets.IKEMEN_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
           artifactErrorsFailBuild: true
           artifacts: "release-assets/*"
@@ -551,7 +551,7 @@ jobs:
         if: ${{ needs.tag.outputs.releaseKind != 'nightly' }}
         uses: ncipollo/release-action@v1
         with:
-          token: ${{ secrets.IKEMEN_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
           artifactErrorsFailBuild: true
           artifacts: "release-assets/*"

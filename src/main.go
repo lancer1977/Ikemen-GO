@@ -239,6 +239,9 @@ func processCommandLine() {
 			"-nojoy":          true,
 			"-nomusic":        true,
 			"-nosound":        true,
+			"-jsonstdout":     true,
+			"-nojsonlog":      true,
+			"-nojsonstdout":   true,
 		}
 		key := ""
 		player := 1
@@ -264,6 +267,10 @@ func processCommandLine() {
 					text := `Options (case sensitive):
 -h -?                   Help
 -log <logfile>          Records match data to <logfile>
+-jsonlog <jsonfile>     Records match data as JSON to <jsonfile> (default: save/last-match.json)
+-jsonstdout             Writes match data JSON to stdout (default for Quick VS)
+-nojsonlog              Disables default JSON file output
+-nojsonstdout           Disables default JSON stdout output
 -r <path>               Loads motif <path>. eg. -r motifdir or -r motifdir/system.def
 -fight <path>           Loads fight screen <path>. eg. -fight data/fight.def
 -storyboard <path>      Loads storyboard <path>. eg. -storyboard chars/kfm/intro.def
