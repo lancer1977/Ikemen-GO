@@ -443,7 +443,7 @@ jobs:
         if: "${{ needs.tag.outputs.releaseKind == 'nightly' && steps.artifacts.outputs.artifact != '' }}"
         uses: ncipollo/release-action@v1
         with:
-          token: ${{ secrets.IKEMEN_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
           artifactErrorsFailBuild: true
           artifacts: "${{ steps.artifacts.outputs.artifact }}${{ matrix.cfg.runner_os == 'linux' && format(',{0}', steps.artifacts_ffmpeg.outputs.artifact_ffsrc) || '' }}"
@@ -471,7 +471,7 @@ jobs:
         if: "${{ needs.tag.outputs.releaseKind != 'nightly' && steps.artifacts.outputs.artifact != '' }}"
         uses: ncipollo/release-action@v1
         with:
-          token: ${{ secrets.IKEMEN_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
           artifactErrorsFailBuild: true
           artifacts: "${{ steps.artifacts.outputs.artifact }}${{ matrix.cfg.runner_os == 'linux' && format(',{0}', steps.artifacts_ffmpeg.outputs.artifact_ffsrc) || '' }}"

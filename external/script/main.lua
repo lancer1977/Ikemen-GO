@@ -852,6 +852,17 @@ function main.f_commandLine()
 	if flags['-log'] ~= nil then
 		main.f_printTable(getGameStats().Matches[matchNo()], flags['-log'])
 	end
+	local gameStatsJson = getGameStatsJson()
+	local jsonLogPath = flags['-jsonlog']
+	if jsonLogPath == nil and flags['-nojsonlog'] == nil then
+		jsonLogPath = 'save/last-match.json'
+	end
+	if jsonLogPath ~= nil then
+		main.f_fileWrite(jsonLogPath, gameStatsJson)
+	end
+	if flags['-jsonstdout'] ~= nil or flags['-nojsonstdout'] == nil then
+		print(gameStatsJson)
+	end
 	os.exit()
 end
 

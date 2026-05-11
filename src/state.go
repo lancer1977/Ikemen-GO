@@ -46,7 +46,7 @@ func (cs Char) String() string {
 	Minus               :%d
 	GroundAngle          :%f
 	InheritJuggle         :%d
-	Preserve              :%d
+	Preserve              :%t
 	Cnsvar              :%v
 	Cnsfvar             :%v
 	Offset              :%v`,
