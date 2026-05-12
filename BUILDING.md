@@ -108,6 +108,47 @@ MESA_GL_VERSION_OVERRIDE=2.1 ./Ikemen_GO_Linux
 
 You can also double-click **`build/Ikemen_GO.command`** on Linux.
 
+### Package desktop installers
+
+To create release-style desktop archives in the shared output folder:
+
+```bash
+OUTPUT_ROOT=/mnt/syn1/games/Ikemen ./scripts/package-installers.sh --all
+```
+
+If you just want the reusable local publish entrypoint, use:
+
+```bash
+./scripts/deploy-local.sh
+```
+
+That wrapper picks the correct target for the current host:
+
+- Linux hosts publish the Linux archive
+- Windows/MSYS2 hosts publish the Windows archive
+
+If you want to force one side explicitly, use `./scripts/deploy-local-linux.sh` or `./scripts/deploy-local-windows.sh`.
+
+The same flows are also available through `make`:
+
+```bash
+make deploy-local
+make deploy-local-linux
+make deploy-local-windows
+```
+
+If you want GitHub Actions to run the deploy, you need a **self-hosted runner** on the machine that can reach `/mnt/syn1/games/Ikemen`.
+GitHub-hosted runners cannot write to your local mount directly.
+The Windows build/deploy path should use the self-hosted runner registered with the `ikemen-windows` label.
+
+The script writes:
+
+- `Ikemen_GO-dev-linux.zip`
+- `Ikemen_GO-dev-windows.zip`
+
+The default output root is `/mnt/syn1/games/Ikemen`.
+Windows packaging still requires the matching MinGW toolchain and a Windows or MSYS2 build host.
+
 ### Use system FFmpeg instead (optional)
 
 ```bash

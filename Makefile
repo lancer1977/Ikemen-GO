@@ -72,6 +72,23 @@ Ikemen_GO_Linux: ${srcFiles}
 Ikemen_GO_LinuxARM: ${srcFiles}
 	./build/build.sh LinuxARM
 
+# Local desktop installer archives
+.PHONY: installers
+installers:
+	OUTPUT_ROOT="$${OUTPUT_ROOT:-/mnt/syn1/games/Ikemen}" ./scripts/deploy-local.sh
+
+.PHONY: deploy-local
+deploy-local:
+	OUTPUT_ROOT="$${OUTPUT_ROOT:-/mnt/syn1/games/Ikemen}" ./scripts/deploy-local.sh
+
+.PHONY: deploy-local-linux
+deploy-local-linux:
+	OUTPUT_ROOT="$${OUTPUT_ROOT:-/mnt/syn1/games/Ikemen}" ./scripts/deploy-local-linux.sh
+
+.PHONY: deploy-local-windows
+deploy-local-windows:
+	OUTPUT_ROOT="$${OUTPUT_ROOT:-/mnt/syn1/games/Ikemen}" ./scripts/deploy-local-windows.sh
+
 # MacOS x64 target
 Ikemen_GO_MacOS: ${srcFiles}
 	bash ./build/build.sh MacOS
