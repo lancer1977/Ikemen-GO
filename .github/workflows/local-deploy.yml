@@ -1,0 +1,68 @@
+name: local-deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'What to deploy'
+        type: choice
+        required: true
+        default: linux
+        options:
+          - linux
+          - windows
+      output_root:
+        description: 'Destination folder on the self-hosted machine'
+        type: string
+        required: true
+        default: /mnt/syn1/games/Ikemen
+
+jobs:
+  linux:
+    name: Deploy Linux installer
+    if: ${{ github.event.inputs.target == 'linux' }}
+    runs-on: [self-hosted, linux, ikemen-linux]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build and deploy Linux installer
+        shell: bash
+        env:
+          OUTPUT_ROOT: ${{ github.event.inputs.output_root }}
+        run: |
+          chmod +x scripts/package-installers.sh scripts/deploy-local.sh scripts/deploy-local-linux.sh
+          ./scripts/deploy-local-linux.sh
+
+  windows:
+    name: Deploy Windows installer
+    if: ${{ github.event.inputs.target == 'windows' }}
+    runs-on: [self-hosted, windows, ikemen-windows]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          path-type: inherit
+          install: >-
+            git
+            make
+            diffutils
+            mingw-w64-x86_64-pkg-config
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-bzip2
+            mingw-w64-x86_64-nasm
+            mingw-w64-x86_64-tools-git
+            mingw-w64-x86_64-SDL2
+            mingw-w64-x86_64-yasm
+            mingw-w64-x86_64-libxmp
+
+      - name: Build and deploy Windows installer
+        shell: msys2 {0}
+        env:
+          OUTPUT_ROOT: ${{ github.event.inputs.output_root }}
+        run: |
+          chmod +x scripts/package-installers.sh scripts/deploy-local.sh scripts/deploy-local-windows.sh
+          ./scripts/deploy-local-windows.sh
