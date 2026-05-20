@@ -1452,7 +1452,7 @@ function start.f_drawTierLabel(textObj, label, x, y, baseColor, tierColor, scale
 	local sx = scaleX or textObj.scaleX or 1
 	local sy = scaleY or textObj.scaleY or 1
 	local suffix = 'Tier'
-	local tierGap = (outlineAll and 8 or 18) * sx
+	local tierGap = (outlineAll and 12 or 18) * sx
 	local parts = {{text = labelText, color = baseColor}}
 	if tier ~= nil then
 		parts = {

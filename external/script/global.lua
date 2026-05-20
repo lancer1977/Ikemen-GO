@@ -128,7 +128,7 @@ local afkStuckRoundResetState = {}
 local afkNoDamageSince = nil
 
 local function afkStuckRoundResetActive()
-	return (gamemode('randomtest') or main.endlessWatchActive == true or main.oneVsAllActive == true) and roundstate() == 2
+	return roundstate() == 2 and not network() and not gamemode('training') and not main.pauseMenu and not paused()
 end
 
 local function afkStunnedState(st)
@@ -148,6 +148,27 @@ local function afkOptionalNumber(names)
 	return 0
 end
 
+local function afkWatchdogClock()
+	local fps = afkOptionalNumber({'ticksPerSecond', 'tickspersecond'})
+	if fps <= 0 then
+		fps = 60
+	end
+	for _, name in ipairs({'gameTime', 'roundtime'}) do
+		local fn = _G[name]
+		if type(fn) == 'function' then
+			local ok, ret = pcall(fn)
+			if ok and type(ret) == 'number' then
+				return ret, afkStuckRoundResetSeconds * fps
+			end
+		end
+	end
+	return os.time(), afkStuckRoundResetSeconds
+end
+
+local function afkQuantize(value, scale)
+	return math.floor((value or 0) * scale + 0.5)
+end
+
 local function afkPlayerSnapshot(p)
 	local oldid = id()
 	playerid(p)
@@ -162,15 +183,51 @@ local function afkPlayerSnapshot(p)
 			statetype = statetype(),
 			movetype = movetype(),
 			physics = physics(),
+			posX = afkOptionalNumber({'posX'}),
+			posY = afkOptionalNumber({'posY'}),
+			posZ = afkOptionalNumber({'posZ'}),
+			velX = afkOptionalNumber({'velX'}),
+			velY = afkOptionalNumber({'velY'}),
+			velZ = afkOptionalNumber({'velZ'}),
+			stageBackEdgeDist = afkOptionalNumber({'stageBackEdgeDist', 'backEdgeBodyDist', 'backEdgeDist'}),
+			stageFrontEdgeDist = afkOptionalNumber({'stageFrontEdgeDist', 'frontEdgeBodyDist', 'frontEdgeDist'}),
+			topBoundDist = afkOptionalNumber({'topBoundDist', 'topBoundBodyDist'}),
+			botBoundDist = afkOptionalNumber({'botBoundDist', 'botBoundBodyDist'}),
 		}
 	end
 	playerid(oldid)
 	return ret
 end
 
+local function afkMovementSignature(snap)
+	return table.concat({
+		afkQuantize(snap.posX, 2),
+		afkQuantize(snap.posY, 2),
+		afkQuantize(snap.posZ, 2),
+		afkQuantize(snap.velX, 100),
+		afkQuantize(snap.velY, 100),
+		afkQuantize(snap.velZ, 100),
+		snap.state,
+		snap.anim,
+		boolToInt(snap.ctrl),
+		snap.statetype,
+		snap.movetype,
+		snap.physics,
+	}, ':')
+end
+
+local function afkOutOfBounds(snap)
+	return snap.stageBackEdgeDist < -160
+		or snap.stageFrontEdgeDist < -160
+		or snap.topBoundDist < -240
+		or snap.botBoundDist < -240
+		or snap.posY < -720
+		or snap.posY > 720
+end
+
 local function afkRoundLifeSignature()
 	local ret = {}
-	for p = 1, teamsize() * 2 do
+	for p = 1, 8 do
 		local snap = afkPlayerSnapshot(p)
 		if snap then
 			table.insert(ret, p .. ':' .. snap.life .. ':' .. snap.redlife)
@@ -179,11 +236,23 @@ local function afkRoundLifeSignature()
 	return table.concat(ret, '|')
 end
 
-local function afkStuckRoundResetCandidate()
-	if life() <= 0 or ctrl() then
-		return false
+local function afkRoundMovementSignature()
+	local ret = {}
+	for p = 1, 8 do
+		local snap = afkPlayerSnapshot(p)
+		if snap and snap.life > 0 then
+			table.insert(ret, p .. ':' .. afkMovementSignature(snap))
+		end
 	end
-	return afkStunnedState(stateno()) or (anim() == 5300 and movetype() == 'I')
+	return table.concat(ret, '|')
+end
+
+local function afkResetRound(oldid)
+	afkStuckRoundResetState = {}
+	afkNoDamageSince = nil
+	playerid(oldid)
+	roundReset()
+	closeMenu()
 end
 
 hook.add("loop", "afkStuckRoundReset", function()
@@ -193,50 +262,56 @@ hook.add("loop", "afkStuckRoundReset", function()
 		return
 	end
 	local oldid = id()
-	local now = os.time()
+	local now, resetLimit = afkWatchdogClock()
 	local roundLifeSignature = afkRoundLifeSignature()
+	local roundMovementSignature = afkRoundMovementSignature()
 	if afkNoDamageSince == nil then
 		afkNoDamageSince = now
-	elseif afkStuckRoundResetState.roundLifeSignature ~= roundLifeSignature then
+	elseif afkStuckRoundResetState.roundLifeSignature ~= roundLifeSignature
+		or afkStuckRoundResetState.roundMovementSignature ~= roundMovementSignature then
 		afkNoDamageSince = now
 	end
-	for p = 1, teamsize() * 2 do
+	for p = 1, 8 do
 		local snap = afkPlayerSnapshot(p)
-		if snap and (afkStunnedState(snap.state) or (snap.anim == 5300 and snap.movetype == 'I')) and snap.life > 0 and not snap.ctrl then
-			local signature = table.concat({
-				snap.state,
-				snap.anim,
-				boolToInt(snap.ctrl),
-				snap.statetype,
-				snap.movetype,
-				snap.physics,
-			}, ':')
-			local data = afkStuckRoundResetState[p]
-			if data == nil or data.signature ~= signature then
-				afkStuckRoundResetState[p] = {
-					signature = signature,
-					startTime = now,
-				}
-			elseif now - data.startTime >= afkStuckRoundResetSeconds then
-				afkStuckRoundResetState = {}
-				playerid(oldid)
-				roundReset()
-				closeMenu()
+		if snap and snap.life > 0 then
+			local data = afkStuckRoundResetState[p] or {}
+			local signature = afkMovementSignature(snap)
+			if data.signature ~= signature then
+				data.signature = signature
+				data.stillSince = now
+			elseif data.stillSince ~= nil and now - data.stillSince >= resetLimit then
+				afkResetRound(oldid)
 				return
 			end
+			if (afkStunnedState(snap.state) or (snap.anim == 5300 and snap.movetype == 'I')) and not snap.ctrl then
+				data.stunnedSince = data.stunnedSince or now
+				if now - data.stunnedSince >= resetLimit then
+					afkResetRound(oldid)
+					return
+				end
+			else
+				data.stunnedSince = nil
+			end
+			if afkOutOfBounds(snap) then
+				data.outOfBoundsSince = data.outOfBoundsSince or now
+				if now - data.outOfBoundsSince >= resetLimit then
+					afkResetRound(oldid)
+					return
+				end
+			else
+				data.outOfBoundsSince = nil
+			end
+			afkStuckRoundResetState[p] = data
 		else
 			afkStuckRoundResetState[p] = nil
 		end
 	end
-	if afkNoDamageSince ~= nil and now - afkNoDamageSince >= afkStuckRoundResetSeconds then
-		afkStuckRoundResetState = {}
-		afkNoDamageSince = nil
-		playerid(oldid)
-		roundReset()
-		closeMenu()
+	if afkNoDamageSince ~= nil and now - afkNoDamageSince >= resetLimit then
+		afkResetRound(oldid)
 		return
 	end
 	afkStuckRoundResetState.roundLifeSignature = roundLifeSignature
+	afkStuckRoundResetState.roundMovementSignature = roundMovementSignature
 	playerid(oldid)
 end)
 
