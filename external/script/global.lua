@@ -505,75 +505,66 @@ function loop()
 		end
 		clearColor(motif.selectbgdef.bgclearcolor[1], motif.selectbgdef.bgclearcolor[2], motif.selectbgdef.bgclearcolor[3])
 		togglePostMatch(false)
-	end
-	hook.run("loop#" .. gamemode())
---fight corner record display
-if start ~= nil and not indialogue() and not postmatch() and not main.pauseMenu and roundstate() > 0 and roundstate() < 4 then
-	if start.txt_fightRecord == nil then
-		local x1, y1 = start.f_getFightRecordLayout(1)
-		local x2, y2 = start.f_getFightRecordLayout(2)
-		start.txt_fightRecord = {
-				text:create({
-					font = 'default-3x5.def',
-					bank = 0,
-					align = -1,
-					text = '',
-					x = x1,
-					y = y1,
-					scaleX = 3,
-					scaleY = 3,
-					r = 255,
-					g = 255,
-					b = 255,
-					a = 255,
-					height = -1,
-					xshear = 0,
-					angle = 0,
-					window = nil,
-					defsc = false,
-				}),
-				text:create({
-					font = 'default-3x5.def',
-					bank = 0,
-					align = 1,
-					text = '',
-					x = x2,
-					y = y2,
-					scaleX = 3,
-					scaleY = 3,
-					r = 255,
-					g = 255,
-					b = 255,
-					a = 255,
-					height = -1,
-					xshear = 0,
-					angle = 0,
-					window = nil,
-					defsc = false,
-				}),
-			}
-	end
-	for side = 1, 2 do
-		local ref = start.f_getActiveCharRef(side)
-		if ref then
-			local record = start.f_getCharRecord(ref)
-			local textValue = start.f_getFightRecordText(record)
-			local x, y = start.f_getFightRecordLayout(side)
-			start.f_drawTierLabel(
-				start.txt_fightRecord[side],
-				textValue,
-				x,
-				y,
-				{255, 255, 255},
-				{start.f_getRecordTierColor(record)},
-				start.txt_fightRecord[side].scaleX,
-				start.txt_fightRecord[side].scaleY,
-				side,
-				true
-			)
 		end
-	end
-end
+		hook.run("loop#" .. gamemode())
+		if start ~= nil and not indialogue() and not postmatch() and not main.pauseMenu and roundstate() > 0 and roundstate() < 4 then
+			if start.txt_fightRecord == nil then
+				start.txt_fightRecord = {
+					text:create({
+						font = 8,
+						bank = 0,
+						align = 1,
+						text = '',
+						x = 578,
+						y = 24,
+						scaleX = 1,
+						scaleY = 1,
+						r = 255,
+						g = 255,
+						b = 255,
+						a = 255,
+						height = -1,
+						xshear = 0,
+						angle = 0,
+						window = nil,
+						defsc = false,
+					}),
+					text:create({
+						font = 8,
+						bank = 0,
+						align = -1,
+						text = '',
+						x = 704,
+						y = 24,
+						scaleX = 1,
+						scaleY = 1,
+						r = 255,
+						g = 255,
+						b = 255,
+						a = 255,
+						height = -1,
+						xshear = 0,
+						angle = 0,
+						window = nil,
+						defsc = false,
+					}),
+				}
+			end
+			for side = 1, 2 do
+				local ref = start.f_getActiveCharRef(side)
+				if ref ~= nil then
+					local record = start.f_getCharRecord(ref)
+					local textValue = string.format('W:%d L:%d %s', record.wins, record.losses, start.f_getRecordTierText(record))
+					local x = side == 1 and 578 or 704
+					local align = side == 1 and 1 or -1
+					start.txt_fightRecord[side]:update({text = textValue, x = x, y = 24, align = align})
+					start.txt_fightRecord[side]:draw()
+				end
+			end
+		end
+		if start ~= nil and type(start.f_drawPlacementGrid) == 'function' and not postmatch() then
+			start.f_drawPlacementGrid()
+		end
 	--pause menu
 	if main.pauseMenu then
 		playerBufReset()

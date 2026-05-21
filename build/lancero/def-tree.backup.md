@@ -1,0 +1,940 @@
+# Def Tree Backup
+
+Generated: 2026-05-20T23:25:28.126373+00:00
+Source root: /home/lancero7777/apps/ikemen-source
+Target root: /home/lancero7777/apps/ikemen-dev
+
+## select.def [Characters]
+
+- kfm_zss, stages/kfm.def
+- kfm720, stages/kfm.def, order=0
+- kfm_zaxis, stages/kfm.def, order=0
+
+## Character Defs
+
+- chars/119way-mario/119way-mario.def
+- chars/2024SF3Gouki/2024SF3Gouki.def
+- chars/____M206 SAGAT beta 5.3/____M206 SAGAT beta 5.3.def
+- chars/A-Shi/A-Shi.def
+- chars/A-Shi/ending.def
+- chars/A-Shi/stroy.def
+- chars/ace/ace.def
+- chars/Adel-BOSS/Adel-BOSS.def
+- chars/ADHD pingu/ADHD pingu.def
+- chars/AI-AmyRose/AI-AmyRose.def
+- chars/AI-AmyRose/AmyRose.def
+- chars/AI-bison/AI-bison.def
+- chars/AI-bison/bison.def
+- chars/AI-eric/AI-eric.def
+- chars/AI-eric/eric-sc.def
+- chars/AI-eric/eric.def
+- chars/AI-ShadowMHII/AI-ShadowMHII.def
+- chars/AI-ShadowMHII/ShadowMHII.def
+- chars/AI-ShadowMHII/ShadowMH_Ending.def
+- chars/AI-SonicMHII/AI-SonicMHII.def
+- chars/akan/akan.def
+- chars/akan/akan_end.def
+- chars/akan/akan_intro.def
+- chars/Akiha_AI/Tohno Akiha.def
+- chars/Akuma/Akuma.def
+- chars/Akuma/Command.def
+- chars/Akuma/storyboard/ending.def
+- chars/Akuma/storyboard/introduction.def
+- chars/Akuma TEA/Akuma.def
+- chars/Akuma TEA/Epilogue/Epilogue.def
+- chars/Akuma TEA/Prologue/Prologue.def
+- chars/AkumaGG/AkumaGG.def
+- chars/AkumaHY/AkumaHY.def
+- chars/AlbertWeskerAI/AlbertWesker.def
+- chars/AlbertWeskerAI/AlbertWeskerAI.def
+- chars/AlbertWeskerAI/backup/30-12-2017 1-26-13 pm/AlbertWesker.def
+- chars/AlbertWeskerAI/backup/30-12-2017 1-28-21 pm/AlbertWesker.def
+- chars/AlbertWeskerAI/backup/30-12-2017 2-28-21 pm/AlbertWesker.def
+- chars/alexEX/alexEX.def
+- chars/Alucard/Alucard.def
+- chars/alucard_C/alucard_C.def
+- chars/Anakin/Anakin.def
+- chars/Angry Ryu/Angry Ryu.def
+- chars/Another God Akuma/Another God Akuma.def
+- chars/Aoko_AACC/Aoko_AACC.def
+- chars/Armor_VegetaZ2/Armor_Majin_VegetaZ2.def
+- chars/Armor_VegetaZ2/Armor_VegetaZ2.def
+- chars/AVGN/AVGN.def
+- chars/AVGN/backup/07-05-2021 5-32-39 pm/AVGN.def
+- chars/Awakened-Clark/Awakened-Clark.def
+- chars/AWK_Morrigan/AWK_Morrigan.def
+- chars/AWK_Morrigan/Command.def
+- chars/AWK_Morrigan/Morriganend/Morriganend.def
+- chars/Azurite v.1.2_ForceAI/Azurite v.1.2.def
+- chars/Azurite v.1.2_ForceAI/Azurite v.1.2_ForceAI.def
+- chars/Azurite v.1.2_ForceAI/omake/Bluish_Phantom_v.2.0.def
+- chars/baki/baki.def
+- chars/Balrog/Balrog.def
+- chars/Balrog/Balrog_unotag.def
+- chars/Banzoku-Alex/Banzoku-Alex.def
+- chars/Bardock_BT/Bardock_BT.def
+- chars/BBL_Tricky/BBL_Tricky.def
+- chars/Beerus/Beerus.def
+- chars/BeterRyu/Command.def
+- chars/BeterRyu/EvilRyu.def
+- chars/BeterRyu/MasterRyu.def
+- chars/BeterRyu/NormalRyu.def
+- chars/BeterRyu/Ryu.def
+- chars/Betty Nor/Betty Nor.def
+- chars/Black_Apocalypse/Black_Apocalypse-win.def
+- chars/Black_Apocalypse/Black_Apocalypse.def
+- chars/BlackPrincess_Tohka/BlackPrincess_Tohka.def
+- chars/BlackZ2i - Anime Version/BlackZ2i - Anime Version.def
+- chars/BlackZ2i - Anime Version/BlackZ2i.def
+- chars/BLAKE V3-1.1/BLAKE V3-1.0.def
+- chars/BLAKE V3-1.1/BLAKE V3-1.1.def
+- chars/Bloodñ+killer/Bloodñ+killer NO AI.def
+- chars/Bloodñ+killer/Bloodñ+killer.def
+- chars/Bomber_Hugo/Bomber_Hugo.def
+- chars/BonziBuddy/BonziBuddy.def
+- chars/BonziBuddy/Ending.def
+- chars/BonziBuddy/Intro.def
+- chars/Botan/Botan.def
+- chars/Bowser/Bowser.def
+- chars/bowser-spaceship/bowser-spaceship.def
+- chars/bowser-spaceship/bs.def
+- chars/Boxer/Boxer.def
+- chars/Boxing guy/Boxing guy.def
+- chars/Boxing guy/backup/09-11-2021 9-37-30 pm/Boxing guy.def
+- chars/BrolyNew/BrolyNew.def
+- chars/BrolyZ2/BrolyZ2.def
+- chars/Bulla/Bulla.def
+- chars/Burai1.1/Burai.def
+- chars/Burai1.1/Burai1.0.def
+- chars/Burai1.1/Burai1.1.def
+- chars/BurnKen/BurnKen.def
+- chars/BurnKen/Ken.def
+- chars/BurnKen/KenUnoTagK.def
+- chars/BurnKen/KenUnoTagR.def
+- chars/BurnKen/KenUnoTagS.def
+- chars/BuuZ2/BuuZ2.def
+- chars/C18Z2/C18Z2.def
+- chars/Cell/Cell.def
+- chars/Cell/backup/Cell.def
+- chars/CFJ_Hit/CFJ_Hit.def
+- chars/CFJ_Liu_Kang/CFJ_Liu_Kang.def
+- chars/Chara/Chara.def
+- chars/Chara lv20/Chara lv20.def
+- chars/Charmx/Charmx.def
+- chars/Charmx/backup/21-12-2021 8-42-49 am/cvsbluestreak.def
+- chars/Charmx/backup/21-12-2021 8-48-30 am/cvsbluestreak.def
+- chars/chicken/chicken.def
+- chars/chris/backup/09-09-2017 8-0-56 pm/kfm.def
+- chars/chris/backup/10-09-2017 3-20-26 pm/kfm.def
+- chars/chris/backup/10-09-2017 3-20-29 pm/kfm.def
+- chars/chris/chris.def
+- chars/Chuck Norris/Chuck Norris.def
+- chars/Chun-Li/Chun-Li.def
+- chars/Chun-Li/NormalChun-Li.def
+- chars/Chun-Li/ShadowLady.def
+- chars/Chun_LI_JJ/Chun_LI_JJ.def
+- chars/Chun_LI_JJ/command.def
+- chars/Chun_LI_JJ/storyboard/ending.def
+- chars/Chun_LI_JJ/storyboard/introduction.def
+- chars/Chunli/Chunli.def
+- chars/Chunli/ending.def
+- chars/Chunli/ending2.def
+- chars/Classic_Sonic/Classic_Sonic.def
+- chars/Clone Blood Igniz/Clone Blood Igniz.def
+- chars/Coco/Coco/Coco.def
+- chars/Coco/__MACOSX/Coco/._Coco.def
+- chars/Conqueror Raoh_S3/Conqueror Raoh_S3.def
+- chars/Crazy_Vega/Crazy_Vega.def
+- chars/cursor/cursor.def
+- chars/custom cheap shin luigi/custom cheap shin luigi.def
+- chars/CVS_Cammy/CVS_Cammy.def
+- chars/CVS_Cammy/Cammy_Ptan.def
+- chars/cvs_karin/cvs_karin.def
+- chars/cvshaohmaru_ex/cvshaohmaru.def
+- chars/cvshaohmaru_ex/cvshaohmaru_ex.def
+- chars/cvshaohmaru_ex/cvshaohmaru_normal.def
+- chars/Cvsiori/Cvsiori.def
+- chars/cvsyoko/cvsyoko.def
+- chars/cvszangief_ex/cvszangief.def
+- chars/cvszangief_ex/cvszangief_ex.def
+- chars/cvszangief_ex/cvszangief_normal.def
+- chars/CvTWStriderHien/CvTWStriderHien.def
+- chars/CyberRyu/CyberRyu.def
+- chars/CyberRyuEvil/CyberRyuEvil.def
+- chars/D-Donald/D-Donald.def
+- chars/D4asuka/D4asuka.def
+- chars/D4karina/D4karina.def
+- chars/DaigoKen/DaigoKen.def
+- chars/Dark God Ryu/Dark God Ryu.def
+- chars/Dark Side Ryu/Dark Side Ryu.def
+- chars/Dark Side Ryu/UNOTAG DEFs/EvilRyu_unotag.def
+- chars/Dark Side Ryu/UNOTAG DEFs/MasterRyu_unotag.def
+- chars/Dark Side Ryu/UNOTAG DEFs/NormalRyu_unotag.def
+- chars/Dark Side Ryu/UNOTAG DEFs/Ryu_unotag.def
+- chars/Dark Storm K/Dark Storm K.def
+- chars/Darkflare/Darkflare.def
+- chars/DarkVega/DarkVega.def
+- chars/DBS Broly Movie Goku/DBS Broly Movie Goku.def
+- chars/Deadly/Deadly.def
+- chars/Definition/Definition.def
+- chars/Definition/stage/BonusGang.def
+- chars/Definitive Rei AI Alt/Definitive Rei AI Alt.def
+- chars/Definitive Rei AI Alt/Definitive Rei AI.def
+- chars/Definitive Rei AI Alt/stage/RuinedCity.def
+- chars/Demon Ken (F.F. Style)/Demon Ken (F.F. Style).def
+- chars/Dempsy Ippo/Dempsy Ippo.def
+- chars/Dempsy Ippo/Ippo.def
+- chars/destinydio/destinydio.def
+- chars/Devil Jin/Devil Jin.def
+- chars/Devil Jin/deviljinend.def
+- chars/Devil_Jin/Devil_Jin.def
+- chars/Devil_Mario_Prime/Devil_Mario_Prime.def
+- chars/dhalsim/dhalsim.def
+- chars/Dirty kf man/Dirty kf man.def
+- chars/dracula/dracula.def
+- chars/Dragon Ryu/Dragon Ryu.def
+- chars/Dragon-Ken/Dragon-Ken.def
+- chars/DragonClaw_AI/DragonClaw_AI.def
+- chars/Dudley/Dudley.def
+- chars/Emperor Thouther/Emperor Thouther.def
+- chars/Emperor Thouther/stage/Souther-PyramidSunset.def
+- chars/Emperor_Frieza/Emperor_Frieza.def
+- chars/Ethos/Ethos.def
+- chars/Etika/Etika.def
+- chars/Evil Ryu/Evil Ryu.def
+- chars/Evil Ryu/UNOTAG DEFs/EvilRyu_unotag.def
+- chars/Evil Ryu/UNOTAG DEFs/MasterRyu_unotag.def
+- chars/Evil Ryu/UNOTAG DEFs/NormalRyu_unotag.def
+- chars/Evil Ryu/UNOTAG DEFs/Ryu_unotag.def
+- chars/Evil Ryu Mekstik/Evil Ryu Mekstik.def
+- chars/EvilRyu/EvilRyu.def
+- chars/EvilRyu/EvilRyu_unotag.def
+- chars/EvilRyu/MasterRyu.def
+- chars/EvilRyu/MasterRyu_unotag.def
+- chars/EvilRyu/NormalRyu.def
+- chars/EvilRyu/NormalRyu_unotag.def
+- chars/EvilRyu/Ryu-Mugen11.def
+- chars/EvilRyu/Ryu.def
+- chars/EvilRyu/Ryu_unotag.def
+- chars/EvilSagat/Definition.def
+- chars/Exetior Remake Version/Exetior Remake Version.def
+- chars/Expand Dong/Expand Dong.def
+- chars/Fei-Long/Fei-Long.def
+- chars/fei-long/fei-long.def
+- chars/Felicia/Felicia.def
+- chars/Felicia REDHOT/Felicia REDHOT.def
+- chars/Felicia_AIPATCH/Felicia_AIPATCH.def
+- chars/Flamme/Flamme.def
+- chars/Flamme/Flamme1,0.def
+- chars/franza/franza.def
+- chars/franza/franza_end.def
+- chars/franza/franza_intro.def
+- chars/FreezaZ2/FreezaZ2.def
+- chars/FreezaZ2/GoldenFreezaZ2.def
+- chars/Frisk/Frisk.def
+- chars/Future_Gohan/Future_Gohan.def
+- chars/Gaou/Gaou.def
+- chars/Geese/Geese.def
+- chars/Geese-KOF98/Geese-KOF98.def
+- chars/Geese_YS/Geese_YS.def
+- chars/Geese_YS/Geese_YS_NoAAI.def
+- chars/Gill/Gill-EnhancedAI.def
+- chars/Gill/Gill.def
+- chars/Gill RR/Gill.def
+- chars/Gill-EnhancedAI/Gill-EnhancedAI.def
+- chars/Gill-EnhancedAI/Gill.def
+- chars/Giygas/Giygas.def
+- chars/Giygas/Giygas10.def
+- chars/Giygas/tn_giygas.def
+- chars/Giygas/tn_giygas10.def
+- chars/God Akuma/God Akuma.def
+- chars/God_Goku/God_Goku.def
+- chars/GodAkuma/GodAkuma.def
+- chars/Gogeta SSJ/Gogeta SSJ.def
+- chars/Gogeta SSJ4/Gogeta SSJ4.def
+- chars/Gogeta SSJ4/final/final.def
+- chars/GogetaSuper4/GogetaSuper4.def
+- chars/GogetaSuper4/ending.def
+- chars/Goh-un/0D_Goh-un.def
+- chars/Goh-un/Goh-un.def
+- chars/Gohan Blanco/Gohan Blanco.def
+- chars/GohanBeastZ2/GohanBBeastZ2.def
+- chars/GohanBeastZ2/GohanBeastZ2.def
+- chars/goku/Epilogue/Epilogue.def
+- chars/goku/Goku.def
+- chars/goku/Prologue/Prologue.def
+- chars/Goku/Epilogue/Epilogue.def
+- chars/Goku/Goku.def
+- chars/Goku/Prologue/Prologue.def
+- chars/Goku Black SSR/Goku Black SSR.def
+- chars/Goku Black SSR/final/final.def
+- chars/Goku Legend SSJ/Goku Legend SSJ.def
+- chars/Goku Ultra Instinto Dominado/Goku Ultra Instinto Dominado.def
+- chars/GokuSSJ4_EB/GokuSSJ4_EB.def
+- chars/GokuSSJ4_EB/ending.def
+- chars/GokuUB22v3/Gokuub22V3.def
+- chars/GokuZ2/GokuZ2.def
+- chars/GokuZ2/files/Ending.def
+- chars/GokuZ2_1.0-ai/GokuZ2_1.0-ai.def
+- chars/GorimaruJr/GorimaruJr.def
+- chars/GorimaruJr/ikaruga-AI.def
+- chars/gouken/Ending_Gouken.def
+- chars/gouken/gouken.def
+- chars/gouken/goukenaend.def
+- chars/Guile/Guile.def
+- chars/Guile/GuileUnoTagK.def
+- chars/Guile/GuileUnoTagR.def
+- chars/Guile/GuileUnoTagS.def
+- chars/guile xi/guile xi.def
+- chars/Gum_Haruhi/Gum_Haruhi.def
+- chars/Guy/Guy.def
+- chars/Hakufu Sonsaku/Hakufu Sonsaku.def
+- chars/HAKUMA/HAKUMA.def
+- chars/Han_Samuel/Han_Samuel.def
+- chars/Haohmaru/Intro_Samurai_1/ss_intro.def
+- chars/Haohmaru/haohmaru.def
+- chars/Haohmaru KOFM/Haohmaru KOFM.def
+- chars/Haohmaru KOFM/Story/Intro.def
+- chars/Haohmaru KOFM/ending/ending.def
+- chars/Haohmaru-KOF98/Haohmaru-KOF98.def
+- chars/heavy combo ryu/heavy combo ryu.def
+- chars/heavyd_ai/HeavyD!.def
+- chars/heavyd_ai/heavyd_ai.def
+- chars/Heihachi/Epilogue/Epilogue.def
+- chars/Heihachi/Heihachi.def
+- chars/Heihachi/Prologue/Prologue.def
+- chars/Hel01/Hel01.def
+- chars/Helder/Helder.def
+- chars/Hisui_AACC/Hisui_AACC.def
+- chars/Hitto/Hitto.def
+- chars/Hitto/Small Size/Hitto.def
+- chars/hken/hken.def
+- chars/Holy Ryu3/Holy Ryu3.def
+- chars/holyhiryu/holyhiryu.def
+- chars/Honda_unotag/Honda_unotag.def
+- chars/Hugo/Hugo.def
+- chars/HUGO/HUGO.def
+- chars/hurry_Ken/hurry_Ken.def
+- chars/HyperGoDRyu/110.def
+- chars/HyperGoDRyu/HyperGoDRyu.def
+- chars/I-Geese/I-Geese.def
+- chars/I_Wanna_Be_The_Ryu/I_Wanna_Be_The_Ryu.def
+- chars/Iori/EXIori.def
+- chars/Iori/Epilogue/Epilogue.def
+- chars/Iori/Iori.def
+- chars/Iori/NormalIori.def
+- chars/Iori/OrochiIori.def
+- chars/Iori/Prologue/Prologue.def
+- chars/Iori Yagami CTN Lv2-KOFM/Iori Yagami CTN Lv2-KOFM.def
+- chars/IORI-HOMER/IORI-HOMER.def
+- chars/Iori-KOF98/Iori-KOF98.def
+- chars/Ippo/Ippo.def
+- chars/IQS_Kishima_AI/Benou no Kagaho.def
+- chars/IQS_Kishima_AI/IQS_Kishima_AI.def
+- chars/IQS_Kishima_AI/font/arcade90.def
+- chars/IQS_Kishima_AI/font/arialnb-tt30.def
+- chars/IQS_Kishima_AI/font/battle169.def
+- chars/IQS_Kishima_AI/font/battle65.def
+- chars/IQS_Kishima_AI/font/name54.def
+- chars/IQS_Kishima_AI/font/name54gi.def
+- chars/IQS_Kishima_AI/font/num130.def
+- chars/IQS_Kishima_AI/font/num39.def
+- chars/IQS_Kishima_AI/font/options.def
+- chars/Iron Fist (MvCX)/Iron Fist (MvCX).def
+- chars/Iron Fist (MvCX)/Iron Fist (MvCX)_unotag.def
+- chars/ITF_Kim/ITF_Kim.def
+- chars/J_Mary/J_Mary.def
+- chars/J_shermie/J_shermie.def
+- chars/Jackie_DrunkenFist/Jackie_DrunkenFist.def
+- chars/jacksepticeye/jacksepticeye.def
+- chars/JAGI/JAGI.def
+- chars/JAGI/JAGI_AI-Patch.def
+- chars/Jagi_r/Jagi_r.def
+- chars/Jerma985/Jerma985.def
+- chars/jimmyhere/ending.def
+- chars/jimmyhere/intro.def
+- chars/jimmyhere/jimmyhere.def
+- chars/jin/jin.def
+- chars/Jin Kazama/Jin Kazama.def
+- chars/Jin(The Evil Awakens 2)/Epilogue/Epilogue.def
+- chars/Jin(The Evil Awakens 2)/Jin(The Evil Awakens 2).def
+- chars/Jin(The Evil Awakens 2)/Prologue/Prologue.def
+- chars/Jin_Kazama/Jin_Kazama.def
+- chars/Jin_Kisaragi_XI/Jin_Kisaragi_XI.def
+- chars/JirenZ2/JirenZ2.def
+- chars/Joe Swanson/Joe Swanson.def
+- chars/Joe-KOF98/Joe-KOF98.def
+- chars/Joe-L/Joe-L.def
+- chars/Johnny Cage MKT/Johnny Cage MKT.def
+- chars/Juggernault/Juggernault.def
+- chars/K-Feilong_WLS/K-Feilong_WLS.def
+- chars/KAGE 2.0/KAGE 2.0.def
+- chars/kaguramutsuki/kaguramutsuki.def
+- chars/KaiSenseiRyu/KaiSenseiRyu.def
+- chars/Kaizou ShinGouki/Kaizou ShinGouki.def
+- chars/Kamijo/Kamijo.def
+- chars/Kanae/Kanae.def
+- chars/Kazuya/Epilogue/Epilogue.def
+- chars/Kazuya/Kazuya.def
+- chars/Kazuya/Prologue/Prologue.def
+- chars/Ken_Sf3_Marvel/End/Ken_Sf3_Marvel_end.def
+- chars/Ken_Sf3_Marvel/Ken_Sf3_Marvel.def
+- chars/KenAI/stage/Ultimate_SF2_USA_Battle_Harbor.def
+- chars/KenAI/stage/Zoom_version/Ultimate_SF2_USA_Battle_Harbor.def
+- chars/KenMasters/KenMasters.def
+- chars/KenMasters/end/intro.def
+- chars/KenMasters/end/kenending.def
+- chars/Kenoh/Act/Raoh.def
+- chars/Kenoh/Kenoh.def
+- chars/Kenoh[FleshdoomDBL&Lordmike]/Act/Raoh.def
+- chars/Kenoh[FleshdoomDBL&Lordmike]/Kenoh[FleshdoomDBL&Lordmike].def
+- chars/Kenshin Himura/Kenshin Himura.def
+- chars/kenshiro-KOFM/kenshiro-KOFM.def
+- chars/Kenshiro_C2/Kenshiro_C2.def
+- chars/KENSHIRONEW/KENSHIRONEW.def
+- chars/KENSHIRONEW/KENSHIRO_31_unotag.def
+- chars/KENSHIRONEW/backup/02-09-2015 7-47-26 pm/KENSHIRO_31.def
+- chars/KENSHIROU_AI-Patch/Ending.def
+- chars/KENSHIROU_AI-Patch/Intro.def
+- chars/KENSHIROU_AI-Patch/KENSHIROUVTE.def
+- chars/KENSHIROU_AI-Patch/KENSHIROU_AI-Patch.def
+- chars/kfm/ending.def
+- chars/kfm/intro.def
+- chars/kfm/kfm.def
+- chars/kfm720/ending.def
+- chars/kfm720/intro.def
+- chars/kfm720/kfm720.def
+- chars/kfm_zaxis/ending.def
+- chars/kfm_zaxis/intro.def
+- chars/kfm_zaxis/kfm_zaxis.def
+- chars/kfm_zss/ending.def
+- chars/kfm_zss/intro.def
+- chars/kfm_zss/kfm_zss.def
+- chars/kfmZ/ending.def
+- chars/kfmZ/intro.def
+- chars/kfmZ/kfmZ.def
+- chars/KidGokuZ2i/KidGokuZ2i.def
+- chars/Kim_BX/Kim_BX.def
+- chars/Knuckles/Knuckles.def
+- chars/KnuxMHII/KnuxMHII.def
+- chars/KnuxMHII/KnuxMH_Ending.def
+- chars/KOF_Tung_Fu_Rue/KOF_Tung_Fu_Rue.def
+- chars/KoopaClownCar_IWBTG/KoopaClownCar_IWBTG.def
+- chars/koryu/koryu.def
+- chars/Kratos/Kratos.def
+- chars/KrillinZ2/KrillinZ2.def
+- chars/kryo/kryo.def
+- chars/kryo/kryo_end.def
+- chars/kryo/kryo_intro.def
+- chars/Kung Fu Girl/Kung Fu Girl.def
+- chars/Kung Fu Man-KOFM/Kung Fu Man-KOFM.def
+- chars/Kyo MI-KOFM/Kyo MI-KOFM.def
+- chars/Kyo MI-KOFM/ending-original.def
+- chars/Kyo MI-KOFM/history.def
+- chars/L-Magneto2/L-Magneto2.def
+- chars/L-Magneto2/Magneto.def
+- chars/lauren/lauren.def
+- chars/Legendary Bogard 1.0/Legendary Bogard 1.0.def
+- chars/LittleMac-KOFM/LittleMac-KOFM.def
+- chars/Lord Evil Ken/Lord Evil Ken.def
+- chars/Lord Evil Ryu/Lord Evil Ryu.def
+- chars/LORD Igniz-Boss/LORD Igniz-Boss.def
+- chars/Lord Soma/Lord Soma.def
+- chars/Lyzer/Lyzer.def
+- chars/Lyzer/Lyzer1,0.def
+- chars/m.bison_mx/m.bison_mx.def
+- chars/Majin Starfish V3/Majin Starfish V3.def
+- chars/Majin_Buu/Majin_Buu.def
+- chars/makoto/makoto.def
+- chars/Makunoushi Ippo/Makunoushi Ippo.def
+- chars/Mamiya/Mamiya.def
+- chars/Man of the Benevolent star/Man of the Benevolent star (2).def
+- chars/Man of the Benevolent star/Man of the Benevolent star.def
+- chars/MarioPS/MarioPS.def
+- chars/Markiplier/Markiplier.def
+- chars/Markiplier/end/outlaw.def
+- chars/MasterKen/Ken.def
+- chars/MasterKen/MasterKen.def
+- chars/MasterKen/NormalKen.def
+- chars/MasterKen/SFIIIKen.def
+- chars/MasterKen/ViolentKen.def
+- chars/MasterRyu/EvilRyu.def
+- chars/MasterRyu/EvilRyu_unotag.def
+- chars/MasterRyu/MasterRyu.def
+- chars/MasterRyu/MasterRyu_unotag.def
+- chars/MasterRyu/NormalRyu.def
+- chars/MasterRyu/NormalRyu_unotag.def
+- chars/MasterRyu/Ryu-Mugen11.def
+- chars/MasterRyu/Ryu.def
+- chars/MasterRyu/Ryu_unotag.def
+- chars/Matrimelee_ume&tane/Matrimelee_ume&tane.def
+- chars/memelord/ending.def
+- chars/memelord/intro.def
+- chars/memelord/memelord.def
+- chars/michael-max-kofa/michael-max-kofa.def
+- chars/MIKE/MIKE.def
+- chars/miketyson/miketyson.def
+- chars/MikeTyson_IWBTG/MikeTyson_IWBTG.def
+- chars/Miku Hatsune/Miku Hatsune.def
+- chars/MIKU_APPEND/MIKU_APPEND.def
+- chars/Miles 'Tails' Prower/Miles 'Tails' Prower.def
+- chars/minosPRIME/minosPRIME.def
+- chars/Mizuchi/Mizuchi.def
+- chars/MizuLenja_EX/MizuLenja_EX.def
+- chars/MK1_CAGE/CONFIG.def
+- chars/MK1_CAGE/MK1_CAGE.def
+- chars/MK1_LIU-KANG/CONFIG.def
+- chars/MK1_LIU-KANG/MK1_LIU-KANG.def
+- chars/MK1_RAIDEN/CONFIG.def
+- chars/MK1_RAIDEN/MK1_RAIDEN.def
+- chars/MK1_SUB-ZERO/CONFIG.def
+- chars/MK1_SUB-ZERO/MK1_SUB-ZERO.def
+- chars/MoarKrabs/MoarKrabs.def
+- chars/Monika_B/Monika_B.def
+- chars/Morrigan Aensland/End/Morriganend.def
+- chars/Morrigan Aensland/Morrigan Aensland.def
+- chars/Morrigan Aensland/UMvC3_Morrigan.def
+- chars/morrigan_pots/morrigan_pots.def
+- chars/Mugen Ryup/Mugen Ryup.def
+- chars/MVC Miku/MVC Miku.def
+- chars/MVC1PatrickStar/MVC1PatrickStar.def
+- chars/MvC2_Blanka/MvC2_Blanka.def
+- chars/MvC2_Cammy Delta/MvC2_Cammy Delta.def
+- chars/MvC2_Juri Han/MvC2_Juri Han.def
+- chars/MVC2_OroAI/MVC2_Oro.def
+- chars/MVC2_OroAI/MVC2_OroAI.def
+- chars/MvC2_Thor/MvC2_Thor.def
+- chars/MvC2Hulk/MvC2Hulk.def
+- chars/N-Ralf/N-Ralf.def
+- chars/N-Ralf/原/ikari.def
+- chars/Nakoruru_Kofe/Nakoruru_Kofe.def
+- chars/NappaTA/NappaTA.def
+- chars/NASHAI/MVCAGENT-NASH.def
+- chars/NASHAI/NASHAI.def
+- chars/Natural/Natural.def
+- chars/New Madness Mario/Data/Storyboard/intro.def
+- chars/New Madness Mario/New Madness Mario.def
+- chars/New Madness Mario/Training Boy.def
+- chars/New Nightmare Broly/New Nightmare Broly.def
+- chars/Nicotine/Nicotine.def
+- chars/Nicotine/SS2_Intro.def
+- chars/Nicotine/ending.def
+- chars/Nicotine/intro Samurai 2/SS2_Intro.def
+- chars/nightmare/nightmare.def
+- chars/nightmare/the nightmare SSJ3HD(soft).def
+- chars/NINTENDO_PunchOut_LittleMac/NINTENDO_PunchOut_LittleMac.def
+- chars/Nitro Supreme Hatsune Miku/Nitro Supreme Hatsune Miku.def
+- chars/NormalKen/Ken.def
+- chars/NormalKen/MasterKen.def
+- chars/NormalKen/NormalKen.def
+- chars/NormalKen/SFIIIKen.def
+- chars/NormalKen/ViolentKen.def
+- chars/NormalRyu/EvilRyu.def
+- chars/NormalRyu/EvilRyu_unotag.def
+- chars/NormalRyu/MasterRyu.def
+- chars/NormalRyu/MasterRyu_unotag.def
+- chars/NormalRyu/NormalRyu.def
+- chars/NormalRyu/NormalRyu_unotag.def
+- chars/NormalRyu/Ryu-Mugen11.def
+- chars/NormalRyu/Ryu.def
+- chars/NormalRyu/Ryu_unotag.def
+- chars/norris/norris.def
+- chars/o_gill/o_gill.def
+- chars/ObamaBossFight/ObamaBossFight.def
+- chars/Ogre EX/Ogre EX.def
+- chars/OL_Yamcha/OL_Yamcha.def
+- chars/Oldmon/Oldmon.def
+- chars/omega weegee remake/omega weegee remake.def
+- chars/OmegaTH/OmegaTH.def
+- chars/OmegaTH/ending.def
+- chars/OmegaTH/intro.def
+- chars/OmegaTH1/OmegaTH1.def
+- chars/OmegaTH1/ending.def
+- chars/OmegaTH1/intro.def
+- chars/One ken/One ken.def
+- chars/oni-akuma-kofa/oni-akuma-kofa.def
+- chars/Orochi Flamme Shingo/Orochi Flamme Shingo.def
+- chars/Orochi Flamme Shingo/Story/Intro.def
+- chars/Orochi Flamme Shingo/ending/ending.def
+- chars/Orochi Gill/Orochi Gill.def
+- chars/OWRemakeV2/OWRemakeV2.def
+- chars/P-Cell_KN.Edit/P-Cell_KN.Edit.def
+- chars/Paladin/Paladin.def
+- chars/Papyrus/Papyrus.def
+- chars/PeachMYTHOS/PeachMYTHOS.def
+- chars/Pekora/Pekora.def
+- chars/Perfect Weapon MB-02/MB-02ending.def
+- chars/Perfect Weapon MB-02/Perfect Weapon MB-02.def
+- chars/peter/peter.def
+- chars/PewDiePie/pewdiepie.def
+- chars/PiccoloZ2/PiccoloZ2.def
+- chars/pingu/ending.def
+- chars/pingu/intro.def
+- chars/pingu/pingu.def
+- chars/POWERSTARMario/POWERSTARMario.def
+- chars/pyron_cvs/pyron_cvs.def
+- chars/Qi-Hao-Long/Qi-Hao-Long.def
+- chars/Qi-Hao-Long/Qi-Hao-Long1.1.def
+- chars/R_Gouki/Geese Stage(Nightmare)/geesebgNM.def
+- chars/R_Gouki/R_Gouki.def
+- chars/RacingMiku2014_EV/RacingMiku2014_EV.def
+- chars/Raditz/Raditz.def
+- chars/Raditz_KN.Edit/Raditz_KN.Edit.def
+- chars/RagnaDSG/RagnaDSG.def
+- chars/RainbowDudley/RainbowDudley.def
+- chars/randomness11/randomness10.def
+- chars/randomness11/randomness11.def
+- chars/RareAkuma/RareAkuma.def
+- chars/rbmary/ED.def
+- chars/rbmary/rbmary.def
+- chars/realistic_weegee/Ending.def
+- chars/realistic_weegee/Intro.def
+- chars/realistic_weegee/realistic_weegee.def
+- chars/RED/RED.def
+- chars/Reggie-Skatore/Reggie-Skatore.def
+- chars/REI/Definitive Rei AI Alt.def
+- chars/REI/REI.def
+- chars/REI/stage/RuinedCity.def
+- chars/rei-hnk-kofa/Stage/Rei.def
+- chars/rei-hnk-kofa/rei-hnk-kofa.def
+- chars/Rei_AI-Patch/Rei.def
+- chars/Rei_AI-Patch/Rei_AI-Patch.def
+- chars/Revenge Broli/Revenge Broli.def
+- chars/rickRB/rickRB.def
+- chars/rock9/rock9.def
+- chars/Rocky/Rocky.def
+- chars/Rose_Black/Rose_Black.def
+- chars/Rozwel Gustab AI/Rozwel Gustab AI.def
+- chars/Ryo-KOF98/Ryo-KOF98.def
+- chars/Ryougi/Ryougi.def
+- chars/ryu/RyuUnoTagK.def
+- chars/ryu/RyuUnoTagR.def
+- chars/ryu/RyuUnoTagS.def
+- chars/ryu/ryu.def
+- chars/Ryu/Command.def
+- chars/Ryu/EvilRyu.def
+- chars/Ryu/MasterRyu.def
+- chars/Ryu/NormalRyu.def
+- chars/Ryu/Ryu.def
+- chars/RYUKO2nd/RYUKO2nd.def
+- chars/ryuuken/ryuuken.def
+- chars/S.Yashiro.Driver/S.Yashiro.Driver.def
+- chars/Sabaki__Ryuuken/Sabaki__Ryuuken.def
+- chars/Saber/command.def
+- chars/Saber/saber.def
+- chars/Saber/storyboard/ending.def
+- chars/Saber/storyboard/introduction.def
+- chars/Sagat/Sagat.def
+- chars/SagatMG/SagatMG.def
+- chars/sakura/sakura.def
+- chars/Sakuya/Sakuya.def
+- chars/sans/sans.def
+- chars/Sans edit/Sans edit.def
+- chars/Sans edit/backup/24-08-2016 11-21-47 am/sans edit.def
+- chars/Schlussel-Pre-1.1/Schlussel-Pre-1.1.def
+- chars/scorpionJUAN/INTROending/scoprionINTRO.def
+- chars/scorpionJUAN/INTROending/scorpionEND.def
+- chars/scorpionJUAN/backup/20-05-2022 11-6-42 am/scorpionJUAN.def
+- chars/scorpionJUAN/scorpionJUAN.def
+- chars/SCWU_Doraemon/SCWU_Doraemon.def
+- chars/SCWU_Doraemon/SCWU_DoraemonAI.def
+- chars/SegaGenesisRyu/SegaGenesisRyu.def
+- chars/SegaGenesisRyu/char/ending.def
+- chars/Seth SFIV/Seth SFIV.def
+- chars/sf3_alex/sf3_alex.def
+- chars/SF3_Gill_K/SF3_Gill_K.def
+- chars/SF3_Gill_K/WINMUGEN_KELN_AI.def
+- chars/sfz3adon/Arcade/end.def
+- chars/sfz3adon/Arcade/intro.def
+- chars/sfz3adon/sfz3adon.def
+- chars/SFZ_Ehnyd/SFZ_Ehnyd.def
+- chars/SFZKen/Ken.def
+- chars/Shadow/Shadow.def
+- chars/Shadow/V-Ryu.def
+- chars/Shadow JUS Updated/Shadow JUS Updated.def
+- chars/SHANG TSUNG MK1/CONFIG.def
+- chars/SHANG TSUNG MK1/SHANG TSUNG MK1.def
+- chars/shaq/shaq.def
+- chars/shaq/shaq10.def
+- chars/Shin/Shin.def
+- chars/Shin/shin_end.def
+- chars/Shin/shin_intro.def
+- chars/Shin Akuma/Shin Akuma.def
+- chars/SHIN RYU/SHIN RYU.def
+- chars/Shin_AI-Patch/Shin.def
+- chars/Shin_AI-Patch/Shin_AI-Patch.def
+- chars/SHINRYU 2.0/SHINRYU 2.0.def
+- chars/ShinSmoke Ryu/EvilRyu.def
+- chars/ShinSmoke Ryu/NormalRyu.def
+- chars/ShinSmoke Ryu/Ryu.def
+- chars/ShinSmoke Ryu/ShinSmoke Ryu.def
+- chars/Shovel Knight/ShovelKnight.def
+- chars/SHUMAWTF_Pingu/SHUMAWTF_Pingu.def
+- chars/SHUMAWTF_Pingu/ending.def
+- chars/SHUMAWTF_Pingu/intro.def
+- chars/silver/silver.def
+- chars/sm666/sm666.def
+- chars/Soma Cruz/Soma Cruz.def
+- chars/Songohan_CS/Songohan_CS.def
+- chars/Songoku_US/Songoku_US.def
+- chars/Sonic The Hedgehog/Sonic The Hedgehog.def
+- chars/Sonic V1.0/Sonic V1.0.def
+- chars/Spawn/Spawn.def
+- chars/spengbab/Story/intro.def
+- chars/spengbab/spengbab.def
+- chars/Spiderman/Scarlet Spiderman.def
+- chars/Spiderman/Spiderman.def
+- chars/Squidward/SquidEnd.def
+- chars/Squidward/SquidIntro.def
+- chars/Squidward/Squidward.def
+- chars/ssf2x_gouki/Backup/ssf2x_gouki(normal).def
+- chars/ssf2x_gouki/ssf2x_ex shin gouki.def
+- chars/ssf2x_gouki/ssf2x_gouki.def
+- chars/ssf2x_gouki/ssf2x_shin gouki.def
+- chars/ssf2x_gouki/stage/ssf2x_vega.def
+- chars/SSG_GokuZ2/SSG_GokuZ2.def
+- chars/SSGSS_GokuZ2/SSGSS_GokuZ2.def
+- chars/SSJ 2 GokuZ2/SSJ 2 GokuZ2.def
+- chars/SSJ3_GokuZ2i/SSJ3_GokuZ2i.def
+- chars/SSJ3_GokuZ2i/SSJ3_GokuZ2i_Britsukas_Alt_Palettes.def
+- chars/SSJ3_GokuZ2i/files/sprite.def
+- chars/SSJ4Blory_KN.edit/SSJ4Blory_KN.edit.def
+- chars/SSJ_Goku_LegendaryZ2/SSJ_Goku_LegendaryZ2.def
+- chars/SSJBlue_VegettoZ2/SSJBlue_VegettoZ2.def
+- chars/SSJBlue_VegettoZ2/Vegetto_SSJBlue_Candy_Z2/Vegetto_ssjblue_Z2.def
+- chars/SteveFox/SteveFox.def
+- chars/Strider Hiryu/Strider Hiryu.def
+- chars/StriderHiryu/StriderHiryu.def
+- chars/Suisei/Suisei.def
+- chars/Suisei/Suisei11.def
+- chars/Supa Cirno/Supa Cirno.def
+- chars/Super Bad Mario/Super Bad Mario.def
+- chars/Super Better Luigi/Super Better Luigi.def
+- chars/Super Better Mario/Super Better Mario.def
+- chars/Super Better Mario/backup/02-06-2019 11-30-45 pm/Super Better Mario.def
+- chars/Super Better Yoshi/Super Better Yoshi.def
+- chars/Super Gogeta4/Super Gogeta4.def
+- chars/Super Gogeta4/ending.def
+- chars/Super Goku Boss Ultimate/Super Goku Boss Ultimate.def
+- chars/Super Ryu/Super Ryu.def
+- chars/Super Vegetto4/Super Vegetto4.def
+- chars/SuperGogeta Ver4.0/SuperGogeta Ver4.0.def
+- chars/SuperLuigi/Stages/HauntedCastle.def
+- chars/SuperLuigi/Stages/PeachCastle.def
+- chars/SuperLuigi/SuperLuigi.def
+- chars/SuperLuigi/backup/20-10-2022 5-40-36 pm/SuperLuigi.def
+- chars/SuperLuigi/backup/20-10-2022 5-40-40 pm/SuperLuigi.def
+- chars/Superman/Superman.def
+- chars/SuperMario/Coding/ending.def
+- chars/SuperMario/Coding/intro.def
+- chars/SuperMario/Stages/HauntedCastle.def
+- chars/SuperMario/Stages/PeachCastle.def
+- chars/SuperMario/SuperMario.def
+- chars/SuperVegettoAI/SuperVegettoAI.def
+- chars/SuperVegettoAI/ending.def
+- chars/Symbiote_Spiderman/Symbiote_Spiderman.def
+- chars/TailsMHII/TailsMHII.def
+- chars/TailsMHII/TailsMH_Ending.def
+- chars/TEARyu/Epilogue/Epilogue.def
+- chars/TEARyu/Prologue/Prologue.def
+- chars/TEARyu/TEARyu.def
+- chars/TenShinHanZ2/TenShinHanZ2.def
+- chars/TerranceBongo/TerranceBongo.def
+- chars/Terry-KOF98/Terry-KOF98.def
+- chars/th123_Aya/th123_Aya.def
+- chars/th123_Meirin/th123_Meirin.def
+- chars/th123_Sakuya/th123_Sakuya.def
+- chars/th123_Yuyuko/th123_Yuyuko.def
+- chars/Thaldrix/EversongWoods.def
+- chars/Thaldrix/Thaldrix.def
+- chars/The Flash/The Flash.def
+- chars/The Second Coming/The Second Coming.def
+- chars/The Second Coming/backup/03-07-2019 12-34-20 pm/The Second Coming.def
+- chars/the-kung-fu-man/the-kung-fu-man.def
+- chars/Thor_AvX/Thor_AvX.def
+- chars/ThoutherMario/ThoutherMario.def
+- chars/TJ Combo/TJ Combo.def
+- chars/TJ ComboAI/TJ Combo.def
+- chars/TJ ComboAI/TJ ComboAI.def
+- chars/toki-kofa/Stage/Toki.def
+- chars/toki-kofa/toki-kofa.def
+- chars/TOKI_AI-Patch/TOKI.def
+- chars/TOKI_AI-Patch/TOKI_AI-Patch.def
+- chars/Tomoka Minato/Tomoka Minato.def
+- chars/Toriel/Toriel.def
+- chars/Toriel/ending.def
+- chars/Toriel/intro.def
+- chars/TTA'Goku MUI/TTA'Goku MUI.def
+- chars/TurboModeGouki/TurboModeGouki.def
+- chars/Turles/Turles.def
+- chars/UC.Falcon/UC.Falcon.def
+- chars/UI_GokuZ2/Black_UIGokuZ2.def
+- chars/UI_GokuZ2/UI_GokuZ2.def
+- chars/UI_GokuZ2/extras/old code/states10/GokuZ2_1.0.def
+- chars/Ultimate C.Falcon/Ultimate C.Falcon.def
+- chars/Ultimate_Bad_Time_Sans_R/Ultimate_Bad_Time_Sans_R.def
+- chars/Ultimate_Balrog/Balrog_Ultimate_Ending/Mugen_1.0/Balrog_Ultimate_Ending.def
+- chars/Ultimate_Balrog/Balrog_Ultimate_Ending/Mugen_1.1/Balrog_Ultimate_Ending.def
+- chars/Ultimate_Ryu/RYU_Ultimate_Ending.def
+- chars/Ultimate_Ryu/RYU_Ultimate_intro.def
+- chars/Ultimate_Ryu/stage/Ultimate_SF2_Suzaku_Castle.def
+- chars/Ultimate_Ryu/stage/Zoom/Ultimate_SF2_Suzaku_Castle.def
+- chars/Ultimate_Ryu/stage/Zoom/Ultimate_SF2_Suzaku_Castle_Champion_Edition.def
+- chars/Ultimate_Ryu/stage/Zoom/Ultimate_SF2_Suzaku_Castle_Winter.def
+- chars/Ultimate_Zangief/Ultimate_Zangief.def
+- chars/Ultimate_Zangief/ZangiefIntro.def
+- chars/Ultimate_Zangief/Zangiefending.def
+- chars/Ultra Instinct Goku/Ultra Instinct Goku.def
+- chars/Ultra Instinct Goku/backup/15-01-2024 1-31-57 am/Ultra Instinct Goku.def
+- chars/UncleJogel/Ending.def
+- chars/UncleJogel/Intro.def
+- chars/UncleJogel/UncleJogel.def
+- chars/undyne/undyne.def
+- chars/Universal Tournament Goku/Universal Tournament Goku.def
+- chars/Vega/SvC_-_Vega_ending.def
+- chars/Vega/Vega.def
+- chars/Vega-SM/Vega-SM.def
+- chars/Vegeta All Forms/Vegeta All Forms.def
+- chars/Vegeta Super Transform 1.6/Vegeta Super Transform 1.6.def
+- chars/VegettoBlue/VegettoBlue.def
+- chars/VegettoBlue_KN/VegettoBlue_KN.def
+- chars/VegettoZ2/VegettoZ2.def
+- chars/VGA_bowser/VGA_bowser.def
+- chars/VGA_bowser/VGA_bowser_tag.def
+- chars/Violent Ken SF3/Violent Ken SF3.def
+- chars/Violent Ken SF3/miketyson/miketyson.def
+- chars/Violent_Ken/Violent_Ken.def
+- chars/Waluigi/Waluigi.def
+- chars/Wario/Wario.def
+- chars/wario/wario.def
+- chars/Warrior_C/Warrior_C.def
+- chars/Washizuka3/Washizuka3.def
+- chars/Xeno GogetaSSJ4/Xeno GogetaSSJ4.def
+- chars/Xeno_Goku OP/Xeno_Goku OP.def
+- chars/XRyu/XRyu.def
+- chars/YamchaZ2i/YamchaZ2i.def
+- chars/YamchaZ2i/backup/04-02-2023 5-51-39 pm/CellZ2.def
+- chars/YamchaZ2i/backup/04-02-2023 5-57-48 pm/CellZ2.def
+- chars/YamchaZ2i/backup/04-02-2023 6-11-53 pm/CellZ2.def
+- chars/YamchaZ2i/backup/04-02-2023 6-16-2 pm/CellZ2.def
+- chars/YamchaZ2i/backup/04-02-2023 6-16-23 pm/CellZ2.def
+- chars/YamchaZ2i/backup/04-02-2023 6-22-34 pm/CellZ2.def
+- chars/YamchaZ2i/backup/04-02-2023 6-23-9 pm/CellZ2.def
+- chars/YamchaZ2i/backup/04-02-2023 6-26-20 pm/CellZ2.def
+- chars/YamchaZ2i/backup/04-02-2023 6-3-40 pm/CellZ2.def
+- chars/YamchaZ2i/backup/04-02-2023 6-39-38 pm/CellZ2.def
+- chars/YamchaZ2i/backup/04-02-2023 6-4-0 pm/CellZ2.def
+- chars/YamchaZ2i/backup/04-02-2023 6-4-29 pm/CellZ2.def
+- chars/YamchaZ2i/backup/04-02-2023 6-40-36 pm/CellZ2.def
+- chars/YamchaZ2i/backup/04-02-2023 6-43-52 pm/CellZ2.def
+- chars/YamchaZ2i/backup/04-02-2023 6-45-55 pm/CellZ2.def
+- chars/YamchaZ2i/backup/04-02-2023 6-50-23 pm/CellZ2.def
+- chars/YamchaZ2i/backup/04-02-2023 6-7-28 pm/CellZ2.def
+- chars/YamchaZ2i/backup/04-02-2023 6-9-18 pm/CellZ2.def
+- chars/YamchaZ2i/backup/04-02-2023 6-9-21 pm/CellZ2.def
+- chars/YamchaZ2i/backup/09-03-2023 11-45-41 pm/CellZ2.def
+- chars/YamchaZ2i/backup/09-03-2023 11-45-42 pm/CellZ2.def
+- chars/Yang/Yang.def
+- chars/yujiro/yujiro.def
+- chars/yuki/yuki.def
+- chars/Yuri Kyaku/Yuri Kyaku.def
+- chars/Zarak/Zarak.def
+- chars/Zarak/imba_end.def
+- chars/Zarak/imba_intro.def
+- chars/zerohaohmaru/zerohaohmaru.def
+- chars/zeroreika/zeroreika.def
+- chars/ZeroReika/zeroreika.def
+- chars/ZeroRyu/ZeroRyu.def
+- chars/Zhou Lee/Zhou Lee.def
+- chars/Zorf-slc/Zorf-slc.def
+- chars/Zorf-slc/Zorf-slc_unotag.def
+
+## Stage Defs
+
+- stages/6gen.def
+- stages/Above Coliseum.def
+- stages/BonusGang.def
+- stages/Bowsercastlefinale.def
+- stages/Boxing.def
+- stages/CARMELLSSB64-RacetotheFinish.def
+- stages/Cairo_bridge.def
+- stages/Castlevania.def
+- stages/Code Monkeys Stage.def
+- stages/FinalDestination.def
+- stages/Final_Destination2.0.def
+- stages/Game Archade SAGA(baki).def
+- stages/Game Archade SAGA(etomo).def
+- stages/Habitacion del Tiempo.def
+- stages/Hell.def
+- stages/Igniz2k2UM-wide-ikemen.def
+- stages/JudgementHall(1.1).def
+- stages/KagamiStageLB1.def
+- stages/Karatedo.def
+- stages/On A London Street-Day.def
+- stages/On A London Street-Night.def
+- stages/SF3 Battle Arena at Night.def
+- stages/SF3 Gouken's Temple.def
+- stages/SF3 Hidden Shrine.def
+- stages/SF3 London Main Street.def
+- stages/SF3 Mt. Fuji Retreat.def
+- stages/SF3 Munich.def
+- stages/SF3 New York Rooftop.def
+- stages/SF3 Ninja Village 02.def
+- stages/SF3 Onsen Resort.def
+- stages/SF3 Ruins at Sunset.def
+- stages/SF3 Sao Paulo Streets.def
+- stages/SF3 Tramway Stop 01.def
+- stages/SF3 Tramway Stop 02.def
+- stages/SF3 Trans-Siberian Railway.def
+- stages/SF3 Under the Bridge.def
+- stages/Ultimate_SF2_Suzaku_Castle.def
+- stages/Ultimate_SF2_Suzaku_Castle_Champion_Edition.def
+- stages/Ultimate_SF2_Suzaku_Castle_Winter.def
+- stages/XX'CITY'FRONT'XX.def
+- stages/battle.def
+- stages/dbtop.def
+- stages/hdbz_broly.def
+- stages/hdbz_broly2.def
+- stages/interactivestage.def
+- stages/kfm.def
+- stages/orochi1.def
+- stages/stage0-720.def
+- stages/stage0.def
+- stages/stage1.def
+- stages/stage10.def
+- stages/stage11.def
+- stages/stage12.def
+- stages/stage13.def
+- stages/stage14.def
+- stages/stage15.def
+- stages/stage16.def
+- stages/stage17.def
+- stages/stage18.def
+- stages/stage19.def
+- stages/stage2.def
+- stages/stage20.def
+- stages/stage21.def
+- stages/stage22.def
+- stages/stage23.def
+- stages/stage24.def
+- stages/stage25.def
+- stages/stage26.def
+- stages/stage27.def
+- stages/stage28.def
+- stages/stage29.def
+- stages/stage3.def
+- stages/stage30.def
+- stages/stage31.def
+- stages/stage32.def
+- stages/stage33.def
+- stages/stage34.def
+- stages/stage3d.def
+- stages/stage3d_outline.def
+- stages/stage4.def
+- stages/stage5.def
+- stages/stage6.def
+- stages/stage7.def
+- stages/stage8.def
+- stages/stage9.def
+- stages/stageZ.def
+- stages/train2014.def

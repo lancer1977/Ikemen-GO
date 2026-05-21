@@ -18,7 +18,6 @@ local stageRandom = false
 local stageListNo = 0
 local t_aiRamp = {}
 local t_gameStats = {}
-local t_recordText = {}
 local t_reservedChars = {{}, {}}
 local timerSelect = 0
 local cursorActive = {}
@@ -436,7 +435,7 @@ start.t_clearCondition = {
 --data saving to stats.json
 local function f_saveStats()
 	if main.debugLog then main.f_printTable(stats, 'debug/t_stats.txt') end
-	main.f_fileWrite(main.flags['-stats'], json.encode(stats, {indent = 2}))
+	jsonEncode(stats, main.flags['-stats'])
 end
 
 --stats data
@@ -1061,6 +1060,35 @@ function start.f_faceOffset(col, row, key)
 	return 0
 end
 
+function start.f_getSelectCellMetric(metric, key)
+	local value = motif.select_info[metric]
+	if type(value) == 'table' then
+		return value[key] or value[1] or 0
+	elseif value ~= nil then
+		return tonumber(value) or 0
+	elseif metric == 'cell_size' then
+		if (motif.select_info.columns or 0) >= 8 then
+			return 24
+		end
+		return key == 1 and 50 or 49
+	elseif metric == 'cell_spacing' then
+		return 4
+	end
+	return 0
+end
+
+function start.f_getSelectCellStep(key)
+	return start.f_getSelectCellMetric('cell_size', key) + start.f_getSelectCellMetric('cell_spacing', key)
+end
+
+function start.f_getSelectTeamMenuPos(side)
+	local pos = motif.select_info['p' .. side .. '_teammenu_pos']
+	if type(pos) == 'table' then
+		return pos
+	end
+	return side == 1 and {80, 160} or {1197, 160}
+end
+
 --returns correct cell position after moving the cursor
 function start.f_cellMovement(selX, selY, cmd, side, snd, dir)
 	local tmpX = selX
@@ -1230,8 +1258,8 @@ function start.f_drawCursor(pn, x, y, param, done)
 	local cd = store[pn]
 
 	-- calculate target cell coordinates
-	local baseX = motif.select_info.pos[1] + x * (motif.select_info.cell_size[1] + motif.select_info.cell_spacing[1]) + start.f_faceOffset(x + 1, y + 1, 1)
-	local baseY = motif.select_info.pos[2] + y * (motif.select_info.cell_size[2] + motif.select_info.cell_spacing[2]) + start.f_faceOffset(x + 1, y + 1, 2)
+	local baseX = motif.select_info.pos[1] + x * start.f_getSelectCellStep(1) + start.f_faceOffset(x + 1, y + 1, 1)
+	local baseY = motif.select_info.pos[2] + y * start.f_getSelectCellStep(2) + start.f_faceOffset(x + 1, y + 1, 2)
 
 	-- initialization or snap: set cursor directly
 	if not cd.init or done or cd.snap then
@@ -1263,7 +1291,7 @@ function start.f_drawCursor(pn, x, y, param, done)
 	if motif.select_info['p' .. pn .. '_cursor_tween_wrap_snap'] == 1 then
 		local dx = cd.targetPos[1] - cd.startPos[1]
 		local dy = cd.targetPos[2] - cd.startPos[2]
-		if math.abs(dx) > motif.select_info.cell_size[1] * (motif.select_info.columns - 1) or math.abs(dy) > motif.select_info.cell_size[2] * (motif.select_info.rows - 1) then
+		if math.abs(dx) > start.f_getSelectCellMetric('cell_size', 1) * (motif.select_info.columns - 1) or math.abs(dy) > start.f_getSelectCellMetric('cell_size', 2) * (motif.select_info.rows - 1) then
 		cd.slideOffset[1], cd.slideOffset[2] = 0, 0	
 		end
 	end
@@ -1322,55 +1350,48 @@ function start.f_getCharRecord(ref)
 		wins = rec.wins or 0,
 		losses = rec.losses or 0,
 		matches = rec.matches or 0,
-		tier = rec.tier or start.f_getRecordTier(rec),
 	}
 end
 
 function start.f_getRecordTier(record)
 	local matches = record.matches or 0
 	if matches <= 0 then
-		return 'U'
+		return 'F'
 	end
 	local winRate = (record.wins or 0) / matches
-	if winRate >= 0.985 then
-		return 'Z+'
-	elseif winRate >= 0.970 then
-		return 'Z'
-	elseif winRate >= 0.950 then
-		return 'Z-'
-	elseif winRate >= 0.900 then
+	if winRate >= 0.95 then
 		return 'S+'
-	elseif winRate >= 0.850 then
+	elseif winRate >= 0.90 then
 		return 'S'
-	elseif winRate >= 0.800 then
+	elseif winRate >= 0.85 then
 		return 'S-'
-	elseif winRate >= 0.750 then
+	elseif winRate >= 0.80 then
 		return 'A+'
-	elseif winRate >= 0.700 then
+	elseif winRate >= 0.75 then
 		return 'A'
-	elseif winRate >= 0.650 then
+	elseif winRate >= 0.70 then
 		return 'A-'
-	elseif winRate >= 0.600 then
+	elseif winRate >= 0.65 then
 		return 'B+'
-	elseif winRate >= 0.550 then
+	elseif winRate >= 0.60 then
 		return 'B'
-	elseif winRate >= 0.500 then
+	elseif winRate >= 0.55 then
 		return 'B-'
-	elseif winRate >= 0.450 then
+	elseif winRate >= 0.50 then
 		return 'C+'
-	elseif winRate >= 0.400 then
+	elseif winRate >= 0.45 then
 		return 'C'
-	elseif winRate >= 0.350 then
+	elseif winRate >= 0.40 then
 		return 'C-'
-	elseif winRate >= 0.300 then
+	elseif winRate >= 0.35 then
 		return 'D+'
-	elseif winRate >= 0.250 then
+	elseif winRate >= 0.30 then
 		return 'D'
-	elseif winRate >= 0.200 then
+	elseif winRate >= 0.25 then
 		return 'D-'
-	elseif winRate >= 0.100 then
+	elseif winRate >= 0.15 then
 		return 'F+'
-	elseif winRate >= 0.050 then
+	elseif winRate >= 0.05 then
 		return 'F'
 	end
 	return 'F-'
@@ -1378,36 +1399,6 @@ end
 
 function start.f_getRecordTierText(record)
 	return start.f_getRecordTier(record) .. ' Tier'
-end
-
-function start.f_getRecordTierColor(record)
-	local tier = start.f_getRecordTier(record)
-	if tier:sub(1, 1) == 'Z' then
-		return 255, 232, 120
-	elseif tier:sub(1, 1) == 'S' then
-		return 255, 190, 60
-	elseif tier:sub(1, 1) == 'A' then
-		return 230, 70, 90
-	elseif tier:sub(1, 1) == 'B' then
-		return 70, 180, 255
-	elseif tier:sub(1, 1) == 'C' then
-		return 90, 210, 140
-	elseif tier:sub(1, 1) == 'D' then
-		return 120, 170, 255
-	elseif tier:sub(1, 1) == 'F' then
-		return 185, 110, 255
-	end
-	return 200, 200, 255
-end
-
-function start.f_getFightRecordText(record)
-	return string.format('W:%d  L:%d  %s Tier', record.wins, record.losses, start.f_getRecordTier(record))
-end
-
-function start.f_getFightRecordLayout(side)
-	local anchor = side == 1 and 0.22 or 0.86
-	local align = side == 1 and -1 or 1
-	return motifLocalcoord(0) * anchor, 42, align
 end
 
 function start.f_getSelectRecordLayout(side, index)
@@ -1421,10 +1412,10 @@ function start.f_getSelectRecordIconCenter(sel, side, index)
 	if sel ~= nil and sel.cell ~= nil then
 		local col = sel.cell % motif.select_info.columns
 		local row = math.floor(sel.cell / motif.select_info.columns)
-		local x = motif.select_info.pos[1] + col * (motif.select_info.cell_size[1] + motif.select_info.cell_spacing[1])
-			+ motif.select_info.cell_size[1] * 0.5 + start.f_faceOffset(col + 1, row + 1, 1)
-		local y = motif.select_info.pos[2] + row * (motif.select_info.cell_size[2] + motif.select_info.cell_spacing[2])
-			+ motif.select_info.cell_size[2] * 0.5 + start.f_faceOffset(col + 1, row + 1, 2)
+		local x = motif.select_info.pos[1] + col * start.f_getSelectCellStep(1)
+			+ start.f_getSelectCellMetric('cell_size', 1) * 0.5 + start.f_faceOffset(col + 1, row + 1, 1)
+		local y = motif.select_info.pos[2] + row * start.f_getSelectCellStep(2)
+			+ start.f_getSelectCellMetric('cell_size', 2) * 0.5 + start.f_faceOffset(col + 1, row + 1, 2)
 			- start.f_getSelectRecordOffsetY()
 		return x, y
 	end
@@ -1435,84 +1426,81 @@ function start.f_getSelectRecordOffsetY()
 	return 36
 end
 
-function start.f_getSelectRecordTierOffsetY()
-	return 30
-end
-
 function start.f_getSelectRecordColumnGap()
 	return 118
 end
 
-function start.f_drawTierLabel(textObj, label, x, y, baseColor, tierColor, scaleX, scaleY, side, outlineAll)
-	if label == nil then
-		return
+function start.f_getSelectRecordScale(side)
+	local scale = motif.select_info['p' .. side .. '_name_scale']
+	return scale[1] * 0.5, scale[2] * 0.5
+end
+
+function start.f_getSelectRecordLineHeight(fontInfo, scaleY)
+	local h = tonumber(fontInfo[8]) or -1
+	if h <= 0 then
+		h = 48
 	end
-	local labelText = tostring(label)
-	local prefix, tier = labelText:match('^(.-)([UFSABCDZ][%+%-]?)%s*Tier$')
-	local sx = scaleX or textObj.scaleX or 1
-	local sy = scaleY or textObj.scaleY or 1
-	local suffix = 'Tier'
-	local tierGap = (outlineAll and 12 or 18) * sx
-	local parts = {{text = labelText, color = baseColor}}
-	if tier ~= nil then
-		parts = {
-			{text = prefix, color = baseColor},
-			{text = tier, color = tierColor},
-			{text = suffix, color = baseColor, gap = tierGap},
-		}
+	return math.max(16, h * scaleY)
+end
+
+function start.f_getSelectRecordPartWidth(fontDef, bank, textValue, scaleX)
+	local text = tostring(textValue)
+	if fontDef == nil then
+		return #text * 8 * scaleX
 	end
-	local fontKey = textObj.font .. textObj.height
-	local fontDef = main.font[fontKey]
-	local totalWidth = 0
+	return fontGetTextWidth(fontDef, text, bank) * scaleX
+end
+
+function start.f_getSelectRecordPartsWidth(parts, fontDef, bank, scaleX)
+	local width = 0
 	for _, part in ipairs(parts) do
 		if part.text ~= '' then
-			totalWidth = totalWidth + (part.gap or 0)
-			totalWidth = totalWidth + fontGetTextWidth(fontDef, part.text, textObj.bank) * sx
+			width = width + (part.gap or 0)
+			width = width + start.f_getSelectRecordPartWidth(fontDef, bank, part.text, scaleX)
 		end
 	end
-	local outlineX = motifLocalcoord(0) / math.max(1, gameOption('Video.GameWidth'))
-	local outlineY = motifLocalcoord(1) / math.max(1, gameOption('Video.GameHeight'))
-	local align = side == 2 and 1 or (side == 0 and 0 or -1)
-	local startX = x
-	if align == 1 then
-		startX = x - totalWidth
-	elseif align == 0 then
-		startX = x - totalWidth * 0.5
+	return width
+end
+
+function start.f_getSelectRecordSideBounds(side)
+	local margin = 12
+	local centerGap = 32
+	local localWidth = motifLocalcoord(0)
+	local middle = localWidth * 0.5
+	if side == 1 then
+		return margin, middle - centerGap
 	end
-	local function drawPart(part, partX, dx, dy, drawColor)
-		textObj:update({
-			text = part.text,
-			align = -1,
-			x = math.floor(partX + dx + 0.5),
-			y = math.floor(y + dy + 0.5),
-			scaleX = sx,
-			scaleY = sy,
-			r = drawColor[1],
-			g = drawColor[2],
-			b = drawColor[3],
-		})
-		textObj:draw()
+	return middle + centerGap, localWidth - margin
+end
+
+function start.f_clampSelectRecordValue(value, minValue, maxValue)
+	if maxValue < minValue then
+		return (minValue + maxValue) * 0.5
 	end
-	local function drawLine(dx, dy, colorOverride)
-		local cursorX = startX
-		for _, part in ipairs(parts) do
-			if part.text ~= '' then
-				cursorX = cursorX + (part.gap or 0)
-				drawPart(part, cursorX, dx, dy, colorOverride or part.color)
-				cursorX = cursorX + fontGetTextWidth(fontDef, part.text, textObj.bank) * sx
-			end
+	return math.max(minValue, math.min(maxValue, value))
+end
+
+function start.f_drawSelectRecordParts(textObj, parts, x, y, fontInfo, fontDef, scaleX, scaleY)
+	local cursorX = x - start.f_getSelectRecordPartsWidth(parts, fontDef, fontInfo[2], scaleX) * 0.5
+	for _, part in ipairs(parts) do
+		if part.text ~= '' then
+			local color = part.color or {fontInfo[4], fontInfo[5], fontInfo[6]}
+			cursorX = cursorX + (part.gap or 0)
+			textObj:update({
+				text = part.text,
+				align = -1,
+				x = math.floor(cursorX + 0.5),
+				y = math.floor(y + 0.5),
+				scaleX = scaleX,
+				scaleY = scaleY,
+				r = color[1],
+				g = color[2],
+				b = color[3],
+			})
+			textObj:draw(3)
+			cursorX = cursorX + start.f_getSelectRecordPartWidth(fontDef, fontInfo[2], part.text, scaleX)
 		end
 	end
-	if outlineAll then
-		local outlineColor = {0, 0, 0}
-		for _, off in ipairs({
-			{-outlineX, 0}, {outlineX, 0}, {0, -outlineY}, {0, outlineY},
-			{-outlineX, -outlineY}, {-outlineX, outlineY}, {outlineX, -outlineY}, {outlineX, outlineY},
-		}) do
-			drawLine(off[1], off[2], outlineColor)
-		end
-	end
-	drawLine(0, 0)
 end
 
 function start.f_getCharRecordText(ref)
@@ -1520,12 +1508,7 @@ function start.f_getCharRecordText(ref)
 		return {}
 	end
 	local record = start.f_getCharRecord(ref)
-	local text = motif.select_info.char_record_text or 'W: %W   L: %L\n%T'
-	text = text:gsub('%%W', tostring(record.wins))
-	text = text:gsub('%%L', tostring(record.losses))
-	text = text:gsub('%%M', tostring(record.matches))
-	text = text:gsub('%%T', start.f_getRecordTierText(record))
-	return main.f_extractText(text)
+	return {string.format('W:%d   L:%d   %s', record.wins, record.losses, start.f_getRecordTierText(record))}
 end
 
 function start.f_updateCharRecord(ref, won, amount)
@@ -1544,7 +1527,6 @@ function start.f_updateCharRecord(ref, won, amount)
 	else
 		stats.characters[key].losses = (stats.characters[key].losses or 0) + n
 	end
-	stats.characters[key].tier = start.f_getRecordTier(stats.characters[key])
 end
 
 function start.f_updateCharRecords(winnerSide)
@@ -1711,32 +1693,7 @@ end
 
 --returns formatted record text table
 function start.f_getRecordText()
-	local text = motif.select_info['record_' .. gamemode() .. '_text'] or motif.select_info.record_text
-	if text == nil then
-		return {}
-	end
-	local charRef = start.f_getHighlightedCharRef()
-	local record = start.f_getCharRecord(charRef)
-	if stats.modes ~= nil and stats.modes[gamemode()] ~= nil and stats.modes[gamemode()].ranking ~= nil and stats.modes[gamemode()].ranking[1] ~= nil then
-		text = start.f_clearTimeText(text, stats.modes[gamemode()].ranking[1].time)
-		text = text:gsub('%%p', tostring(stats.modes[gamemode()].ranking[1].score))
-		local name = '?' --in case character being removed from roster
-		if main.t_charDef[stats.modes[gamemode()].ranking[1].chars[1]] ~= nil then
-			name = start.f_getCharData(main.t_charDef[stats.modes[gamemode()].ranking[1].chars[1]]).name
-		end
-		text = text:gsub('%%c', name)
-		text = text:gsub('%%n', stats.modes[gamemode()].ranking[1].name)
-	end
-	local currentName = '?'
-	if charRef ~= nil then
-		currentName = start.f_getCharData(charRef).name
-	end
-	text = text:gsub('%%C', currentName)
-	text = text:gsub('%%W', tostring(record.wins))
-	text = text:gsub('%%L', tostring(record.losses))
-	text = text:gsub('%%M', tostring(record.matches))
-	text = text:gsub('%%T', start.f_getRecordTierText(record))
-	return main.f_extractText(text)
+	return {}
 end
 
 --cursor sound data, play cursor sound
@@ -1904,8 +1861,8 @@ for i = 1, motif.select_info.rows * motif.select_info.columns do
 	end
 	col = #start.t_grid[row] + 1
 	start.t_grid[row][col] = {
-		x = (col - 1) * (motif.select_info.cell_size[1] + motif.select_info.cell_spacing[1]) + start.f_faceOffset(col, row, 1),
-		y = (row - 1) * (motif.select_info.cell_size[2] + motif.select_info.cell_spacing[2]) + start.f_faceOffset(col, row, 2)
+		x = (col - 1) * start.f_getSelectCellStep(1) + start.f_faceOffset(col, row, 1),
+		y = (row - 1) * start.f_getSelectCellStep(2) + start.f_faceOffset(col, row, 2)
 	}
 	if start.f_selGrid(i).char ~= nil then
 		start.t_grid[row][col].char = start.f_selGrid(i).char
@@ -2280,7 +2237,6 @@ function start.f_selectReset(hardReset)
 		start.t_roster = {}
 		start.reset = true
 	end
-	t_recordText = start.f_getRecordText()
 	menu.movelistChar = 1
 	hook.run("start.f_selectReset")
 end
@@ -2605,17 +2561,272 @@ function codeInput(name)
 	return false
 end
 
+if type(motifLocalcoord) ~= 'function' then
+	function motifLocalcoord(axis)
+		if motif ~= nil and motif.info ~= nil and motif.info.localcoord ~= nil then
+			return motif.info.localcoord[axis + 1] or motif.info.localcoord[1] or 0
+		end
+		if type(gameOption) == 'function' then
+			return axis == 0 and gameOption('Video.GameWidth') or gameOption('Video.GameHeight')
+		end
+		return axis == 0 and 320 or 240
+	end
+end
+
+if type(text) ~= 'table' or type(text.create) ~= 'function' then
+	text = {}
+	function text:create(params)
+		local obj = {
+			data = textImgNew(),
+			font = -1,
+			bank = 0,
+			align = 0,
+			text = '',
+			x = 0,
+			y = 0,
+			scaleX = 1,
+			scaleY = 1,
+			r = 255,
+			g = 255,
+			b = 255,
+			a = 255,
+			height = -1,
+			xshear = 0,
+			angle = 0,
+		}
+		function obj:update(p)
+			p = p or {}
+			for _, key in ipairs({'font', 'bank', 'align', 'text', 'x', 'y', 'scaleX', 'scaleY', 'r', 'g', 'b', 'a', 'height', 'xshear', 'angle'}) do
+				if p[key] ~= nil then
+					self[key] = p[key]
+				end
+			end
+			if self.font ~= -1 then
+				local fontKey = tostring(self.font) .. tostring(self.height)
+				local fnt = (main.font_def and main.font_def[fontKey]) or (main.font and main.font[fontKey])
+				if fnt ~= nil then
+					textImgSetFont(self.data, fnt)
+				end
+			end
+			textImgSetBank(self.data, self.bank)
+			textImgSetAlign(self.data, self.align)
+			textImgSetText(self.data, self.text)
+			textImgSetColor(self.data, self.r, self.g, self.b, self.a)
+			textImgSetLocalcoord(self.data, motifLocalcoord(0), motifLocalcoord(1))
+			textImgSetPos(self.data, self.x, self.y)
+			textImgSetScale(self.data, self.scaleX, self.scaleY)
+			textImgSetXShear(self.data, self.xshear)
+			textImgSetAngle(self.data, self.angle)
+			if p.window ~= nil then
+				textImgSetWindow(self.data, p.window[1], p.window[2], p.window[3], p.window[4])
+			end
+			return self
+		end
+		function obj:draw(layer)
+			textImgDraw(self.data, layer)
+		end
+		return obj:update(params)
+	end
+end
+
+if type(main.f_createTextImg) ~= 'function' then
+	function main.f_createTextImg(t, prefix, override)
+		t = t or {}
+		local fontInfo = t[prefix .. '_font'] or {-1, 0, 0, 255, 255, 255, 255, -1}
+		local offset = t[prefix .. '_offset'] or {0, 0}
+		local scale = t[prefix .. '_scale'] or {1, 1}
+		local params = override or {}
+		return text:create({
+			font = fontInfo[1],
+			bank = fontInfo[2] or 0,
+			align = fontInfo[3] or 0,
+			text = t[prefix .. '_text'] or '',
+			x = params.x or offset[1] or 0,
+			y = params.y or offset[2] or 0,
+			scaleX = scale[1] or 1,
+			scaleY = scale[2] or 1,
+			r = fontInfo[4] or 255,
+			g = fontInfo[5] or 255,
+			b = fontInfo[6] or 255,
+			a = fontInfo[7] or 255,
+			height = fontInfo[8] or -1,
+			xshear = t[prefix .. '_xshear'] or 0,
+			angle = t[prefix .. '_angle'] or 0,
+			window = t[prefix .. '_window'],
+			defsc = false,
+		})
+	end
+end
+
+if type(main.f_createOverlay) ~= 'function' then
+	function main.f_createOverlay(t, prefix)
+		t = t or {}
+		local overlay = t[prefix]
+		local rectData = type(overlay) == 'table' and overlay.RectData or nil
+		return {
+			draw = function()
+				if rectData ~= nil then
+					rectDraw(rectData)
+				end
+			end,
+		}
+	end
+end
+
+function start.f_isPlacementGridEnabled()
+	if main.placementGrid then
+		return true
+	end
+	if type(getCommandLineValue) ~= 'function' then
+		return false
+	end
+	return getCommandLineValue('-placementgrid') ~= nil or getCommandLineValue('-placement-grid') ~= nil
+end
+
+function start.f_getPlacementGridCell(cell)
+	local cellNo = tonumber(cell)
+	if cellNo == nil then
+		return nil
+	end
+	cellNo = math.floor(cellNo)
+	if cellNo < 1 or cellNo > 100 then
+		return nil
+	end
+	local width = motifLocalcoord(0)
+	local height = motifLocalcoord(1)
+	local col = (cellNo - 1) % 10
+	local row = math.floor((cellNo - 1) / 10)
+	local cellWidth = width / 10
+	local cellHeight = height / 10
+	return {
+		number = cellNo,
+		col = col + 1,
+		row = row + 1,
+		x1 = col * cellWidth,
+		y1 = row * cellHeight,
+		x2 = (col + 1) * cellWidth,
+		y2 = (row + 1) * cellHeight,
+		x = (col + 0.5) * cellWidth,
+		y = (row + 0.5) * cellHeight,
+	}
+end
+
+function start.f_createPlacementGridLine(width, height, x1, y1, x2, y2, color, alpha)
+	local rect = rectNew()
+	rectSetLocalcoord(rect, width, height)
+	rectSetWindow(rect, x1, y1, x2, y2)
+	rectSetColor(rect, color[1], color[2], color[3])
+	rectSetAlpha(rect, alpha, 255 - alpha)
+		rectSetLayerno(rect, 3)
+	return rect
+end
+
+function start.f_buildPlacementGrid()
+	local width = motifLocalcoord(0)
+	local height = motifLocalcoord(1)
+	local lineWidth = math.max(1, math.floor(width / 640 + 0.5))
+	local centerWidth = math.max(3, lineWidth * 3)
+	local lines = {}
+	local function addLine(x1, y1, x2, y2, isCenter)
+		local color = isCenter and {255, 80, 60} or {255, 255, 255}
+		local alpha = isCenter and 220 or 150
+		table.insert(lines, start.f_createPlacementGridLine(width, height, x1, y1, x2, y2, color, alpha))
+	end
+	for col = 0, 10 do
+		local x = width * col / 10
+		local thickness = col == 5 and centerWidth or lineWidth
+		local left = math.max(0, math.min(width - thickness, x - thickness * 0.5))
+		addLine(left, 0, left + thickness, height, col == 5)
+	end
+	for row = 0, 10 do
+		local y = height * row / 10
+		local thickness = row == 5 and centerWidth or lineWidth
+		local top = math.max(0, math.min(height - thickness, y - thickness * 0.5))
+		addLine(0, top, width, top + thickness, row == 5)
+	end
+	local fontInfo = motif.select_info.p1_name_font or {-1, 0, 0, 255, 255, 255, 255, -1}
+	start.t_placementGrid = {
+		width = width,
+		height = height,
+		lines = lines,
+		text = text:create({
+			font = fontInfo[1],
+			bank = fontInfo[2] or 0,
+			align = 0,
+			text = '',
+			x = 0,
+			y = 0,
+			scaleX = 0.5,
+			scaleY = 0.5,
+			r = 255,
+			g = 255,
+			b = 255,
+			a = 230,
+			height = fontInfo[8] or -1,
+			xshear = 0,
+			angle = 0,
+			window = nil,
+			defsc = false,
+		}),
+	}
+	textImgSetLayerno(start.t_placementGrid.text.data, 3)
+end
+
+function start.f_drawPlacementGrid()
+	if not start.f_isPlacementGridEnabled() then
+		return
+	end
+	local width = motifLocalcoord(0)
+	local height = motifLocalcoord(1)
+	if start.t_placementGrid == nil or start.t_placementGrid.width ~= width or start.t_placementGrid.height ~= height then
+		start.f_buildPlacementGrid()
+	end
+	for _, rect in ipairs(start.t_placementGrid.lines) do
+		rectDraw(rect, 3)
+	end
+	local textObj = start.t_placementGrid.text
+	local cellWidth = width / 10
+	local cellHeight = height / 10
+	local labelScale = math.max(0.35, math.min(0.7, math.min(width / 1280, height / 720) * 0.55))
+	local colors = {
+		{{255, 255, 255}, {255, 230, 120}},
+		{{120, 220, 255}, {160, 255, 150}},
+	}
+	for row = 0, 9 do
+		for col = 0, 9 do
+			local color = colors[row < 5 and 1 or 2][col < 5 and 1 or 2]
+			textObj:update({
+				text = tostring(row * 10 + col + 1),
+				align = 0,
+				x = math.floor((col + 0.5) * cellWidth + 0.5),
+				y = math.floor((row + 0.5) * cellHeight + 0.5),
+				scaleX = labelScale,
+				scaleY = labelScale,
+				r = color[1],
+				g = color[2],
+				b = color[3],
+				a = 230,
+			})
+			textObj:draw(3)
+		end
+	end
+end
+
 --;===========================================================
 --; SELECT SCREEN
 --;===========================================================
-local txt_recordSelect = main.f_createTextImg(motif.select_info, 'record')
 local txt_timerSelect = main.f_createTextImg(motif.select_info, 'timer')
 local txt_selStage = main.f_createTextImg(motif.select_info, 'stage_active')
 local t_txt_name = {}
-for i = 1, 2 do
-	table.insert(t_txt_name, main.f_createTextImg(motif.select_info, 'p' .. i .. '_name'))
-end
+	for i = 1, 2 do
+		table.insert(t_txt_name, main.f_createTextImg(motif.select_info, 'p' .. i .. '_name'))
+	end
+	for i = 1, #t_txt_name do
+		textImgSetLayerno(t_txt_name[i].data, 3)
+	end
 
+main.t_sort = main.t_sort or {}
+main.t_sort.select_info = main.t_sort.select_info or {}
 if main.t_sort.select_info.teammenu == nil then
 	main.t_sort.select_info.teammenu = {'single', 'simul', 'turns'}
 end
@@ -2858,10 +3069,6 @@ function start.f_selectScreen()
 						if motif.select_info['p' .. side .. '_name_num'] == 1 then
 							nameRef = start.p[side].t_selTemp[#start.p[side].t_selTemp].ref
 						end
-						local recordEntry = start.p[side].t_selTemp[i]
-						if motif.select_info['p' .. side .. '_name_num'] == 1 then
-							recordEntry = start.p[side].t_selTemp[#start.p[side].t_selTemp]
-						end
 						t_txt_name[side]:update({
 							font =   motif.select_info['p' .. side .. '_name_font'][1],
 							bank =   motif.select_info['p' .. side .. '_name_font'][2],
@@ -2879,75 +3086,8 @@ function start.f_selectScreen()
 							xshear = motif.select_info['p' .. side .. '_name_xshear'],
 							angle  = motif.select_info['p' .. side .. '_name_angle'],
 						})
-						t_txt_name[side]:draw()
-						local record = start.f_getCharRecord(nameRef)
-						local tier = start.f_getRecordTier(record)
-						local tierColor = {start.f_getRecordTierColor(record)}
-						local nameX, nameY = start.f_getSelectRecordLayout(side, i)
-						local recordX = nameX
-						local recordY = nameY + start.f_getSelectRecordOffsetY()
-						local recordSpacing = start.f_getSelectRecordTierOffsetY()
-						local recordFont = motif.select_info['p' .. side .. '_name_font']
-						local recordScaleX = motif.select_info['p' .. side .. '_name_scale'][1] * 0.85
-						local recordScaleY = motif.select_info['p' .. side .. '_name_scale'][2] * 0.85
-						local recordFontDef = main.font[recordFont[1] .. recordFont[8]]
-						local columnGap = start.f_getSelectRecordColumnGap()
-						local winX = recordX - columnGap * 0.5
-						local lossX = recordX + columnGap * 0.5
-						local minCenterX = 8 + columnGap * 0.5
-						local maxCenterX = motifLocalcoord(0) - 8 - columnGap * 0.5
-						recordX = math.max(minCenterX, math.min(maxCenterX, recordX))
-						winX = recordX - columnGap * 0.5
-						lossX = recordX + columnGap * 0.5
-						t_txt_name[side]:update({
-							text = 'W:' .. tostring(record.wins),
-							align = 0,
-							x = winX,
-							y = recordY,
-							scaleX = recordScaleX,
-							scaleY = recordScaleY,
-							r = recordFont[4],
-							g = recordFont[5],
-							b = recordFont[6],
-						})
-						t_txt_name[side]:draw()
-						t_txt_name[side]:update({
-							text = 'L:' .. tostring(record.losses),
-							align = 0,
-							x = lossX,
-							y = recordY,
-							scaleX = recordScaleX,
-							scaleY = recordScaleY,
-							r = recordFont[4],
-							g = recordFont[5],
-							b = recordFont[6],
-						})
-						t_txt_name[side]:draw()
-						t_txt_name[side]:update({
-							text = tier,
-							align = 0,
-							x = winX,
-							y = recordY + recordSpacing,
-							scaleX = recordScaleX,
-							scaleY = recordScaleY,
-							r = tierColor[1],
-							g = tierColor[2],
-							b = tierColor[3],
-						})
-						t_txt_name[side]:draw()
-						t_txt_name[side]:update({
-							text = 'Tier',
-							align = 0,
-							x = lossX,
-							y = recordY + recordSpacing,
-							scaleX = recordScaleX,
-							scaleY = recordScaleY,
-							r = recordFont[4],
-							g = recordFont[5],
-							b = recordFont[6],
-						})
-						t_txt_name[side]:draw()
-					end
+							t_txt_name[side]:draw()
+						end
 					end
 				end
 		end
@@ -3032,33 +3172,15 @@ function start.f_selectScreen()
 		if motif.select_info.timer_count ~= -1 and (not start.p[1].teamEnd or not start.p[2].teamEnd or not start.p[1].selEnd or not start.p[2].selEnd or (main.stageMenu and not stageEnd)) and counter >= 0 then
 			timerSelect = main.f_drawTimer(timerSelect, motif.select_info, 'timer_', txt_timerSelect)
 		end
-		--draw record text
-		t_recordText = start.f_getRecordText()
-		local recordColor = {255, 255, 255}
-		local highlightedRef = start.f_getHighlightedCharRef()
-		if highlightedRef then
-			local record = start.f_getCharRecord(highlightedRef)
-			recordColor = {start.f_getRecordTierColor(record)}
-		end
-		for i = 1, #t_recordText do
-			local tierLine = t_recordText[i] ~= nil and t_recordText[i]:find('Tier', 1, true) ~= nil
-			txt_recordSelect:update({
-				text = t_recordText[i],
-				y = motif.select_info.record_offset[2] + main.f_ySpacing(motif.select_info, 'record') * (i - 1),
-				r = tierLine and recordColor[1] or motif.select_info.record_font[4],
-				g = tierLine and recordColor[2] or motif.select_info.record_font[5],
-				b = tierLine and recordColor[3] or motif.select_info.record_font[6],
-			})
-			txt_recordSelect:draw()
-		end
-		-- hook
-		hook.run("start.f_selectScreen")
+			-- hook
+			hook.run("start.f_selectScreen")
 		--draw layerno = 1 backgrounds
-		bgDraw(motif.selectbgdef.bg, 1)
-		--draw fadein / fadeout
-		main.f_fadeAnim(motif.select_info)
-		--frame transition
-		if not main.f_frameChange() then
+			bgDraw(motif.selectbgdef.bg, 1)
+			--draw fadein / fadeout
+			main.f_fadeAnim(motif.select_info)
+			start.f_drawPlacementGrid()
+			--frame transition
+			if not main.f_frameChange() then
 			selScreenEnd = true
 			break --skip last frame rendering
 		end
@@ -3073,8 +3195,9 @@ end
 local t_txt_teamSelfTitle = {}
 local t_txt_teamEnemyTitle = {}
 for i = 1, 2 do
-	table.insert(t_txt_teamSelfTitle, main.f_createTextImg(motif.select_info, 'p' .. i .. '_teammenu_selftitle', {x = motif.select_info['p' .. i .. '_teammenu_pos'][1], y = motif.select_info['p' .. i .. '_teammenu_pos'][2]}))
-	table.insert(t_txt_teamEnemyTitle, main.f_createTextImg(motif.select_info, 'p' .. i .. '_teammenu_enemytitle', {x = motif.select_info['p' .. i .. '_teammenu_pos'][1], y = motif.select_info['p' .. i .. '_teammenu_pos'][2]}))
+	local pos = start.f_getSelectTeamMenuPos(i)
+	table.insert(t_txt_teamSelfTitle, main.f_createTextImg(motif.select_info, 'p' .. i .. '_teammenu_selftitle', {x = pos[1], y = pos[2]}))
+	table.insert(t_txt_teamEnemyTitle, main.f_createTextImg(motif.select_info, 'p' .. i .. '_teammenu_enemytitle', {x = pos[1], y = pos[2]}))
 end
 local t_teamActiveCount = {0, 0}
 local t_teamActiveType = {'p1_teammenu_item_active', 'p2_teammenu_item_active'}
@@ -3227,8 +3350,8 @@ function start.f_teamMenu(side, t)
 					bank =   motif.select_info[t_teamActiveType[side] .. '_font'][2],
 					align =  motif.select_info[t_teamActiveType[side] .. '_font'][3], --winmugen ignores active font facing? Fixed in mugen 1.0
 					text =   t[i].displayname,
-					x =      motif.select_info['p' .. side .. '_teammenu_pos'][1] + motif.select_info['p' .. side .. '_teammenu_item_offset'][1] + motif.select_info['p' .. side .. '_teammenu_item_spacing'][1] * (i - 1),
-					y =      motif.select_info['p' .. side .. '_teammenu_pos'][2] + motif.select_info['p' .. side .. '_teammenu_item_offset'][2] + motif.select_info['p' .. side .. '_teammenu_item_spacing'][2] * (i - 1),
+					x =      start.f_getSelectTeamMenuPos(side)[1] + motif.select_info['p' .. side .. '_teammenu_item_offset'][1] + motif.select_info['p' .. side .. '_teammenu_item_spacing'][1] * (i - 1),
+					y =      start.f_getSelectTeamMenuPos(side)[2] + motif.select_info['p' .. side .. '_teammenu_item_offset'][2] + motif.select_info['p' .. side .. '_teammenu_item_spacing'][2] * (i - 1),
 					scaleX = motif.select_info[t_teamActiveType[side] .. '_scale'][1],
 					scaleY = motif.select_info[t_teamActiveType[side] .. '_scale'][2],
 					r =      motif.select_info[t_teamActiveType[side] .. '_font'][4],
@@ -3249,8 +3372,8 @@ function start.f_teamMenu(side, t)
 					bank =   motif.select_info['p' .. side .. '_teammenu_item_font'][2],
 					align =  motif.select_info['p' .. side .. '_teammenu_item_font'][3], --winmugen ignores active font facing? Fixed in mugen 1.0
 					text =   t[i].displayname,
-					x =      motif.select_info['p' .. side .. '_teammenu_pos'][1] + motif.select_info['p' .. side .. '_teammenu_item_offset'][1] + motif.select_info['p' .. side .. '_teammenu_item_spacing'][1] * (i - 1),
-					y =      motif.select_info['p' .. side .. '_teammenu_pos'][2] + motif.select_info['p' .. side .. '_teammenu_item_offset'][2] + motif.select_info['p' .. side .. '_teammenu_item_spacing'][2] * (i - 1),
+					x =      start.f_getSelectTeamMenuPos(side)[1] + motif.select_info['p' .. side .. '_teammenu_item_offset'][1] + motif.select_info['p' .. side .. '_teammenu_item_spacing'][1] * (i - 1),
+					y =      start.f_getSelectTeamMenuPos(side)[2] + motif.select_info['p' .. side .. '_teammenu_item_offset'][2] + motif.select_info['p' .. side .. '_teammenu_item_spacing'][2] * (i - 1),
 					scaleX = motif.select_info['p' .. side .. '_teammenu_item_scale'][1],
 					scaleY = motif.select_info['p' .. side .. '_teammenu_item_scale'][2],
 					r =      motif.select_info['p' .. side .. '_teammenu_item_font'][4],
