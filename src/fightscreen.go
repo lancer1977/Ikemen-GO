@@ -2162,6 +2162,9 @@ func (wi *FightScreenWinIcon) reset() {
 }
 
 func (wi *FightScreenWinIcon) clear() {
+	if wi == nil {
+		return
+	}
 	wi.wins = nil
 }
 

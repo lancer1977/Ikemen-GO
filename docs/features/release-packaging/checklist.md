@@ -27,6 +27,7 @@
 - [x] Confirm the final Linux archive appears in the shared output directory
 - [x] Fail fast on Windows packaging from the wrong host
 - [ ] Validate the new GitHub Actions workflow on a self-hosted runner
+- [x] Validate the stream-box test deploy root at `C:\\mugen`
 
 ## Follow-up
 

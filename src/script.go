@@ -91,6 +91,12 @@ func toUserData(l *lua.LState, argi int) interface{} {
 	}
 	return nil
 }
+func commandListArg(l *lua.LState, argi int) (*CommandList, bool) {
+	if cl, ok := toUserData(l, argi).(*CommandList); ok && cl != nil {
+		return cl, true
+	}
+	return nil, false
+}
 func userDataError(l *lua.LState, argi int, udtype interface{}) {
 	l.RaiseError("\nArgument %v is not a userdata of type: %T\n", argi, udtype)
 }
@@ -2299,9 +2305,18 @@ func systemScriptInit(l *lua.LState) {
 		sys.sel.ClearSelected()
 		return 0
 	})
+	luaRegister(l, "commandNew", func(*lua.LState) int {
+		/*Create a new command-list object for UI/script input handling.
+		@function commandNew
+		@treturn userdata commandList A new command-list userdata.
+		function commandNew() end*/
+		l.Push(newUserData(l, NewCommandList(NewInputBuffer())))
+		return 1
+	})
 	luaRegister(l, "commandAdd", func(l *lua.LState) int {
 		/*Register a UI command definition.
 		@function commandAdd
+		@tparam[opt] userdata commandList Command-list userdata created by `commandNew()`.
 		@tparam string name Command name (used in triggers).
 		@tparam string command Command string in engine input notation.
 		@tparam[opt] int32 time Command input time window in ticks.
@@ -2309,38 +2324,45 @@ func systemScriptInit(l *lua.LState) {
 		@tparam[opt] boolean bufferHitpause Whether inputs are buffered during hitpause.
 		@tparam[opt] boolean bufferPauseend Whether inputs are buffered during pause end.
 		@tparam[opt] int32 stepTime Step granularity in ticks.
-		function commandAdd(name, command, time, bufferTime, bufferHitpause, bufferPauseend, stepTime) end*/
-		name := strArg(l, 1)
-		cmdstr := strArg(l, 2)
+		function commandAdd([commandList,] name, command, time, bufferTime, bufferHitpause, bufferPauseend, stepTime) end*/
+		argi := 1
 		dcl := (*CommandList)(nil)
-		for _, cl := range sys.commandLists {
-			if cl != nil {
-				dcl = cl
-				break
+		if cl, ok := commandListArg(l, 1); ok {
+			dcl = cl
+			argi = 2
+		}
+		name := strArg(l, argi)
+		cmdstr := strArg(l, argi+1)
+		if dcl == nil {
+			for _, cl := range sys.commandLists {
+				if cl != nil {
+					dcl = cl
+					break
+				}
 			}
 		}
 		if dcl == nil {
-			dcl = NewCommandList(nil)
+			dcl = NewCommandList(NewInputBuffer())
 		}
 		time := dcl.DefaultTime
 		buftime := dcl.DefaultBufferTime
 		bufferHitpause := dcl.DefaultBufferHitpause
 		bufferPauseend := dcl.DefaultBufferPauseEnd
 		steptime := dcl.DefaultStepTime
-		if !nilArg(l, 3) {
-			time = int32(numArg(l, 3))
+		if !nilArg(l, argi+2) {
+			time = int32(numArg(l, argi+2))
 		}
-		if !nilArg(l, 4) {
-			buftime = Max(1, int32(numArg(l, 4)))
+		if !nilArg(l, argi+3) {
+			buftime = Max(1, int32(numArg(l, argi+3)))
 		}
-		if !nilArg(l, 5) {
-			bufferHitpause = boolArg(l, 5)
+		if !nilArg(l, argi+4) {
+			bufferHitpause = boolArg(l, argi+4)
 		}
-		if !nilArg(l, 6) {
-			bufferPauseend = boolArg(l, 6)
+		if !nilArg(l, argi+5) {
+			bufferPauseend = boolArg(l, argi+5)
 		}
-		if !nilArg(l, 7) {
-			steptime = int32(numArg(l, 7))
+		if !nilArg(l, argi+6) {
+			steptime = int32(numArg(l, argi+6))
 		}
 		spec := CommandSpec{
 			Cmd:            cmdstr,
@@ -2355,11 +2377,32 @@ func systemScriptInit(l *lua.LState) {
 		}
 		return 0
 	})
+	luaRegister(l, "commandInput", func(l *lua.LState) int {
+		/*Feed current controller input into a command-list object.
+		@function commandInput
+		@tparam userdata commandList Command-list userdata created by `commandNew()`.
+		@tparam int playerNo 1-based player/controller index.
+		function commandInput(commandList, playerNo) end*/
+		cl, ok := commandListArg(l, 1)
+		if !ok || cl == nil {
+			l.RaiseError("\nArgument 1 is not a commandList userdata\n")
+		}
+		pn := int(numArg(l, 2))
+		if pn > 0 {
+			cl.InputUpdate(nil, pn-1)
+		}
+		return 0
+	})
 	luaRegister(l, "commandBufReset", func(l *lua.LState) int {
 		/*Reset command input buffers.
 		@function commandBufReset
+		@tparam[opt] userdata commandList Command-list userdata created by `commandNew()`.
 		@tparam[opt] int playerNo 1-based player/controller index. If omitted, all command buffers are reset.
-		function commandBufReset(playerNo) end*/
+		function commandBufReset([commandList|playerNo]) end*/
+		if cl, ok := commandListArg(l, 1); ok && cl != nil {
+			cl.BufReset()
+			return 0
+		}
 		if nilArg(l, 1) {
 			for _, cl := range sys.commandLists {
 				if cl == nil {
@@ -2422,10 +2465,14 @@ func systemScriptInit(l *lua.LState) {
 	luaRegister(l, "commandGetState", func(l *lua.LState) int {
 		/*Query the current state of a named command.
 		@function commandGetState
-		@tparam int playerNo 1-based player/controller index.
+		@tparam userdata|int commandListOrPlayer Command-list userdata created by `commandNew()`, or a 1-based player/controller index.
 		@tparam string name Command name to query.
 		@treturn boolean active `true` if the command is currently active, `false` otherwise.
-		function commandGetState(playerNo, name) end*/
+		function commandGetState(commandListOrPlayer, name) end*/
+		if cl, ok := commandListArg(l, 1); ok && cl != nil {
+			l.Push(lua.LBool(cl.GetState(strArg(l, 2))))
+			return 1
+		}
 		pn := int(numArg(l, 1))
 		if pn < 1 || pn > len(sys.commandLists) || sys.commandLists[pn-1] == nil {
 			l.Push(lua.LBool(false))

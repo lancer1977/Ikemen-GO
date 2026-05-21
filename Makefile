@@ -89,6 +89,18 @@ deploy-local-linux:
 deploy-local-windows:
 	OUTPUT_ROOT="$${OUTPUT_ROOT:-/mnt/syn1/games/Ikemen}" ./scripts/deploy-local-windows.sh
 
+.PHONY: smoke-workflows
+smoke-workflows:
+	IKEMEN_BIN="$${IKEMEN_BIN:-$(CURDIR)/Ikemen_GO_Linux}" ./scripts/smoke/ikemen-workflow-matrix.sh
+
+.PHONY: smoke-stream-box
+smoke-stream-box:
+	./scripts/smoke/stream-box-ikemen-smoke.sh --check --launch --post-check
+
+.PHONY: smoke-local-kfm
+smoke-local-kfm:
+	./scripts/smoke/ikemen-local-kfm-smoke.sh $(IKEMEN_LOCAL_KFM_ARGS)
+
 # MacOS x64 target
 Ikemen_GO_MacOS: ${srcFiles}
 	bash ./build/build.sh MacOS

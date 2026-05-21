@@ -1,0 +1,30 @@
+{
+  "generatedAt": "2026-05-16T17:50:51Z",
+  "workRoot": "/tmp/ikemen-workflow.GAFPEa",
+  "characterDir": "chars",
+  "timeSeconds": 10,
+  "roundsToWin": 2,
+  "timeoutSeconds": 35,
+  "totalCharacters": 17,
+  "testedCharacters": 15,
+  "skippedCharacters": 2,
+  "compatibleCount": 0,
+  "incompatibleCount": 15,
+  "results": [
+        {"character":"BrolyZ2","path":"chars/BrolyZ2/BrolyZ2.def","status":"error","compatible":false,"elapsedSeconds":9,"exitCode":1,"resultExists":false,"errorHint":"exit code 1: Panic: external/script/main.lua:1083: /tmp/ikemen-workflow.GAFPEa/chars/BrolyZ2/BrolyZ2.def:"},
+        {"character":"Chun_LI_JJ","path":"chars/Chun_LI_JJ/Chun_LI_JJ.def","status":"error","compatible":false,"elapsedSeconds":2,"exitCode":1,"resultExists":false,"errorHint":"exit code 1: Panic: external/script/main.lua:1083: /tmp/ikemen-workflow.GAFPEa/chars/Chun_LI_JJ/Chun_LI_JJ.def:"},
+        {"character":"Future_Gohan","path":"chars/Future_Gohan/Future_Gohan.def","status":"error","compatible":false,"elapsedSeconds":3,"exitCode":1,"resultExists":false,"errorHint":"exit code 1: Panic: external/script/main.lua:1083: /tmp/ikemen-workflow.GAFPEa/chars/Future_Gohan/Future_Gohan.def:"},
+        {"character":"GokuZ2_1.0-ai","path":"chars/GokuZ2_1.0-ai/GokuZ2_1.0-ai.def","status":"error","compatible":false,"elapsedSeconds":2,"exitCode":1,"resultExists":false,"errorHint":"exit code 1: Panic: external/script/main.lua:1083: /tmp/ikemen-workflow.GAFPEa/chars/GokuZ2_1.0-ai/GokuZ2_1.0-ai.def:"},
+        {"character":"Iori-KOF98","path":"chars/Iori-KOF98/Iori-KOF98.def","status":"error","compatible":false,"elapsedSeconds":2,"exitCode":1,"resultExists":false,"errorHint":"exit code 1: Panic: external/script/main.lua:1083: /tmp/ikemen-workflow.GAFPEa/chars/Iori-KOF98/Iori-KOF98.def:"},
+        {"character":"PiccoloZ2","path":"chars/PiccoloZ2/PiccoloZ2.def","status":"error","compatible":false,"elapsedSeconds":3,"exitCode":1,"resultExists":false,"errorHint":"exit code 1: Panic: external/script/main.lua:1083: /tmp/ikemen-workflow.GAFPEa/chars/PiccoloZ2/PiccoloZ2.def:"},
+        {"character":"Rei_AI-Patch","path":"chars/Rei_AI-Patch/Rei_AI-Patch.def","status":"error","compatible":false,"elapsedSeconds":3,"exitCode":1,"resultExists":false,"errorHint":"exit code 1: Panic: external/script/main.lua:1083: /tmp/ikemen-workflow.GAFPEa/chars/Rei_AI-Patch/Rei_AI-Patch.def:"},
+        {"character":"ShinSmoke Ryu","path":"chars/ShinSmoke Ryu/ShinSmoke Ryu.def","status":"error","compatible":false,"elapsedSeconds":3,"exitCode":1,"resultExists":false,"errorHint":"exit code 1: Panic: external/script/main.lua:1083: /tmp/ikemen-workflow.GAFPEa/chars/ShinSmoke Ryu/ShinSmoke Ryu.def:"},
+        {"character":"Spiderman","path":"chars/Spiderman/Spiderman.def","status":"error","compatible":false,"elapsedSeconds":3,"exitCode":1,"resultExists":false,"errorHint":"exit code 1: Panic: external/script/main.lua:1083: /tmp/ikemen-workflow.GAFPEa/chars/Spiderman/Spiderman.def:"},
+        {"character":"Thor_AvX","path":"chars/Thor_AvX/Thor_AvX.def","status":"error","compatible":false,"elapsedSeconds":2,"exitCode":1,"resultExists":false,"errorHint":"exit code 1: Panic: external/script/main.lua:1083: /tmp/ikemen-workflow.GAFPEa/chars/Thor_AvX/Thor_AvX.def:"},
+        {"character":"kfm","path":"chars/kfm/kfm.def","status":"error","compatible":false,"elapsedSeconds":1,"exitCode":1,"resultExists":false,"errorHint":"exit code 1: Panic: external/script/main.lua:1083: /tmp/ikemen-workflow.GAFPEa/chars/kfm/kfm.def:"},
+        {"character":"kfm720","path":"chars/kfm720/kfm720.def","status":"error","compatible":false,"elapsedSeconds":2,"exitCode":1,"resultExists":false,"errorHint":"exit code 1: Panic: external/script/main.lua:1083: /tmp/ikemen-workflow.GAFPEa/chars/kfm720/kfm720.def:"},
+        {"character":"kfmZ","path":"chars/kfmZ/kfmZ.def","status":"error","compatible":false,"elapsedSeconds":3,"exitCode":1,"resultExists":false,"errorHint":"exit code 1: Panic: external/script/main.lua:1083: /tmp/ikemen-workflow.GAFPEa/chars/kfmZ/kfm.zss:657:"},
+        {"character":"kfm_zaxis","path":"chars/kfm_zaxis/kfm_zaxis.def","status":"error","compatible":false,"elapsedSeconds":1,"exitCode":1,"resultExists":false,"errorHint":"exit code 1: Panic: external/script/main.lua:1083: /tmp/ikemen-workflow.GAFPEa/chars/kfm_zaxis/kfm_zaxis.def:"},
+        {"character":"kfm_zss","path":"chars/kfm_zss/kfm_zss.def","status":"error","compatible":false,"elapsedSeconds":3,"exitCode":1,"resultExists":false,"errorHint":"exit code 1: Panic: external/script/main.lua:1083: /tmp/ikemen-workflow.GAFPEa/chars/kfm_zss/kfm_zss.def:"}
+  ]
+}

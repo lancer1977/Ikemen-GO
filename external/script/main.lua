@@ -1,4 +1,11 @@
 main = {}
+io.stderr:write("[startup] main.lua loaded\n")
+io.stderr:flush()
+local function f_startupTrace(message)
+	io.stderr:write("[startup] " .. tostring(message) .. "\n")
+	io.stderr:flush()
+end
+main.f_startupTrace = f_startupTrace
 --;===========================================================
 --; INITIALIZE DATA
 --;===========================================================
@@ -68,6 +75,29 @@ function main.f_fileWrite(path, str, mode)
 	file:close()
 end
 
+function main.f_fileWriteAtomic(path, str)
+	if str == nil then
+		return
+	end
+	local tempPath = path .. '.tmp'
+	local file = io.open(tempPath, 'w+')
+	if file == nil then
+		panicError("\nUnable to open file for writing: " .. tempPath .. "\n")
+		return
+	end
+	file:write(str)
+	file:close()
+	local ok, err = os.rename(tempPath, path)
+	if not ok then
+		os.remove(path)
+		ok, err = os.rename(tempPath, path)
+	end
+	if not ok then
+		os.remove(tempPath)
+		panicError("\nUnable to rename result file: " .. path .. "\n" .. tostring(err))
+	end
+end
+
 --returns value depending on button pressed (a = 1; a + start = 7 etc.)
 function main.f_btnPalNo(p)
 	local s = 0
@@ -85,7 +115,7 @@ function main.f_restoreInput()
 	end
 	resetRemapInput()
 	-- Restore to the base mapping captured at the mode start.
-	for i = 1, gameOption('Config.Players') do
+	for i = 1, safeGameOption('Config.Players', 4) do
 		local v = main.t_baseRemapInput[i] or i
 		if i ~= v then
 			remapInput(i, v)
@@ -96,7 +126,7 @@ end
 -- capture current remap state as the "base" mapping restored after each match
 function main.f_saveBaseRemapInput()
 	main.t_baseRemapInput = {}
-	for i = 1, gameOption('Config.Players') do
+	for i = 1, safeGameOption('Config.Players', 4) do
 		main.t_baseRemapInput[i] = getRemapInput(i)
 	end
 end
@@ -106,7 +136,14 @@ function main.f_fileExists(file)
 	if file == '' then
 		return false
 	end
-	return fileExists(file)
+	local ok, handle = pcall(function()
+		return io.open(file, 'r')
+	end)
+	if ok and handle ~= nil then
+		handle:close()
+		return true
+	end
+	return false
 end
 
 --prints "t" table content into "toFile" file
@@ -186,12 +223,234 @@ function main.f_arg(arg, default)
 	return default
 end
 
---command line global flags
-if getCommandLineValue("-ailevel") ~= nil then
-	modifyGameOption('Options.Difficulty', math.max(1, math.min(tonumber(getCommandLineValue("-ailevel")), 8)))
+local function safeGameOption(path, fallback)
+	local ok, value = pcall(function()
+		return gameOption(path)
+	end)
+	if ok and value ~= nil then
+		return value
+	end
+	return fallback
 end
-if getCommandLineValue("-speed") ~= nil then
-	local speed_input = tonumber(getCommandLineValue("-speed"))
+main.f_safeGameOption = safeGameOption
+
+local function safeCommandLineValue(flag)
+	local ok, value = pcall(function()
+		return getCommandLineValue(flag)
+	end)
+	if ok then
+		return value
+	end
+	local okFlags, flags = pcall(function()
+		return getCommandLineFlags()
+	end)
+	if okFlags and type(flags) == "table" then
+		return flags[flag]
+	end
+	return nil
+end
+main.f_safeCommandLineValue = safeCommandLineValue
+io.stderr:write("[startup] cmdline p1=" .. tostring(safeCommandLineValue("-p1")) ..
+	" p2=" .. tostring(safeCommandLineValue("-p2")) ..
+	" loadmotif=" .. tostring(safeCommandLineValue("-loadmotif")) ..
+	" storyboard=" .. tostring(safeCommandLineValue("-storyboard")) ..
+	" resultfile=" .. tostring(safeCommandLineValue("-resultfile")) ..
+	" debugstartup=" .. tostring(safeCommandLineValue("-debugstartup")) .. "\n")
+io.stderr:flush()
+
+local function safeFightFramesPerCount()
+	local ok, frames = pcall(function()
+		return fightScreenVar("time.framespercount")
+	end)
+	if ok and type(frames) == "number" and frames > 0 then
+		return frames
+	end
+	return 60
+end
+
+local function safeModifyGameOption(path, value)
+	local ok = pcall(function()
+		modifyGameOption(path, value)
+	end)
+	return ok
+end
+
+local function safeCall(func, ...)
+	if type(func) ~= "function" then
+		return false
+	end
+	return pcall(func, ...)
+end
+
+local function safeTextSprite(existing)
+	if type(existing) == "userdata" then
+		return existing
+	end
+	local ok, ts = pcall(textImgNew)
+	if ok and type(ts) == "userdata" then
+		return ts
+	end
+	return existing
+end
+
+local function ensureSelectInfoTextSprites(selectInfo)
+	if type(selectInfo) ~= "table" then
+		return
+	end
+	if type(selectInfo.title) ~= "table" then
+		selectInfo.title = {}
+	end
+	selectInfo.title.TextSpriteData = safeTextSprite(selectInfo.title.TextSpriteData)
+	if type(selectInfo.stage) ~= "table" then
+		selectInfo.stage = {}
+	end
+	if type(selectInfo.stage.active) ~= "table" then
+		selectInfo.stage.active = {}
+	end
+	selectInfo.stage.active.TextSpriteData = safeTextSprite(selectInfo.stage.active.TextSpriteData)
+	if type(selectInfo.record) ~= "table" then
+		selectInfo.record = {}
+	end
+	selectInfo.record.TextSpriteData = safeTextSprite(selectInfo.record.TextSpriteData)
+end
+
+local function safeLoadMotif()
+	local ok, result = pcall(function()
+		return loadMotif()
+	end)
+		if ok and result ~= nil then
+			result.files = result.files or {select = 'data/select.def'}
+			result.select_info = result.select_info or {
+			columns = 5,
+			rows = 2,
+			cell = {
+				size = {48, 48},
+				spacing = {0, 0},
+				bg = {},
+				random = {},
+				up = {key = 'U'},
+				down = {key = 'D'},
+				left = {key = 'L'},
+				right = {key = 'R'},
+			},
+			title = {TextSpriteData = {}, text = {}},
+			portrait = {offset = {0, 0}},
+			stage = {portrait = 0, active = {TextSpriteData = {}}},
+			fadein = {FadeData = {}, time = 0},
+			record = {TextSpriteData = {}},
+			done = {key = 'START'},
+			cancel = {snd = {0, 0}},
+			wrapping = false,
+			moveoveremptyboxes = false,
+			searchemptyboxesup = false,
+			searchemptyboxesdown = false,
+			showemptyboxes = true,
+			paletteselect = 0,
+			p1 = {cursor = {}},
+			p2 = {cursor = {}},
+			itemname = {default = {}},
+			itemname_order = {default = {}},
+			}
+			ensureSelectInfoTextSprites(result.select_info)
+			return result
+		end
+		local fallback = {
+			files = {select = 'data/select.def'},
+			select_info = {
+			columns = 5,
+			rows = 2,
+			cell = {
+				size = {48, 48},
+				spacing = {0, 0},
+				bg = {},
+				random = {},
+				up = {key = 'U'},
+				down = {key = 'D'},
+				left = {key = 'L'},
+				right = {key = 'R'},
+			},
+			title = {TextSpriteData = {}, text = {}},
+			portrait = {offset = {0, 0}},
+			stage = {portrait = 0, active = {TextSpriteData = {}}},
+			fadein = {FadeData = {}, time = 0},
+			record = {TextSpriteData = {}},
+			done = {key = 'START'},
+			cancel = {snd = {0, 0}},
+			wrapping = false,
+			moveoveremptyboxes = false,
+			searchemptyboxesup = false,
+			searchemptyboxesdown = false,
+			showemptyboxes = true,
+			paletteselect = 0,
+			p1 = {cursor = {}},
+			p2 = {cursor = {}},
+			itemname = {default = {}},
+				itemname_order = {default = {}},
+			},
+		}
+		ensureSelectInfoTextSprites(fallback.select_info)
+		return fallback
+end
+
+local function safeAnimGetPreloadedCharData(charRef, group, number, keepLoop)
+	local ok, result = pcall(function()
+		return animGetPreloadedCharData(charRef, group, number, keepLoop)
+	end)
+	if ok then
+		return result
+	end
+	return nil
+end
+
+local function safeAnimGetPreloadedStageData(stageNo, group, number)
+	local ok, result = pcall(function()
+		return animGetPreloadedStageData(stageNo, group, number)
+	end)
+	if ok then
+		return result
+	end
+	return nil
+end
+
+local function safeGetStageInfo(stageNo)
+	local ok, result = pcall(function()
+		return getStageInfo(stageNo)
+	end)
+	if ok and type(result) == 'table' then
+		return result
+	end
+	return nil
+end
+
+local function safeGetCharAttachedInfo(defPath)
+	local ok, result = pcall(function()
+		return getCharAttachedInfo(defPath)
+	end)
+	if ok and type(result) == 'table' then
+		return result
+	end
+	return nil
+end
+
+local function safeAnimNew(sff, data)
+	local ok, result = pcall(function()
+		return animNew(sff, data)
+	end)
+	if ok then
+		return result
+	end
+	return nil
+end
+
+--command line global flags
+if safeCommandLineValue("-ailevel") ~= nil then
+	local aiLevel = tonumber(safeCommandLineValue("-ailevel"))
+	if aiLevel ~= nil then
+		safeModifyGameOption('Options.Difficulty', math.max(1, math.min(aiLevel, 8)))
+	end
+end
+if safeCommandLineValue("-speed") ~= nil then
+	local speed_input = tonumber(safeCommandLineValue("-speed"))
 	if speed_input ~= nil and speed_input >= -9 and speed_input <= 9 then
 		local target_game_speed
 		if speed_input > 0 then
@@ -208,49 +467,50 @@ if getCommandLineValue("-speed") ~= nil then
 		setGameSpeed(target_game_speed)
 	end
 end
-if getCommandLineValue("-speedtest") ~= nil then
-	local target_speed = gameOption('Debug.SpeedTest')
-	local custom_speed = tonumber(getCommandLineValue("-speedtest"))
+if safeCommandLineValue("-speedtest") ~= nil then
+	local target_speed = safeGameOption('Debug.SpeedTest', 100)
+	local custom_speed = tonumber(safeCommandLineValue("-speedtest"))
 	if custom_speed ~= nil and custom_speed > 0 then
 		target_speed = custom_speed
 	end
 
-	setGameSpeed(math.floor(60 * (target_speed - 1) / gameOption('Options.GameSpeedStep') + 0.5))
+	setGameSpeed(math.floor(60 * (target_speed - 1) / safeGameOption('Options.GameSpeedStep', 1) + 0.5))
 end
-if getCommandLineValue("-framerate") ~= nil then
-	local target_framerate = gameOption('Video.Framerate')
-	custom_framerate = tonumber(getCommandLineValue("-framerate"))
+if safeCommandLineValue("-framerate") ~= nil then
+	local target_framerate = safeGameOption('Video.Framerate', 60)
+	custom_framerate = tonumber(safeCommandLineValue("-framerate"))
 	if custom_framerate ~= nil and custom_framerate > 0 then
 		target_framerate = custom_framerate
 	end
-	modifyGameOption('Video.Framerate', target_framerate)
+	safeModifyGameOption('Video.Framerate', target_framerate)
 end
-if getCommandLineValue("-nosound") ~= nil then
-	modifyGameOption('Sound.MasterVolume', 0)
+if safeCommandLineValue("-nosound") ~= nil then
+	safeModifyGameOption('Sound.MasterVolume', 0)
 end
-if getCommandLineValue("-togglelifebars") ~= nil then
-	toggleLifebarDisplay()
+if safeCommandLineValue("-togglelifebars") ~= nil then
+	safeCall(toggleLifebarDisplay)
 end
-if getCommandLineValue("-maxpowermode") ~= nil then
-	toggleMaxPowerMode()
+if safeCommandLineValue("-maxpowermode") ~= nil then
+	safeCall(toggleMaxPowerMode)
 end
-if getCommandLineValue("-debug") ~= nil then
-	toggleDebugDisplay()
+if safeCommandLineValue("-debug") ~= nil then
+	safeCall(toggleDebugDisplay)
 end
-if getCommandLineValue("-setport") ~= nil then
-	setListenPort(getCommandLineValue("-setport"))
+if safeCommandLineValue("-setport") ~= nil then
+	safeCall(setListenPort, safeCommandLineValue("-setport"))
 end
-if getCommandLineValue("-setvolume") ~= nil and getCommandLineValue("-nosound") == nil then
-	modifyGameOption('Sound.MasterVolume', getCommandLineValue("-setvolume"))
+if safeCommandLineValue("-setvolume") ~= nil and safeCommandLineValue("-nosound") == nil then
+	safeModifyGameOption('Sound.MasterVolume', safeCommandLineValue("-setvolume"))
 end
-if getCommandLineValue("-windowed") ~= nil then
-	modifyGameOption('Video.Fullscreen', false)
+if safeCommandLineValue("-windowed") ~= nil then
+	safeModifyGameOption('Video.Fullscreen', false)
+	safeCall(setWindowedMode)
 end
-if getCommandLineValue("-width") ~= nil then
-	modifyGameOption('Video.GameWidth', getCommandLineValue("-width"))
+if safeCommandLineValue("-width") ~= nil then
+	safeModifyGameOption('Video.GameWidth', safeCommandLineValue("-width"))
 end
-if getCommandLineValue("-height") ~= nil then 
-	modifyGameOption('Video.GameHeight', getCommandLineValue("-height"))
+if safeCommandLineValue("-height") ~= nil then
+	safeModifyGameOption('Video.GameHeight', safeCommandLineValue("-height"))
 end
 
 -- Lua Hook System
@@ -633,8 +893,11 @@ end
 main.nextRefresh = os.clock() + 0.02
 function main.f_loadingRefresh()
 	if os.clock() >= main.nextRefresh then
-		refresh()
-		textImgDraw(motif.title_info.loading.TextSpriteData)
+		safeCall(refresh)
+		local loading = motif.title_info and motif.title_info.loading
+		if loading and loading.TextSpriteData then
+			safeCall(textImgDraw, loading.TextSpriteData)
+		end
 		main.nextRefresh = os.clock() + 0.02
 	end
 end
@@ -642,7 +905,7 @@ end
 main.pauseMenu = false
 require('external.script.debug')
 
-loadDebugFont(gameOption('Debug.Font'), gameOption('Debug.FontScale'))
+safeCall(loadDebugFont, safeGameOption('Debug.Font'), safeGameOption('Debug.FontScale'))
 
 main.t_stageDef = {['random'] = 0}
 main.t_charDef = {}
@@ -653,22 +916,22 @@ main.t_selStages = {}
 --; COMMAND LINE QUICK VS
 --;===========================================================
 function main.f_commandLine()
-	setCredits(-1)
+	safeCall(setCredits, -1)
 	local ref = #main.t_selChars
 	local t_teamMode = {0, 0}
 	local t_numChars = {0, 0}
 	local t_matchWins = {
-		draw = {gameOption('Options.Match.MaxDrawGames'), gameOption('Options.Match.MaxDrawGames')},
-		simul = {gameOption('Options.Simul.Match.Wins'), gameOption('Options.Simul.Match.Wins')},
-		single = {gameOption('Options.Match.Wins'), gameOption('Options.Match.Wins')},
-		tag = {gameOption('Options.Tag.Match.Wins'), gameOption('Options.Tag.Match.Wins')},
+		draw = {safeGameOption('Options.Match.MaxDrawGames', 0), safeGameOption('Options.Match.MaxDrawGames', 0)},
+		simul = {safeGameOption('Options.Simul.Match.Wins', 2), safeGameOption('Options.Simul.Match.Wins', 2)},
+		single = {safeGameOption('Options.Match.Wins', 2), safeGameOption('Options.Match.Wins', 2)},
+		tag = {safeGameOption('Options.Tag.Match.Wins', 2), safeGameOption('Options.Tag.Match.Wins', 2)},
 	}
-	local roundTime = gameOption('Options.Time')
-	if getCommandLineValue("-loadmotif") == nil then
-		loadFightScreen()
+	local roundTime = safeGameOption('Options.Time', 99)
+	if safeCommandLineValue("-loadmotif") == nil then
+		safeCall(loadFightScreen)
 	end
-	setFightScreenElements({guardbar = gameOption('Options.GuardBreak'), stunbar = gameOption('Options.Dizzy'), redlifebar = gameOption('Options.RedLife')})
-	local frames = fightScreenVar("time.framespercount")
+	safeCall(setFightScreenElements, {guardbar = safeGameOption('Options.GuardBreak', true), stunbar = safeGameOption('Options.Dizzy', true), redlifebar = safeGameOption('Options.RedLife', true)})
+	local frames = safeFightFramesPerCount()
 	local t = {}
 	local t_assignedPals = {}
 	local flags = getCommandLineFlags()
@@ -750,20 +1013,20 @@ function main.f_commandLine()
 	for side = 1, 2 do
 		local enemy = 3 - side
 		if t_teamMode[enemy] == 1 then --Simul
-			setMatchWins(side, t_matchWins.simul[enemy])
+			safeCall(setMatchWins, side, t_matchWins.simul[enemy])
 		elseif t_teamMode[enemy] == 2 then --Turns
-			setMatchWins(side, t_numChars[enemy])
+			safeCall(setMatchWins, side, t_numChars[enemy])
 		elseif t_teamMode[enemy] == 3 then --Tag
-			setMatchWins(side, t_matchWins.tag[enemy])
+			safeCall(setMatchWins, side, t_matchWins.tag[enemy])
 		else --Single
-			setMatchWins(side, t_matchWins.single[enemy])
+			safeCall(setMatchWins, side, t_matchWins.single[enemy])
 		end
-		setMatchMaxDrawGames(side, t_matchWins.draw[side])
+		safeCall(setMatchMaxDrawGames, side, t_matchWins.draw[side])
 	end
 	frames = frames * math.max(t_framesMul[1], t_framesMul[2])
-	setTimeFramesPerCount(frames)
-	setRoundTime(math.max(-1, roundTime * frames))
-	local stage = gameOption('Debug.StartStage')
+	safeCall(setTimeFramesPerCount, frames)
+	safeCall(setRoundTime, math.max(-1, roundTime * frames))
+	local stage = safeGameOption('Debug.StartStage', 'stages/stage1.def')
 	if flags['-s'] ~= nil then
 		for _, v in ipairs({flags['-s'], 'stages/' .. flags['-s'], 'stages/' .. flags['-s'] .. '.def'}) do
 			if main.f_fileExists(v) then
@@ -778,12 +1041,12 @@ function main.f_commandLine()
 		end
 		main.t_stageDef[stage:lower()] = #main.t_selStages + 1
 	end
-	clearSelected()
-	setMatchNo(1)
-	selectStage(main.t_stageDef[stage:lower()])
-	setTeamMode(1, t_teamMode[1], t_numChars[1])
-	setTeamMode(2, t_teamMode[2], t_numChars[2])
-	if gameOption('Debug.DumpLuaTables') then main.f_printTable(t, 'debug/t_quickvs.txt') end
+	safeCall(clearSelected)
+	safeCall(setMatchNo, 1)
+	safeCall(selectStage, main.t_stageDef[stage:lower()])
+	safeCall(setTeamMode, 1, t_teamMode[1], t_numChars[1])
+	safeCall(setTeamMode, 2, t_teamMode[2], t_numChars[2])
+		if safeGameOption('Debug.DumpLuaTables', false) then main.f_printTable(t, 'debug/t_quickvs.txt') end
 	local t_params = {}
 	--iterate over the table in -p order ascending
 	for _, v in main.f_sortKeys(t, function(t, a, b) return t[b].num > t[a].num end) do
@@ -799,9 +1062,9 @@ function main.f_commandLine()
 		if main.t_charDef[v.character:lower()] == nil then
 			panicError("\nUnable to add character. No such file or directory: " .. v.character .. "\n")
 		end
-		selectChar(v.player, main.t_charDef[v.character:lower()], v.pal)
-		setCom(v.num, v.ai)
-		remapInput(v.num, v.input)
+			safeCall(selectChar, v.player, main.t_charDef[v.character:lower()], v.pal)
+			safeCall(setCom, v.num, v.ai)
+			safeCall(remapInput, v.num, v.input)
 		-- fold overrides into loadStart() params (p1.<member>.<field>=...)
 		local member = math.ceil(v.num / 2)
 		for k2, v2 in pairs(v.override) do
@@ -839,48 +1102,71 @@ function main.f_commandLine()
 		main.f_clearShuffleTables()
 		refresh()
 	end
+	f_startupTrace("commandline begin")
 	local params = table.concat(t_params, ", ")
 	if params == '' then
+		f_startupTrace("loadStart()")
 		loadStart()
 	else
+		f_startupTrace("loadStart(params)")
 		loadStart(params)
 	end
 	while loading() do
 		--do nothing
 	end
+	f_startupTrace("game() begin")
 	local winner = game()
+	f_startupTrace("game() returned winner=" .. tostring(winner))
 	if flags['-log'] ~= nil then
 		main.f_printTable(getGameStats().Matches[matchNo()], flags['-log'])
 	end
 	local gameStatsJson = getGameStatsJson()
+	f_startupTrace("game stats json built")
 	local jsonLogPath = flags['-jsonlog']
 	if jsonLogPath == nil and flags['-nojsonlog'] == nil then
 		jsonLogPath = 'save/last-match.json'
 	end
 	if jsonLogPath ~= nil then
-		main.f_fileWrite(jsonLogPath, gameStatsJson)
+		f_startupTrace("writing json log to " .. tostring(jsonLogPath))
+		main.f_fileWriteAtomic(jsonLogPath, gameStatsJson)
+	end
+	local resultFilePath = flags['-resultfile']
+	if resultFilePath ~= nil then
+		f_startupTrace("writing result file to " .. tostring(resultFilePath))
+		main.f_fileWriteAtomic(resultFilePath, gameStatsJson)
 	end
 	if flags['-jsonstdout'] ~= nil or flags['-nojsonstdout'] == nil then
+		f_startupTrace("writing json stdout")
 		print(gameStatsJson)
 	end
+	f_startupTrace("commandline exit")
 	os.exit()
 end
 
---initiate quick match only if -loadmotif flag is missing
-if getCommandLineValue("-p1") ~= nil and getCommandLineValue("-p2") ~= nil and getCommandLineValue("-loadmotif") == nil then
-	main.f_commandLine()
-end
 
 --;===========================================================
 --; LOAD DATA
 --;===========================================================
 main.t_unlockLua = {chars = {}, stages = {}, modes = {}}
 
-motif = loadMotif()
-if gameOption('Debug.DumpLuaTables') then main.f_printTable(motif, "debug/loadMotif.txt") end
+motif = safeLoadMotif()
+if motif.attract_mode == nil then
+	motif.attract_mode = {enabled = false}
+end
+io.stderr:write("[startup] loaded motif\n")
+io.stderr:flush()
+if safeGameOption('Debug.DumpLuaTables', false) then main.f_printTable(motif, "debug/loadMotif.txt") end
 
-loadFightScreen()
+io.stderr:write("[startup] calling loadFightScreen\n")
+io.stderr:flush()
+safeCall(loadFightScreen)
+io.stderr:write("[startup] returned loadFightScreen\n")
+io.stderr:flush()
+io.stderr:write("[startup] calling loadingRefresh\n")
+io.stderr:flush()
 main.f_loadingRefresh()
+io.stderr:write("[startup] returned loadingRefresh\n")
+io.stderr:flush()
 
 local function showSessionWarning()
 	local text = getSessionWarning()
@@ -1083,7 +1369,7 @@ function main.f_addChar(line, playable, loading, slot)
 		local params = motif.select_info.portrait
 		for _, v in pairs({{params.anim, -1}, params.spr}) do
 			if v[1] ~= -1 then
-				local a = animGetPreloadedCharData(main.t_selChars[row].char_ref, v[1], v[2])
+			local a = safeAnimGetPreloadedCharData(main.t_selChars[row].char_ref, v[1], v[2])
 				if a then
 					animSetLocalcoord(a, motif.info.localcoord[1], motif.info.localcoord[2])
 					animSetLayerno(a, params.layerno)
@@ -1110,11 +1396,11 @@ function main.f_addChar(line, playable, loading, slot)
 					break
 				end
 			end
+			end
+			if main.t_selChars[row].cell_data == nil then
+				main.t_selChars[row].cell_data = safeAnimNew(nil, '-1,0, 0,0, -1')
+			end
 		end
-		if main.t_selChars[row].cell_data == nil then
-			main.t_selChars[row].cell_data = animNew(nil, '-1,0, 0,0, -1')
-		end
-	end
 	--slots
 	if not slot then
 		table.insert(main.t_selGrid, {['chars'] = {row}, ['slot'] = 1})
@@ -1148,7 +1434,10 @@ function main.f_addStage(file, hidden, line)
 		return
 	end
 	local stageNo = #main.t_selStages + 1
-	local t_info = getStageInfo(stageNo)
+	local t_info = safeGetStageInfo(stageNo)
+	if t_info == nil then
+		return
+	end
 	table.insert(main.t_selStages, {
 		name = t_info.name,
 		def = file,
@@ -1165,7 +1454,7 @@ function main.f_addStage(file, hidden, line)
 		end
 		main.t_selStages[stageNo].attachedChar = {}
 		for i = 1, #attachedList do
-			local acInfo = getCharAttachedInfo(attachedList[i])
+			local acInfo = safeGetCharAttachedInfo(attachedList[i])
 			if acInfo ~= nil then
 				acInfo.dir = acInfo.def:gsub('[^/]+%.def$', '')
 				table.insert(main.t_selStages[stageNo].attachedChar, acInfo)
@@ -1174,9 +1463,19 @@ function main.f_addStage(file, hidden, line)
 	end
 	--anim data
 	local function f_makeStageAnim(stageNo, params, fieldName)
-		for _, v in pairs({{params.anim, -1}, params.spr}) do
+		if type(params) ~= 'table' then
+			return
+		end
+		local animRefs = {}
+		if params.anim ~= nil then
+			table.insert(animRefs, {params.anim, -1})
+		end
+		if type(params.spr) == 'table' then
+			table.insert(animRefs, params.spr)
+		end
+		for _, v in pairs(animRefs) do
 			if #v > 0 and v[1] ~= -1 then
-				local a = animGetPreloadedStageData(stageNo, v[1], v[2])
+				local a = safeAnimGetPreloadedStageData(stageNo, v[1], v[2])
 				if a then
 					animSetLocalcoord(a, motif.info.localcoord[1], motif.info.localcoord[2])
 					animSetLayerno(a, params.layerno)
@@ -1217,13 +1516,13 @@ function main.f_addStage(file, hidden, line)
 	--select screen anim data
 	f_makeStageAnim(stageNo, motif.select_info.stage.portrait, "anim_data")
 	--vs screen anim data
-	f_makeStageAnim(stageNo, motif.vs_screen.stage.portrait, "vs_anim_data")
+	f_makeStageAnim(stageNo, motif.vs_screen and motif.vs_screen.stage and motif.vs_screen.stage.portrait, "vs_anim_data")
 	if hidden ~= nil and hidden ~= 0 then
 		main.t_selStages[stageNo].hidden = hidden
-	end
-	if main.t_selStages[stageNo].anim_data == nil then
-		main.t_selStages[stageNo].anim_data = animNew(nil, '-1,0, 0,0, -1')
-	end
+		end
+		if main.t_selStages[stageNo].anim_data == nil then
+		main.t_selStages[stageNo].anim_data = safeAnimNew(nil, '-1,0, 0,0, -1')
+		end
 	return stageNo
 end
 
@@ -1242,7 +1541,8 @@ local section = 0
 local row = 0
 local slot = false
 local csCell = 0
-local content = main.f_fileRead(motif.files.select)
+local select_def = (motif.files and motif.files.select) or 'data/select.def'
+local content = main.f_fileRead(select_def)
 content = content:gsub('([^\r\n;]*)%s*;[^\r\n]*', '%1')
 content = content:gsub('\n%s*\n', '\n')
 
@@ -1250,15 +1550,16 @@ lanChars = false
 lanStages = false
 lanOptions = false
 lanStory = false
+local language = safeGameOption('Config.Language', 'en')
 for line in content:gmatch('[^\r\n]+') do
 	local lineCase = line:lower()
-	if lineCase:match('^%s*%[%s*' .. gameOption('Config.Language') .. '.characters' .. '%s*%]') then
+	if lineCase:match('^%s*%[%s*' .. language .. '.characters' .. '%s*%]') then
 		lanChars = true
-	elseif lineCase:match('^%s*%[%s*' .. gameOption('Config.Language') .. '.extrastages' .. '%s*%]') then
+	elseif lineCase:match('^%s*%[%s*' .. language .. '.extrastages' .. '%s*%]') then
 		lanStages = true
-	elseif lineCase:match('^%s*%[%s*' .. gameOption('Config.Language') .. '.options' .. '%s*%]') then
+	elseif lineCase:match('^%s*%[%s*' .. language .. '.options' .. '%s*%]') then
 		lanOptions = true
-	elseif lineCase:match('^%s*%[%s*' .. gameOption('Config.Language') .. '.storymode' .. '%s*%]') then
+	elseif lineCase:match('^%s*%[%s*' .. language .. '.storymode' .. '%s*%]') then
 		lanStory = true
 	end
 end
@@ -1269,7 +1570,7 @@ for line in content:gmatch('[^\r\n]+') do
 	if lineCase:match('^%s*%[%s*characters%s*%]') then
 		row = 0
 		section = 1
-	elseif lineCase:match('^%s*%[%s*' .. gameOption('Config.Language') .. '.characters' .. '%s*%]') then
+	elseif lineCase:match('^%s*%[%s*' .. language .. '.characters' .. '%s*%]') then
 		if lanChars then
 			row = 0
 			section = 1
@@ -1279,7 +1580,7 @@ for line in content:gmatch('[^\r\n]+') do
 	elseif lineCase:match('^%s*%[%s*extrastages%s*%]') then
 		row = 0
 		section = 2
-	elseif lineCase:match('^%s*%[%s*' .. gameOption('Config.Language') .. '.extrastages' .. '%s*%]') then
+	elseif lineCase:match('^%s*%[%s*' .. language .. '.extrastages' .. '%s*%]') then
 		if lanStages then
 			row = 0
 			section = 2
@@ -1289,7 +1590,7 @@ for line in content:gmatch('[^\r\n]+') do
 	elseif lineCase:match('^%s*%[%s*options%s*%]') then
 		row = 0
 		section = 3
-	elseif lineCase:match('^%s*%[%s*' .. gameOption('Config.Language') .. '.options' .. '%s*%]') then
+	elseif lineCase:match('^%s*%[%s*' .. language .. '.options' .. '%s*%]') then
 		if lanOptions then
 			row = 0
 			section = 3
@@ -1299,7 +1600,7 @@ for line in content:gmatch('[^\r\n]+') do
 	elseif lineCase:match('^%s*%[%s*storymode%s*%]') then
 		row = 0
 		section = 4
-	elseif lineCase:match('^%s*%[%s*' .. gameOption('Config.Language') .. '.storymode' .. '%s*%]') then
+	elseif lineCase:match('^%s*%[%s*' .. language .. '.storymode' .. '%s*%]') then
 		if lanStory then
 			row = 0
 			section = 4
@@ -1419,8 +1720,9 @@ for i = 1, #t_addExluded do
 end
 
 --add Training char if defined and not included in select.def
-if gameOption('Config.TrainingChar') ~= '' and main.t_charDef[gameOption('Config.TrainingChar'):lower()] == nil then
-	main.f_addChar(gameOption('Config.TrainingChar') .. ', order = 0, ordersurvival = 0, exclude = 1', false, true)
+local trainingChar = safeGameOption('Config.TrainingChar', '')
+if trainingChar ~= '' and main.t_charDef[trainingChar:lower()] == nil then
+	main.f_addChar(trainingChar .. ', order = 0, ordersurvival = 0, exclude = 1', false, true)
 end
 
 --add remaining character parameters
@@ -1462,18 +1764,24 @@ function main.f_updateRandomChars()
 		end
 	end
 	main.t_randomChars = t
-	if gameOption('Debug.DumpLuaTables') then main.f_printTable(main.t_randomChars, "debug/t_randomChars.txt") end
+	if safeGameOption('Debug.DumpLuaTables', false) then main.f_printTable(main.t_randomChars, "debug/t_randomChars.txt") end
 end
 
 -- build initial pool (may be refreshed later after unlock() runs)
 main.f_updateRandomChars()
+io.stderr:write("[startup] updated random chars\n")
+io.stderr:flush()
 
 --add default starting stage if no stages have been added via select.def
+io.stderr:write("[startup] checking default starting stage\n")
+io.stderr:flush()
 if #main.t_includeStage[1] == 0 or #main.t_includeStage[2] == 0 then
-	local row = main.f_addStage(gameOption('Debug.StartStage'))
+	local row = main.f_addStage(safeGameOption('Debug.StartStage', 'stages/stage1.def'))
 	table.insert(main.t_includeStage[1], row)
 	table.insert(main.t_includeStage[2], row)
 end
+io.stderr:write("[startup] default starting stage ready\n")
+io.stderr:flush()
 
 --update selectableStages table
 function main.f_updateSelectableStages()
@@ -1485,12 +1793,16 @@ function main.f_updateSelectableStages()
 	end
 end
 main.f_updateSelectableStages()
+io.stderr:write("[startup] updated selectable stages\n")
+io.stderr:flush()
 
 --add default maxmatches values if config is missing in select.def
 if main.t_selOptions.arcademaxmatches == nil then main.t_selOptions.arcademaxmatches = {6, 1, 1, 0, 0, 0, 0, 0, 0, 0} end
 if main.t_selOptions.teammaxmatches == nil then main.t_selOptions.teammaxmatches = {4, 1, 1, 0, 0, 0, 0, 0, 0, 0} end
 if main.t_selOptions.timeattackmaxmatches == nil then main.t_selOptions.timeattackmaxmatches = {6, 1, 1, 0, 0, 0, 0, 0, 0, 0} end
 if main.t_selOptions.survivalmaxmatches == nil then main.t_selOptions.survivalmaxmatches = {-1, 0, 0, 0, 0, 0, 0, 0, 0, 0} end
+io.stderr:write("[startup] selection defaults ready\n")
+io.stderr:flush()
 
 hook.run("main.selectDef.defaults", main.t_selOptions)
 
@@ -1520,21 +1832,33 @@ function main.f_menuWindow(t, offset)
 end
 
 function main.f_storyboard(path)
-	local s = loadStoryboard(path)
+	if type(loadStoryboard) ~= 'function' then
+		return
+	end
+	local ok, s = pcall(function()
+		return loadStoryboard(path)
+	end)
+	if not ok then
+		return
+	end
 	if s == nil then
 		return
 	end
-	if gameOption('Debug.DumpLuaTables') then
+	if safeGameOption('Debug.DumpLuaTables', false) then
 		-- get filename without extension from full path
 		local name = path:match("([^/\\]+)$") or "unknown" -- last path segment
 		name = name:gsub("%.[^%.]+$", "") -- strip last extension
 		main.f_printTable(s, 'debug/loadStoryboard_' .. name .. '.txt')
 	end
 	while true do
-		if not runStoryboard() then
+		if type(runStoryboard) ~= 'function' then
 			break
 		end
-		refresh()
+		local okRun, keepRunning = pcall(runStoryboard)
+		if not okRun or not keepRunning then
+			break
+		end
+		safeCall(refresh)
 	end
 end
 
@@ -1547,17 +1871,30 @@ function main.f_hiscore(mode, place)
 	end
 end
 
-setPlayers()
+io.stderr:write("[startup] calling setPlayers\n")
+io.stderr:flush()
+setPlayers(safeGameOption('Config.Players', 4))
+io.stderr:write("[startup] returned setPlayers\n")
+io.stderr:flush()
 
 --Load additional scripts
+io.stderr:write("[startup] requiring start/options/menu\n")
+io.stderr:flush()
 start = require('external.script.start')
 options = require('external.script.options')
 menu = require('external.script.menu')
+io.stderr:write("[startup] required start/options/menu\n")
+io.stderr:flush()
 
-if getCommandLineValue("-storyboard") ~= nil then
-	main.f_storyboard(getCommandLineValue("-storyboard"))
+local storyboardPath = safeCommandLineValue("-storyboard")
+if storyboardPath ~= nil and storyboardPath ~= '' then
+	io.stderr:write("[startup] calling storyboard\n")
+	io.stderr:flush()
+	main.f_storyboard(storyboardPath)
 	os.exit()
 end
+io.stderr:write("[startup] storyboard skipped\n")
+io.stderr:flush()
 
 --;===========================================================
 --; MENUS
@@ -1608,17 +1945,17 @@ function main.f_default()
 		p2score = false,
 		p2wincount = false,
 		timer = false,
-		guardbar = gameOption('Options.GuardBreak'),
-		stunbar = gameOption('Options.Dizzy'),
-		redlifebar = gameOption('Options.RedLife'),
+		guardbar = safeGameOption('Options.GuardBreak', true),
+		stunbar = safeGameOption('Options.Dizzy', true),
+		redlifebar = safeGameOption('Options.RedLife', true),
 	}
 	main.luaPath = 'external/script/default.lua' --path to script executed by start.f_selectMode()
 	main.makeRoster = false --if default roster for each match should be generated before first match
 	main.matchWins = { --amount of rounds to win for each team side and team mode
-		draw = {gameOption('Options.Match.MaxDrawGames'), gameOption('Options.Match.MaxDrawGames')},
-		simul = {gameOption('Options.Simul.Match.Wins'), gameOption('Options.Simul.Match.Wins')},
-		single = {gameOption('Options.Match.Wins'), gameOption('Options.Match.Wins')},
-		tag = {gameOption('Options.Tag.Match.Wins'), gameOption('Options.Tag.Match.Wins')},
+		draw = {safeGameOption('Options.Match.MaxDrawGames', 0), safeGameOption('Options.Match.MaxDrawGames', 0)},
+		simul = {safeGameOption('Options.Simul.Match.Wins', 2), safeGameOption('Options.Simul.Match.Wins', 2)},
+		single = {safeGameOption('Options.Match.Wins', 2), safeGameOption('Options.Match.Wins', 2)},
+		tag = {safeGameOption('Options.Tag.Match.Wins', 2), safeGameOption('Options.Tag.Match.Wins', 2)},
 	}
 	main.motif = { --which motif elements should be rendered
 		challenger = false,
@@ -1633,9 +1970,9 @@ function main.f_default()
 		losescreen = false,
 		menu = true,
 	}
-	main.numSimul = {gameOption('Options.Simul.Min'), gameOption('Options.Simul.Max')} --min/max number of simul characters
-	main.numTag = {gameOption('Options.Tag.Min'), gameOption('Options.Tag.Max')} --min/max number of tag characters
-	main.numTurns = {gameOption('Options.Turns.Min'), gameOption('Options.Turns.Max')} --min/max number of turn characters
+	main.numSimul = {safeGameOption('Options.Simul.Min', 2), safeGameOption('Options.Simul.Max', 4)} --min/max number of simul characters
+	main.numTag = {safeGameOption('Options.Tag.Min', 2), safeGameOption('Options.Tag.Max', 4)} --min/max number of tag characters
+	main.numTurns = {safeGameOption('Options.Turns.Min', 2), safeGameOption('Options.Turns.Max', 4)} --min/max number of turn characters
 	main.orderSelect = {false, false} --if versus screen order selection should be active
 	main.persistLife = false --if life should be maintained after match
 	main.persistMusic = false --if the music that was playing previously should be stopped at the start of the match
@@ -1644,7 +1981,7 @@ function main.f_default()
 	main.rankingCondition = false --if winning (clearing) whole mode is needed for rankings to be saved
 	main.resetScore = false --if loosing should set score for the next match to lose count
 	main.rotationChars = false --flags modes where gameOption('Arcade.AI.SurvivalColor') should be used instead of gameOption('Arcade.AI.RandomColor')
-	main.roundTime = gameOption('Options.Time') --sets round time
+	main.roundTime = safeGameOption('Options.Time', 99) --sets round time
 	main.selectMenu = {true, false} --which team side should be allowed to select players
 	main.stageMenu = false --if manual stage selection is allowed
 	main.stageOrder = false --if select.def stage order param should be used
@@ -1656,7 +1993,7 @@ function main.f_default()
 	resetAILevel()
 	resetRemapInput()
 	if not motif.attract_mode.enabled and start.challenger == 0 then
-		setCredits(-1) --amount of credits from the start (-1 = disabled)
+		safeCall(setCredits, -1) --amount of credits from the start (-1 = disabled)
 	end
 	setConsecutiveWins(1, 0)
 	setConsecutiveWins(2, 0)
@@ -1664,8 +2001,8 @@ function main.f_default()
 	setHomeTeam(2) --http://mugenguild.com/forum/topics/ishometeam-triggers-169132.0.html
 	setFightScreenElements(main.fightscreen)
 	setMotifElements(main.motif)
-	setTimeFramesPerCount(fightScreenVar("time.framespercount"))
-	setRoundTime(math.max(-1, main.roundTime * fightScreenVar("time.framespercount")))
+	setTimeFramesPerCount(safeFightFramesPerCount())
+	setRoundTime(math.max(-1, main.roundTime * safeFightFramesPerCount()))
 	setWinCount(1, 0)
 	setWinCount(2, 0)
 	textImgReset(motif.select_info.title.TextSpriteData)
@@ -2047,8 +2384,8 @@ main.t_itemname = {
 		main.matchWins.simul = {1, 1}
 		main.matchWins.single = {1, 1}
 		main.matchWins.tag = {1, 1}
-		main.numSimul = {2, math.min(4, gameOption('Config.Players'))}
-		main.numTag = {2, math.min(4, gameOption('Config.Players'))}
+		main.numSimul = {2, math.min(4, safeGameOption('Config.Players', 4))}
+		main.numTag = {2, math.min(4, safeGameOption('Config.Players', 4))}
 		main.persistLife = true
 		main.persistMusic = true
 		main.persistRounds = true
@@ -2088,8 +2425,8 @@ main.t_itemname = {
 		main.motif.vsmatchno = true
 		main.motif.victoryscreen = true
 		main.motif.winscreen = true
-		main.numSimul = {2, math.min(4, gameOption('Config.Players'))}
-		main.numTag = {2, math.min(4, gameOption('Config.Players'))}
+		main.numSimul = {2, math.min(4, safeGameOption('Config.Players', 4))}
+		main.numTag = {2, math.min(4, safeGameOption('Config.Players', 4))}
 		main.resetScore = true
 		main.stageOrder = true
 		main.storyboard.credits = true
@@ -2151,14 +2488,15 @@ main.t_itemname = {
 	end,
 	--TRAINING
 	['training'] = function(t, item)
-		if main.t_charDef[gameOption('Config.TrainingChar'):lower()] ~= nil then
-			main.forceChar[2] = {main.t_charDef[gameOption('Config.TrainingChar'):lower()]}
+		local trainingChar = safeGameOption('Config.TrainingChar', '')
+		if main.t_charDef[trainingChar:lower()] ~= nil then
+			main.forceChar[2] = {main.t_charDef[trainingChar:lower()]}
 		end
 		--main.fightscreen.p1score = true
 		--main.fightscreen.p2ailevel = true
 		main.roundTime = -1
 		main.selectMenu[2] = true
-		if gameOption('Config.TrainingStage') == '' then
+		if safeGameOption('Config.TrainingStage', '') == '' then
 			main.stageMenu = true
 		end
 		main.teamMenu[1].simul = true
@@ -2224,8 +2562,8 @@ main.t_itemname = {
 		--main.fightscreen.p2wincount = true
 		main.motif.vsscreen = true
 		main.motif.victoryscreen = true
-		main.numSimul = {2, math.min(4, math.max(2, math.ceil(gameOption('Config.Players') / 2)))}
-		main.numTag = {2, math.min(4, math.max(2, math.ceil(gameOption('Config.Players') / 2)))}
+		main.numSimul = {2, math.min(4, math.max(2, math.ceil(safeGameOption('Config.Players', 4) / 2)))}
+		main.numTag = {2, math.min(4, math.max(2, math.ceil(safeGameOption('Config.Players', 4) / 2)))}
 		main.selectMenu[2] = true
 		main.stageMenu = true
 		main.teamMenu[1].simul = true
@@ -2266,7 +2604,7 @@ main.t_itemname = {
 }
 main.t_itemname.teamarcade = main.t_itemname.arcade
 main.t_itemname.teamversus = main.t_itemname.versus
-if gameOption('Debug.DumpLuaTables') then main.f_printTable(main.t_itemname, 'debug/t_mainItemname.txt') end
+if safeGameOption('Debug.DumpLuaTables', false) then main.f_printTable(main.t_itemname, 'debug/t_mainItemname.txt') end
 
 function main.f_deleteIP(item, t)
 	if t[item].itemname:match('^ip_') then
@@ -2586,7 +2924,7 @@ function main.f_start()
 			elseif c == 'storymode' and #main.t_selStoryMode == 0 then --skip story mode if there are no story arc declared
 				t_skipGroup[c] = true
 				break
-			elseif c == 'versuscoop' and gameOption('Config.Players') < 4 then --skip versus coop if there are not enough players
+			elseif c == 'versuscoop' and safeGameOption('Config.Players', 4) < 4 then --skip versus coop if there are not enough players
 				t_skipGroup[c] = true
 				break
 			end
@@ -2671,7 +3009,7 @@ function main.f_start()
 	--for _, v in pairs(motif[main.group].menu.item.active.bg) do
 	--	animSetWindow(v.AnimData, w[1], w[2], w[3], w[4])
 	--end
-	if gameOption('Debug.DumpLuaTables') then main.f_printTable(main.menu, 'debug/t_mainMenu.txt') end
+	if safeGameOption('Debug.DumpLuaTables', false) then main.f_printTable(main.menu, 'debug/t_mainMenu.txt') end
 end
 
 function main.f_clearShuffleTables()
@@ -2848,7 +3186,13 @@ end
 --asserts content unlock conditions
 function main.f_unlock(permanent)
 	local refreshRandom = false
-	local stats = jsonDecode(getCommandLineValue("-stats")) or {}
+	local stats = {}
+	if type(jsonDecode) == 'function' then
+		local ok, decoded = pcall(jsonDecode, getCommandLineValue("-stats"))
+		if ok and type(decoded) == 'table' then
+			stats = decoded
+		end
+	end
 	local env = setmetatable({stats = stats}, {__index = _G})
 	for group, t in pairs(main.t_unlockLua) do
 		local t_del = {}
@@ -3064,7 +3408,7 @@ end
 
 --attract mode loop
 function main.f_attractMode()
-	setCredits(0)
+	safeCall(setCredits, 0)
 	while true do --outer loop
 		local startScreen = false
 		while true do --inner loop (attract mode)
@@ -3101,22 +3445,22 @@ function main.f_attractMode()
 			end
 			--eat credit
 			if getCredits() > 0 then
-				setCredits(getCredits() - 1)
+				safeCall(setCredits, getCredits() - 1)
 			end
 			--enter menu
 			main.menu.loop()
 		elseif getCredits() > 0 then
-			setCredits(getCredits() - 1)
+			safeCall(setCredits, getCredits() - 1)
 		end
 	end
 end
 
-setCredits(-1)
+safeCall(setCredits, -1)
 function main.f_setCredits()
 	if motif.attract_mode.enabled or start.challenger ~= 0 then
 		return
 	end
-	setCredits(gameOption('Options.Credits') - 1)
+	safeCall(setCredits, gameOption('Options.Credits') - 1)
 end
 
 --demo mode
@@ -3667,8 +4011,11 @@ for _, v in ipairs(getDirectoryFiles('external/mods')) do
 	end
 end
 
-for _, v in ipairs(gameOption('Common.Modules')) do
-	table.insert(t_modules, v)
+local commonModules = safeGameOption('Common.Modules', {})
+if type(commonModules) == 'table' then
+	for _, v in ipairs(commonModules) do
+		table.insert(t_modules, v)
+	end
 end
 if motif.files.module ~= '' then table.insert(t_modules, motif.files.module) end
 for _, v in ipairs(t_modules) do
@@ -3678,12 +4025,16 @@ for _, v in ipairs(t_modules) do
 	require(v:gsub('[/\\]+', '.'))
 end
 
+io.stderr:write("[startup] calling unlock(false)\n")
+io.stderr:flush()
 main.f_unlock(false)
+io.stderr:write("[startup] returned unlock(false)\n")
+io.stderr:flush()
 
 --;===========================================================
 --; INITIALIZE LOOPS
 --;===========================================================
-if gameOption('Debug.DumpLuaTables') then
+if safeGameOption('Debug.DumpLuaTables', false) then
 	main.f_printTable(main.t_selChars, "debug/t_selChars.txt")
 	main.f_printTable(main.t_selStages, "debug/t_selStages.txt")
 	main.f_printTable(main.t_selOptions, "debug/t_selOptions.txt")
@@ -3702,14 +4053,27 @@ if gameOption('Debug.DumpLuaTables') then
 	main.f_printTable(loadGameOption(), "debug/config.txt")
 end
 
-main.f_start()
-menu.f_start()
-options.f_start()
-
-if getCommandLineValue("-p1") ~= nil and getCommandLineValue("-p2") ~= nil then
+local quickVs = safeCommandLineValue("-p1") ~= nil and safeCommandLineValue("-p2") ~= nil
+if quickVs then
 	main.f_default()
 	main.f_commandLine()
 end
+
+io.stderr:write("[startup] calling main.f_start\n")
+io.stderr:flush()
+main.f_start()
+io.stderr:write("[startup] returned main.f_start\n")
+io.stderr:flush()
+io.stderr:write("[startup] calling menu.f_start\n")
+io.stderr:flush()
+menu.f_start()
+io.stderr:write("[startup] returned menu.f_start\n")
+io.stderr:flush()
+io.stderr:write("[startup] calling options.f_start\n")
+io.stderr:flush()
+options.f_start()
+io.stderr:write("[startup] returned options.f_start\n")
+io.stderr:flush()
 
 main.f_loadingRefresh()
 

@@ -2,6 +2,12 @@
 
 Ikemen GO is an open source fighting game engine that supports resources from the [M.U.G.E.N](https://en.wikipedia.org/wiki/Mugen_(game_engine)) engine, written in Google’s programming language, [Go](https://go.dev/). It is a complete rewrite of a prior engine known simply as Ikemen.
 
+## ChannelCheevos Ownership Note
+
+- Canonical streamer/debug and remote-launch docs live in [`../channel-cheevos/docs/features/ikemen-go/README.md`](../channel-cheevos/docs/features/ikemen-go/README.md).
+- The matching phased roadmap lives in [`../channel-cheevos/docs/roadmaps/ikemen-remote-launch-and-debug/README.md`](../channel-cheevos/docs/roadmaps/ikemen-remote-launch-and-debug/README.md).
+- This repo stays the engine/runtime reference while product ownership lives in Channel Cheevos.
+
 ## Features
 Ikemen GO aims for backwards-compatibility on par with M.U.G.E.N version 1.1 Beta, while simultaneously expanding on its features in a variety of ways.
 

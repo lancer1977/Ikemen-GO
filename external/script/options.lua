@@ -1,4 +1,31 @@
 local options = {}
+local safeGameOption = main.f_safeGameOption or function(path, fallback)
+	local ok, value = pcall(function()
+		return gameOption(path)
+	end)
+	if ok and value ~= nil then
+		return value
+	end
+	return fallback
+end
+local function safeIsUIKeyAction(itemname)
+	if type(isUIKeyAction) ~= 'function' then
+		return false
+	end
+	local ok, result = pcall(function()
+		return isUIKeyAction(itemname)
+	end)
+	return ok and result
+end
+local function safeSetDefaultConfig(cfgType, player, enabledButtons)
+	if type(setDefaultConfig) ~= 'function' then
+		return false
+	end
+	local ok = pcall(function()
+		setDefaultConfig(cfgType, player, enabledButtons)
+	end)
+	return ok
+end
 --;===========================================================
 --; COMMON
 --;===========================================================
@@ -27,12 +54,13 @@ function options.f_precision(v, decimal)
 end
 
 --- Save the current configuration to the config file and handle common file modifications
-local t_commonFilesOriginal = gameOption('Common')
+local t_commonFilesOriginal = safeGameOption('Common', {})
 function options.f_saveCfg(reload)
 	-- Restore the original content of the common files
-	local t_commonFiles = gameOption('Common')
+	local t_commonFiles = safeGameOption('Common', {})
 	for _, k in ipairs({'Air', 'Cmd', 'Const', 'States', 'Fx', 'Modules', 'Lua'}) do
-		modifyGameOption('Common.' .. k, t_commonFilesOriginal[k][k:lower()] or {})
+		local original = t_commonFilesOriginal[k] or {}
+		modifyGameOption('Common.' .. k, original[k:lower()] or {})
 	end
 	-- Save the current configuration to 'config.ini'
 	saveGameOption(getCommandLineValue("-config"))
@@ -44,7 +72,8 @@ function options.f_saveCfg(reload)
 	end
 	-- Reapply modified common file arrays after saving
 	for _, k in ipairs({'Air', 'Cmd', 'Const', 'States', 'Fx', 'Modules', 'Lua'}) do
-		modifyGameOption('Common.' .. k, t_commonFiles[k][k:lower()] or {})
+		local current = t_commonFiles[k] or {}
+		modifyGameOption('Common.' .. k, current[k:lower()] or {})
 	end
 end
 
@@ -1910,19 +1939,20 @@ function options.f_start()
 		animSetWindow(v.AnimData, kw[1], kw[2], kw[3], kw[4])
 	end
 	-- log
-	if gameOption('Debug.DumpLuaTables') then main.f_printTable(options.menu, 'debug/t_optionsMenu.txt') end
-end
-
---;===========================================================
---; KEY SETTINGS
---;===========================================================
-local t_keyCfg = {}
-table.insert(t_keyCfg, {itemname = 'spacer', displayname = '-', paramname = 'spacer'})
-for _, v in ipairs(motif.option_info.keymenu.itemname_order or {}) do
-	if isUIKeyAction(v) or v == "configall" then
-		table.insert(t_keyCfg, {itemname = v, displayname = motif.option_info.keymenu.itemname[v] or '', paramname = v, infodisplay = ''})
+		if safeGameOption('Debug.DumpLuaTables', false) then main.f_printTable(options.menu, 'debug/t_optionsMenu.txt') end
 	end
-end
+
+	--;===========================================================
+	--; KEY SETTINGS
+	--;===========================================================
+	local t_keyCfg = {}
+	local keymenuInfo = (motif.option_info and motif.option_info.keymenu) or {itemname_order = {}, itemname = {}}
+	table.insert(t_keyCfg, {itemname = 'spacer', displayname = '-', paramname = 'spacer'})
+	for _, v in ipairs(keymenuInfo.itemname_order or {}) do
+		if safeIsUIKeyAction(v) or v == "configall" then
+			table.insert(t_keyCfg, {itemname = v, displayname = keymenuInfo.itemname[v] or '', paramname = v, infodisplay = ''})
+		end
+	end
 table.insert(t_keyCfg, {itemname = 'page', displayname = '', paramname = 'page', infodisplay = ''})
 
 -- find the index of the "Config all" row
@@ -1958,7 +1988,7 @@ local t_keyCfgFields = {
 
 local t_btnEnabled = {}
 for _, row in ipairs(t_keyCfg) do
-	if isUIKeyAction(row.itemname) then
+	if safeIsUIKeyAction(row.itemname) then
 		t_btnEnabled[row.itemname] = true
 	end
 end
@@ -1978,14 +2008,14 @@ local function f_restoreKeyConfigPlayer(cfgType, pn)
 end
 
 function options.f_keyDefault()
-	for i = 1, gameOption('Config.Players') do
-		setDefaultConfig('Keys', i, t_btnEnabled)
-		setDefaultConfig('Joystick', i, t_btnEnabled)
+	for i = 1, safeGameOption('Config.Players', 4) do
+		safeSetDefaultConfig('Keys', i, t_btnEnabled)
+		safeSetDefaultConfig('Joystick', i, t_btnEnabled)
 	end
 	resetRemapInput()
 end
 
-if gameOption('Config.FirstRun') then
+if safeGameOption('Config.FirstRun', false) then
 	options.f_keyDefault()
 end
 

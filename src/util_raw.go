@@ -6,6 +6,7 @@ import (
 	"C"
 	"io"
 	"os"
+	"strings"
 )
 
 // Main entry point for C programs
@@ -26,6 +27,10 @@ func ShowInfoDialog(message, title string) {
 }
 
 func ShowErrorDialog(message string) {
+	if strings.EqualFold(os.Getenv("IKEMEN_SUPPRESS_ERROR_DIALOG"), "1") {
+		print("I.K.E.M.E.N Error\n\n" + message + "\n")
+		return
+	}
 	print("I.K.E.M.E.N Error\n\n" + message)
 }
 

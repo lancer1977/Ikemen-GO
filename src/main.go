@@ -242,6 +242,8 @@ func processCommandLine() {
 			"-jsonstdout":     true,
 			"-nojsonlog":      true,
 			"-nojsonstdout":   true,
+			"-debugstartup":   true,
+			"-noerrordialog":  true,
 		}
 		key := ""
 		player := 1
@@ -268,9 +270,11 @@ func processCommandLine() {
 -h -?                   Help
 -log <logfile>          Records match data to <logfile>
 -jsonlog <jsonfile>     Records match data as JSON to <jsonfile> (default: save/last-match.json)
+-resultfile <jsonfile>  Writes the final match JSON to <jsonfile> (canonical bridge contract)
 -jsonstdout             Writes match data JSON to stdout (default for Quick VS)
 -nojsonlog              Disables default JSON file output
 -nojsonstdout           Disables default JSON stdout output
+-noerrordialog          Logs errors without showing a blocking desktop dialog
 -r <path>               Loads motif <path>. eg. -r motifdir or -r motifdir/system.def
 -fight <path>           Loads fight screen <path>. eg. -fight data/fight.def
 -storyboard <path>      Loads storyboard <path>. eg. -storyboard chars/kfm/intro.def
@@ -327,6 +331,9 @@ Debug Options:
 		// After the loop, if a key is still waiting for a value, set it to "true".
 		if key != "" {
 			sys.cmdFlags[key] = "true"
+		}
+		if sys.cmdFlags["-noerrordialog"] == "true" {
+			os.Setenv("IKEMEN_SUPPRESS_ERROR_DIALOG", "1")
 		}
 	}
 }
