@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	findfont "github.com/flopp/go-findfont"
 	"github.com/sqweek/dialog"
@@ -22,6 +23,10 @@ func ShowInfoDialog(message, title string) {
 }
 
 func ShowErrorDialog(message string) {
+	if strings.EqualFold(os.Getenv("IKEMEN_SUPPRESS_ERROR_DIALOG"), "1") {
+		fmt.Fprintln(os.Stderr, message)
+		return
+	}
 	dialog.Message(message).Title("I.K.E.M.E.N Error").Error()
 }
 

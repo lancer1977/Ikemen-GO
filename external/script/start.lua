@@ -140,7 +140,7 @@ function start.f_makeRoster(t_ret)
 			end
 		end
 	end
-	if gameOption('Debug.DumpLuaTables') then main.f_printTable(t_ret, 'debug/t_roster.txt') end
+	if main.f_safeGameOption('Debug.DumpLuaTables', false) then main.f_printTable(t_ret, 'debug/t_roster.txt') end
 	return t_ret
 end
 
@@ -197,7 +197,7 @@ function start.f_aiRamp(currentMatch)
 			table.insert(t_aiRamp, endAI)
 		end
 	end
-	if gameOption('Debug.DumpLuaTables') then main.f_printTable(t_aiRamp, 'debug/t_aiRamp.txt') end
+if main.f_safeGameOption('Debug.DumpLuaTables', false) then main.f_printTable(t_aiRamp, 'debug/t_aiRamp.txt') end
 end
 --;===========================================================
 
@@ -1500,7 +1500,7 @@ for i = 1, motif.select_info.rows * motif.select_info.columns do
 		start.t_grid[row][col].skip = 1
 	end
 end
-if gameOption('Debug.DumpLuaTables') then main.f_printTable(start.t_grid, 'debug/t_grid.txt') end
+if main.f_safeGameOption('Debug.DumpLuaTables', false) then main.f_printTable(start.t_grid, 'debug/t_grid.txt') end
 
 local function updateCommon(common, add)
 	for k, values in pairs(common) do
@@ -1643,23 +1643,44 @@ end
 
 --start game
 function start.f_game(common)
+	if main.f_startupTrace ~= nil then
+		main.f_startupTrace("start.f_game begin")
+	end
 	clearColor(0, 0, 0)
-	if gameOption('Debug.DumpLuaTables') and start ~= nil then
+	if main.f_safeGameOption('Debug.DumpLuaTables', false) and start ~= nil then
 		main.f_printTable(start.p, 'debug/t_p.txt')
 	end
 	if gameMode('training') then
 		menu.f_trainingReset()
 	end
 	local winner = -1
+	if main.f_startupTrace ~= nil then
+		main.f_startupTrace("game() begin")
+	end
 	winner, start.challenger = game()
-	if gameOption('Debug.DumpLuaTables') then
+	if main.f_startupTrace ~= nil then
+		main.f_startupTrace("game() returned winner=" .. tostring(winner) .. " challenger=" .. tostring(start.challenger))
+	end
+	if main.f_safeGameOption('Debug.DumpLuaTables', false) then
 		main.f_printTable(getGameStats(), 'debug/t_gameStats.txt')
 	end
+	if main.f_startupTrace ~= nil then
+		main.f_startupTrace("restoring input")
+	end
 	main.f_restoreInput()
+	if main.f_startupTrace ~= nil then
+		main.f_startupTrace("updating common state")
+	end
 	updateCommon(common, false)
 	if shutdown() then
+		if main.f_startupTrace ~= nil then
+			main.f_startupTrace("shutdown requested")
+		end
 		clearColor(0, 0, 0)
 		os.exit()
+	end
+	if main.f_startupTrace ~= nil then
+		main.f_startupTrace("start.f_game return winner=" .. tostring(winner))
 	end
 	return winner
 end
@@ -3875,7 +3896,7 @@ function start.f_selectLoading(arg)
 	addParam("persistmusic", main.persistMusic)
 	addParam("persistrounds", main.persistRounds)
 	local params = table.concat(parts, ", ")
-	if gameOption('Debug.DumpLuaTables') then main.f_printTable(params, "debug/loadStartParams.txt") end
+	if main.f_safeGameOption('Debug.DumpLuaTables', false) then main.f_printTable(params, "debug/loadStartParams.txt") end
 	loadStart(params)
 end
 

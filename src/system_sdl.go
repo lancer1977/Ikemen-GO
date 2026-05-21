@@ -48,7 +48,11 @@ func (s *System) newWindow(w, h int) (*Window, error) {
 			// Android ignores these anyway, but WINDOW_FULLSCREEN is the safest anchor
 			windowFlags |= sdl.WINDOW_FULLSCREEN | sdl.WINDOW_SHOWN
 		} else {
-			chk(sdl.Init(sdl.INIT_AUDIO | sdl.INIT_VIDEO | sdl.INIT_JOYSTICK | sdl.INIT_EVENTS | sdl.INIT_GAMECONTROLLER | sdl.INIT_HAPTIC | sdl.INIT_TIMER))
+			initFlags := uint32(sdl.INIT_AUDIO | sdl.INIT_VIDEO | sdl.INIT_EVENTS | sdl.INIT_TIMER)
+			if _, noJoy := sys.cmdFlags["-nojoy"]; !noJoy {
+				initFlags |= uint32(sdl.INIT_JOYSTICK | sdl.INIT_GAMECONTROLLER | sdl.INIT_HAPTIC)
+			}
+			chk(sdl.Init(initFlags))
 		}
 
 		// 2. DISPLAY MODE (The Crash Point)

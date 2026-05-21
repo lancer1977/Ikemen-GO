@@ -17,6 +17,8 @@ The current packaging target is the shared output root at `/mnt/syn1/games/Ikeme
 - [x] Explicit `make deploy-local-linux` and `make deploy-local-windows` targets added
 - [x] GitHub Actions workflow added for self-hosted local deploy
 - [ ] Windows GitHub Actions runs on the self-hosted runner registered as `ikemen-windows`
+- [x] Stream rig validation uses the `stream-box` SSH alias instead of raw IPs
+- [x] The Windows test deploy root is `C:\\mugen` on the stream box
 
 ## Output Layout
 
@@ -37,3 +39,6 @@ Each archive mirrors the release workflow shape:
 - Windows packaging requires the MinGW toolchain that matches the existing release build
 - Screenpack assets are pulled from the upstream screenpack repository when they are not already present locally
 - `./scripts/deploy-local.sh` now dispatches to the correct platform target instead of trying both on every host
+- Use `ssh stream-box` or `scripts/stream-box-ssh.sh --check` when validating
+  the Windows stream rig from the repo or from deploy automation.
+- Copy the packaged Ikemen runtime into `C:\\mugen` for test deploys.
