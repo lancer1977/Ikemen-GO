@@ -21,6 +21,8 @@ local t_portraitPriority = {1, 1}
 local timerSelect = 0
 local cursorActive = {}
 local cursorDone = {}
+local t_selectStatsCache = {frame = nil, data = nil}
+local t_selectStatsRects = {{outer = nil, inner = nil}, {outer = nil, inner = nil}}
 
 --;===========================================================
 --; COMMON FUNCTIONS
@@ -1311,6 +1313,205 @@ function start.f_getRecordText()
 	--player name
 	text = text:gsub('%%n', t.name)
 	return text
+end
+
+local function f_selectStatsCache(counter)
+	if t_selectStatsCache.frame == counter and t_selectStatsCache.data ~= nil then
+		return t_selectStatsCache.data
+	end
+	local stats = jsonDecode('save/stats.json')
+	if type(stats) ~= 'table' then
+		stats = {}
+	end
+	t_selectStatsCache.frame = counter
+	t_selectStatsCache.data = stats
+	return stats
+end
+
+local function f_selectStatsKeyFromRef(ref)
+	if ref == nil or ref < 0 then
+		return nil
+	end
+	local charData = start.f_getCharData(ref)
+	if charData == nil then
+		return nil
+	end
+	local def = charData.def or charData.char or charData.name or ''
+	if def == nil or def == '' then
+		return nil
+	end
+	def = tostring(def):gsub('\\', '/')
+	local base = def:match('([^/]+)$') or def
+	if base == '' then
+		return nil
+	end
+	base = base:gsub('%.[^%.]+$', '')
+	return base:lower()
+end
+
+local function f_selectStatsNormalizeTier(tier)
+	if tier == nil then
+		return 'U'
+	end
+	tier = tostring(tier):gsub('^%s+', ''):gsub('%s+$', '')
+	tier = tier:gsub('%s*TIER$', '')
+	if tier == '' then
+		return 'U'
+	end
+	return tier:upper()
+end
+
+local function f_selectStatsResolveEntry(stats, key)
+	if type(stats) ~= 'table' or key == nil then
+		return nil
+	end
+	local chars = stats.characters
+	if type(chars) ~= 'table' then
+		return nil
+	end
+	local entry = chars[key]
+	if type(entry) ~= 'table' then
+		for _, v in ipairs(chars) do
+			if type(v) == 'table' then
+				local matchKey = v.key or v.def or v.char or v.name
+				if type(matchKey) == 'string' and matchKey:lower() == key then
+					entry = v
+					break
+				end
+			end
+		end
+	end
+	if type(entry) ~= 'table' then
+		return nil
+	end
+	if type(entry.modes) == 'table' then
+		return entry.modes[gameMode()] or entry.modes.default or entry.modes.all or entry
+	end
+	if type(entry[gameMode()]) == 'table' then
+		return entry[gameMode()]
+	end
+	return entry
+end
+
+local function f_selectStatsResolveValues(stats, key)
+	local entry = f_selectStatsResolveEntry(stats, key)
+	if type(entry) ~= 'table' then
+		return 0, 0, 'U'
+	end
+	local win = tonumber(entry.win or entry.wins or entry.Win or entry.Wins or 0) or 0
+	local lose = tonumber(entry.lose or entry.loss or entry.losses or entry.Lose or entry.Losses or 0) or 0
+	if win < 0 then
+		win = 0
+	end
+	if lose < 0 then
+		lose = 0
+	end
+	local tier = f_selectStatsNormalizeTier(entry.tier or entry.Tier or entry.rank or entry.Rank or entry.level or entry.Level or entry.group or entry.Group)
+	return math.floor(win), math.floor(lose), tier
+end
+
+local function f_selectStatsTierColor(tier)
+	local t = f_selectStatsNormalizeTier(tier)
+	if t == 'S' then
+		return {255, 216, 96, 255}
+	elseif t == 'A' then
+		return {128, 255, 128, 255}
+	elseif t == 'B' then
+		return {128, 200, 255, 255}
+	elseif t == 'C' then
+		return {255, 196, 128, 255}
+	elseif t == 'D' then
+		return {255, 140, 140, 255}
+	end
+	return {192, 192, 192, 255}
+end
+
+local function f_selectStatsRect(side, which)
+	local slot = t_selectStatsRects[side]
+	if slot == nil then
+		slot = {outer = nil, inner = nil}
+		t_selectStatsRects[side] = slot
+	end
+	if slot[which] == nil then
+		local rect = rectNew()
+		rectSetLayerno(rect, 2)
+		rectSetColor(rect, 0, 0, 0)
+		rectSetAlpha(rect, 255, 255)
+		slot[which] = rect
+	end
+	return slot[which]
+end
+
+function start.f_drawSelectStatsOverlay(counter)
+	local screenW = (motif.info and motif.info.localcoord and motif.info.localcoord[1]) or 320
+	local halfW = screenW / 2
+	local stats = f_selectStatsCache(counter)
+	for side = 1, 2 do
+		local pCfg = f_getMotifP(motif.select_info, side, side)
+		if pCfg ~= nil and pCfg.name ~= nil and pCfg.name.TextSpriteData ~= nil then
+			local ref = start.c[side] and start.c[side].selRef or nil
+			local key = f_selectStatsKeyFromRef(ref)
+			local win, lose, tier = f_selectStatsResolveValues(stats, key)
+			local nameCfg = pCfg.name
+			local textSpr = nameCfg.TextSpriteData
+			local label = 'stats'
+			local value = string.format('%d - %d - %s', win, lose, tier)
+			local lineH = math.max(12, (nameCfg.spacing and nameCfg.spacing[2]) or 14)
+			local padX = 6
+			local padY = 4
+			local labelW = textImgGetTextWidth(textSpr, label)
+			local valueW = textImgGetTextWidth(textSpr, value)
+			local boxW = math.max(labelW, valueW) + padX * 2
+			local boxH = lineH * 2 + padY * 2
+			local baseX = (nameCfg.pos and nameCfg.pos[1] or 0) + (nameCfg.offset and nameCfg.offset[1] or 0)
+			local baseY = (nameCfg.pos and nameCfg.pos[2] or 0) + (nameCfg.offset and nameCfg.offset[2] or 0)
+			local nameCount = 1
+			if start.p[side] ~= nil and start.p[side].t_selTemp ~= nil and #start.p[side].t_selTemp > 0 then
+				nameCount = math.min(#start.p[side].t_selTemp, nameCfg.num or #start.p[side].t_selTemp)
+			end
+			local boxX = baseX
+			local boxY = baseY + nameCount * lineH + 2
+			if side == 1 then
+				boxX = math.max(4, math.min(boxX, halfW - boxW - 4))
+			else
+				boxX = math.max(halfW + 4, math.min(boxX, screenW - boxW - 4))
+			end
+			local outer = f_selectStatsRect(side, 'outer')
+			local inner = f_selectStatsRect(side, 'inner')
+			rectSetWindow(outer, boxX, boxY, boxX + boxW, boxY + boxH)
+			rectUpdate(outer)
+			rectDraw(outer, 2)
+			rectSetColor(inner, 24, 24, 24)
+			rectSetAlpha(inner, 220, 220)
+			rectSetWindow(inner, boxX + 1, boxY + 1, boxX + boxW - 1, boxY + boxH - 1)
+			rectUpdate(inner)
+			rectDraw(inner, 2)
+			textImgReset(textSpr)
+			textImgSetLayerno(textSpr, 2)
+			textImgSetPos(textSpr, boxX + padX, boxY + 2)
+			textImgSetColor(textSpr, 255, 255, 255, 255)
+			textImgSetText(textSpr, label)
+			textImgDraw(textSpr)
+			local valueY = boxY + lineH + 2
+			local xCursor = boxX + padX
+			local segments = {
+				{text = tostring(win), color = {128, 255, 128, 255}},
+				{text = ' - ', color = {255, 255, 255, 255}},
+				{text = tostring(lose), color = {255, 128, 128, 255}},
+				{text = ' - ', color = {255, 255, 255, 255}},
+				{text = tostring(tier), color = f_selectStatsTierColor(tier)},
+			}
+			for _, seg in ipairs(segments) do
+				textImgReset(textSpr)
+				textImgSetLayerno(textSpr, 2)
+				textImgSetPos(textSpr, xCursor, valueY)
+				textImgSetColor(textSpr, seg.color[1], seg.color[2], seg.color[3], seg.color[4])
+				textImgSetText(textSpr, seg.text)
+				textImgDraw(textSpr)
+				xCursor = xCursor + textImgGetTextWidth(textSpr, seg.text)
+			end
+		end
+	end
 end
 
 --cursor sound data, play cursor sound
@@ -2710,6 +2911,8 @@ function start.f_selectScreen()
 		hook.run("start.f_selectScreen")
 		--draw layerno = 1 backgrounds
 		bgDraw(motif.selectbgdef.BGDef, 1)
+		-- draw stats overlay above the select background layers
+		start.f_drawSelectStatsOverlay(counter)
 		--frame transition
 		if not fadeActive() and (fadeOutStarted or start.escFlag) then
 			selScreenEnd = true
