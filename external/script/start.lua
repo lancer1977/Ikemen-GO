@@ -2976,6 +2976,9 @@ function start.f_selectScreen()
 		-- draw stats overlay above the select background layers
 		start.f_drawSelectStatsOverlay(counter)
 		renderProbeMode('select', 'S6 select stats', 112, 140, 220, 96, 255)
+		-- draw explicit screen-space header/footer proof text for select overlay seam testing
+		renderProbeScreenBlockMode('edge-screen', 'SELECT HEADER SCREEN-SPACE', 0, 0, 320, 22, 64, 255, 255)
+		renderProbeScreenBlockMode('edge-screen', 'SELECT FOOTER SCREEN-SPACE', 0, 218, 320, 22, 64, 255, 255)
 		renderProbeBlockMode('edge', 'T5', 264, 6, 48, 18, 255, 0, 255)
 		renderProbeBlockMode('edge', 'B5', 264, 220, 48, 18, 255, 0, 255)
 		renderProbeMode('swarm-select', 'SW93 bg1/stats post final', 160, 412, 140, 140, 140)
