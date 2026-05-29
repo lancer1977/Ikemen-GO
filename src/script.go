@@ -7189,6 +7189,22 @@ func systemScriptInit(l *lua.LState) {
 		drawRenderProbeBlockMode(strArg(l, 1), strArg(l, 2), float32(numArg(l, 3)), float32(numArg(l, 4)), int32(numArg(l, 5)), int32(numArg(l, 6)), int32(numArg(l, 7)), int32(numArg(l, 8)), int32(numArg(l, 9)))
 		return 0
 	})
+	luaRegister(l, "renderProbeScreenBlockMode", func(*lua.LState) int {
+		/*Draw a categorized screen-space probe block when the active IKEMEN_RENDER_PROBES mode matches.
+		@function renderProbeScreenBlockMode
+		@tparam string category Probe category.
+		@tparam string label Short probe label.
+		@tparam float32 x Screen-space X position.
+		@tparam float32 y Screen-space Y position.
+		@tparam int width Block width. Values <= 0 fill to the screen edge.
+		@tparam int height Block height. Values <= 0 fill to the screen edge.
+		@tparam int r Red channel.
+		@tparam int g Green channel.
+		@tparam int b Blue channel.
+		function renderProbeScreenBlockMode(category, label, x, y, width, height, r, g, b) end*/
+		drawRenderProbeScreenBlockMode(strArg(l, 1), strArg(l, 2), float32(numArg(l, 3)), float32(numArg(l, 4)), int32(numArg(l, 5)), int32(numArg(l, 6)), int32(numArg(l, 7)), int32(numArg(l, 8)), int32(numArg(l, 9)))
+		return 0
+	})
 	luaRegister(l, "textImgSetTextDelay", func(*lua.LState) int {
 		/*Set per-character text delay for a text sprite.
 		@function textImgSetTextDelay
