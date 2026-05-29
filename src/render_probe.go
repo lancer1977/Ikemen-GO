@@ -74,29 +74,39 @@ func drawRenderProbeScreenBlockMode(category, label string, x, y float32, w, h i
 		return
 	}
 
-	// This helper intentionally reasserts screen-space bounds instead of inheriting
-	// any select-screenpack/perspective state. It is for top/bottom HUD seam probes.
-	maxW := sys.scrrect[2]
-	maxH := sys.scrrect[3]
-	xi := Clamp(int32(x), 0, maxW)
-	yi := Clamp(int32(y), 0, maxH)
-	if w <= 0 {
-		w = maxW - xi
-	}
-	if h <= 0 {
-		h = maxH - yi
-	}
-	if xi+w > maxW {
-		w = maxW - xi
-	}
-	if yi+h > maxH {
-		h = maxH - yi
-	}
-	if w < 12 || h < 12 {
-		return
-	}
+	// Queue in the top Lua layer so screenpack/bg/text draws flushed by refresh()
+	// do not overwrite the probe. This is for top/bottom HUD seam probes.
+	labelLocal := label
+	xLocal := x
+	yLocal := y
+	wLocal := w
+	hLocal := h
+	rLocal := r
+	gLocal := g
+	bLocal := b
+	sys.luaQueueLayerDraw(2, func() {
+		maxW := sys.scrrect[2]
+		maxH := sys.scrrect[3]
+		xi := Clamp(int32(xLocal), 0, maxW)
+		yi := Clamp(int32(yLocal), 0, maxH)
+		if wLocal <= 0 {
+			wLocal = maxW - xi
+		}
+		if hLocal <= 0 {
+			hLocal = maxH - yi
+		}
+		if xi+wLocal > maxW {
+			wLocal = maxW - xi
+		}
+		if yi+hLocal > maxH {
+			hLocal = maxH - yi
+		}
+		if wLocal < 12 || hLocal < 12 {
+			return
+		}
 
-	drawRenderProbeBlock(label, float32(xi), float32(yi), w, h, r, g, b, [2]int32{255, 0})
+		drawRenderProbeBlock(labelLocal, float32(xi), float32(yi), wLocal, hLocal, rLocal, gLocal, bLocal, [2]int32{255, 0})
+	})
 }
 
 func drawRenderProbeBlock(label string, x, y float32, w, h int32, r, g, b int32, alpha [2]int32) {
