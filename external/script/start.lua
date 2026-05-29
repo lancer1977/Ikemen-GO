@@ -816,6 +816,7 @@ end
 
 -- draw portraits
 function start.f_drawPortraits(t_portraits, side, t, subname, last, iconDone)
+	renderProbeMode('swarm-select', 'SW10 portraits enter p' .. side, 440, 50 + side * 16, 255, 200, 80)
 	if #t_portraits == 0 then
 		return
 	end
@@ -843,13 +844,18 @@ function start.f_drawPortraits(t_portraits, side, t, subname, last, iconDone)
 		end
 	end
 	-- face2 layer (if present)
+	renderProbeMode('swarm-select', 'SW11 face2 pre p' .. side, 440, 98 + side * 16, 255, 180, 80)
 	drawPortraitLayer(t_portraits, side, t, 'face2', last, 'face2_data')
+	renderProbeMode('swarm-select', 'SW12 face2 post p' .. side, 440, 130 + side * 16, 255, 160, 80)
 	-- primary face layer
+	renderProbeMode('swarm-select', 'SW13 face pre p' .. side, 440, 162 + side * 16, 255, 140, 80)
 	drawPortraitLayer(t_portraits, side, t, subname, last, 'face_data')
+	renderProbeMode('swarm-select', 'SW14 face post p' .. side, 440, 194 + side * 16, 255, 120, 80)
 	-- draw order icons (unchanged, still using main face params)
 	if iconDone == nil then
 		return
 	end
+	renderProbeMode('swarm-select', 'SW15 icons pre p' .. side, 440, 226 + side * 16, 255, 100, 80)
 	for member = 1, #t_portraits do
 		local paramsSide, params = getParams(side, member, t, subname)
 		if member > paramsSide.num then
@@ -865,6 +871,7 @@ function start.f_drawPortraits(t_portraits, side, t, subname, last, iconDone)
 			paramsSide.pos[2] + params.offset[2] + (member - 1) * paramsSide.spacing[2]
 		)
 	end
+	renderProbeMode('swarm-select', 'SW16 portraits exit p' .. side, 440, 258 + side * 16, 255, 80, 80)
 end
 
 --returns correct cell position after moving the cursor
@@ -2523,6 +2530,7 @@ end
 --; SELECT SCREEN
 --;===========================================================
 function start.updateDrawList()
+	renderProbeMode('swarm-select', 'SW01 updateDrawList enter', 440, 18, 80, 255, 80)
 	local drawList = {}
 
 	for row = 1, motif.select_info.rows do
@@ -2588,6 +2596,7 @@ function start.updateDrawList()
 		end
 	end
 
+	renderProbeMode('swarm-select', 'SW02 updateDrawList return', 440, 34, 80, 255, 120)
 	return drawList
 end
 
@@ -2627,7 +2636,9 @@ end
 
 start.needUpdateDrawList = false
 function start.f_selectScreen()
+	renderProbeMode('select', 'SELECT FUNC ENTER', 112, 12, 255, 255, 255)
 	if (not main.selectMenu[1] and not main.selectMenu[2]) or selScreenEnd then
+		renderProbeMode('select', 'SELECT EARLY RETURN', 112, 28, 255, 80, 80)
 		return true
 	end
 	bgReset(motif.selectbgdef.BGDef)
@@ -2687,25 +2698,45 @@ function start.f_selectScreen()
 
 	while not selScreenEnd do
 		counter = counter + 1
+		renderProbeMode('select', 'SELECT PATH HIT', 112, 24, 255, 255, 255)
 		--draw clearcolor
 		clearColor(motif.selectbgdef.bgclearcolor[1], motif.selectbgdef.bgclearcolor[2], motif.selectbgdef.bgclearcolor[3])
+		renderProbeMode('select', 'S0 select clear', 112, 44, 255, 64, 64)
+		renderProbeBlockMode('edge', 'T0', 4, 6, 48, 18, 255, 64, 64)
+		renderProbeBlockMode('edge', 'B0', 4, 220, 48, 18, 255, 64, 64)
 		--draw layerno = 0 backgrounds
 		bgDraw(motif.selectbgdef.BGDef, 0)
+		renderProbeMode('select', 'S1 select bg0', 112, 60, 255, 128, 64)
+		renderProbeBlockMode('edge', 'T1', 56, 6, 48, 18, 255, 160, 64)
+		renderProbeBlockMode('edge', 'B1', 56, 220, 48, 18, 255, 160, 64)
 		--draw title
 		textImgDraw(motif.select_info.title.TextSpriteData)
+		renderProbeMode('select', 'S2 select title', 112, 76, 255, 196, 64)
+		renderProbeBlockMode('edge', 'T2', 108, 6, 48, 18, 255, 220, 64)
+		renderProbeBlockMode('edge', 'B2', 108, 220, 48, 18, 255, 220, 64)
 		--draw portraits
+		renderProbeBlockMode('swarm-block', 'C', 44, 92, 52, 34, 255, 210, 0)
+		renderProbeMode('swarm-select', 'SW20 portraits block pre', 160, 140, 255, 255, 80)
 		for side = 1, 2 do
 			if #start.p[side].t_selTemp > 0 then
 				start.f_drawPortraits(start.p[side].t_selTemp, side, motif.select_info, 'face', true)
 			end
 		end
+		renderProbeBlockMode('swarm-block', 'D', 104, 92, 52, 34, 255, 160, 0)
+		renderProbeMode('swarm-select', 'SW21 portraits block post', 160, 156, 255, 220, 80)
 		--draw cell art
 		if start.needUpdateDrawList then
 			staticDrawList = start.updateDrawList()
 			start.needUpdateDrawList = false 
 		end
+		renderProbeBlockMode('swarm-block', 'A', 44, 140, 72, 40, 0, 255, 0)
+		renderProbeMode('swarm-select', 'SW30 batchDraw pre', 160, 172, 80, 255, 80)
 		batchDraw(staticDrawList)
+		renderProbeBlockMode('swarm-block', 'B', 124, 140, 72, 40, 0, 200, 0)
+		renderProbeMode('swarm-select', 'SW31 batchDraw post', 160, 188, 80, 230, 80)
+		renderProbeMode('select', 'S3 select cells', 112, 92, 96, 255, 96)
 		--draw done cursors
+		renderProbeMode('swarm-select', 'SW40 done cursors pre', 160, 204, 80, 200, 255)
 		for side = 1, 2 do
 			local persist = motif.select_info['p' .. side].cursor.persist 
 			local totalSelected = #start.p[side].t_selected
@@ -2738,7 +2769,10 @@ function start.f_selectScreen()
 				end
 			end
 		end
+		renderProbeMode('swarm-select', 'SW41 done cursors post', 160, 220, 80, 180, 255)
 		--team and select menu
+		renderProbeBlockMode('swarm-block', 'F', 44, 196, 52, 34, 0, 160, 255)
+		renderProbeMode('swarm-select', 'SW50 team/select menu pre', 160, 236, 80, 160, 255)
 		if blinkCount < motif.select_info.p2.cursor.switchtime then
 			blinkCount = blinkCount + 1
 		else
@@ -2820,7 +2854,12 @@ function start.f_selectScreen()
 				end
 			end
 		end
+		renderProbeMode('swarm-select', 'SW51 team/select menu post', 160, 252, 80, 140, 255)
+		renderProbeBlockMode('edge', 'T3', 160, 6, 48, 18, 64, 220, 255)
+		renderProbeBlockMode('edge', 'B3', 160, 220, 48, 18, 64, 220, 255)
 		--draw names
+		renderProbeBlockMode('swarm-block', 'N', 104, 196, 52, 34, 200, 80, 255)
+		renderProbeMode('swarm-select', 'SW60 names pre', 160, 268, 200, 120, 255)
 		for side = 1, 2 do
 			if #start.p[side].t_selTemp > 0 then
 				for i = 1, #start.p[side].t_selTemp do
@@ -2843,9 +2882,12 @@ function start.f_selectScreen()
 				end
 			end
 		end
+		renderProbeMode('swarm-select', 'SW61 names post', 160, 284, 180, 100, 255)
 		--team and character selection complete
+		renderProbeMode('select', 'S4 select names', 112, 108, 96, 220, 255)
 		if start.p[1].selEnd and start.p[2].selEnd and start.p[1].teamEnd and start.p[2].teamEnd then
 			restoreCursor = true
+			renderProbeMode('swarm-select', 'SW70 complete block', 160, 300, 255, 80, 220)
 			if main.stageMenu and not stageEnd then --Stage select
 				start.p[1].screenDelay, start.p[2].screenDelay = 0, 0
 				start.f_stageMenu()
@@ -2859,6 +2901,7 @@ function start.f_selectScreen()
 			end
 			--draw stage portrait
 			if main.stageMenu then
+				renderProbeMode('swarm-select', 'SW71 stage block pre', 160, 316, 255, 80, 180)
 				--draw stage portrait background
 				main.f_animPosDraw(motif.select_info.stage.portrait.bg.AnimData)
 				--draw stage portrait (random)
@@ -2900,24 +2943,40 @@ function start.f_selectScreen()
 				textImgDraw(stageTextData)
 			end
 		else
+			renderProbeMode('swarm-select', 'SW72 record block pre', 160, 316, 255, 80, 180)
 			--draw record text
 			textImgDraw(motif.select_info.record.TextSpriteData)
 		end
 		--draw timer
+		renderProbeMode('swarm-select', 'SW80 timer pre', 160, 332, 255, 80, 140)
 		if motif.select_info.timer.count ~= -1 and (not start.p[1].teamEnd or not start.p[2].teamEnd or not start.p[1].selEnd or not start.p[2].selEnd or (main.stageMenu and not stageEnd)) and counter >= 0 then
 			timerSelect = main.f_drawTimer(timerSelect, motif.select_info.timer)
 		end
+		renderProbeMode('swarm-select', 'SW81 timer post', 160, 348, 255, 80, 100)
 		-- hook
+		renderProbeMode('swarm-select', 'SW90 hook pre', 160, 364, 255, 255, 255)
 		hook.run("start.f_selectScreen")
+		renderProbeMode('swarm-select', 'SW91 hook post', 160, 380, 220, 220, 220)
 		--draw layerno = 1 backgrounds
+		renderProbeBlockMode('swarm-block', 'G', 44, 244, 72, 40, 255, 255, 255)
+		renderProbeBlockMode('edge', 'T4', 212, 6, 48, 18, 255, 255, 255)
+		renderProbeBlockMode('edge', 'B4', 212, 220, 48, 18, 255, 255, 255)
+		renderProbeMode('swarm-select', 'SW92 bg1 pre', 160, 396, 180, 180, 180)
 		bgDraw(motif.selectbgdef.BGDef, 1)
+		renderProbeMode('select', 'S5 select bg1/top', 112, 124, 160, 96, 255)
 		-- draw stats overlay above the select background layers
 		start.f_drawSelectStatsOverlay(counter)
+		renderProbeMode('select', 'S6 select stats', 112, 140, 220, 96, 255)
+		renderProbeBlockMode('edge', 'T5', 264, 6, 48, 18, 255, 0, 255)
+		renderProbeBlockMode('edge', 'B5', 264, 220, 48, 18, 255, 0, 255)
+		renderProbeMode('swarm-select', 'SW93 bg1/stats post final', 160, 412, 140, 140, 140)
 		--frame transition
 		if not fadeActive() and (fadeOutStarted or start.escFlag) then
 			selScreenEnd = true
 			break --skip last frame rendering
 		end
+		renderProbeBlockMode('swarm-block', 'Z', 124, 244, 72, 40, 255, 0, 255)
+		renderProbeMode('swarm-select', 'SW99 before refresh', 160, 428, 255, 255, 255)
 		refresh()
 	end
 	return not start.escFlag
@@ -3909,12 +3968,15 @@ function start.f_selectVersus(active, t_orderSelect)
 		counter = counter + 1
 		--draw clearcolor
 		clearColor(motif.versusbgdef.bgclearcolor[1], motif.versusbgdef.bgclearcolor[2], motif.versusbgdef.bgclearcolor[3])
+		renderProbeMode('versus', 'V0 versus clear', 6, 204, 255, 64, 64)
 		--draw layerno = 0 backgrounds
 		bgDraw(motif.versusbgdef.BGDef, 0)
+		renderProbeMode('versus', 'V1 versus bg0', 6, 220, 255, 128, 64)
 		--draw portraits and order icons
 		for side = 1, 2 do
 			start.f_drawPortraits(main.f_remapTable(start.p[side].t_selTemp, start.t_orderRemap[side]), side, motif.vs_screen, '', false, t_icon[side])
 		end
+		renderProbeMode('versus', 'V2 versus portraits', 112, 220, 96, 255, 96)
 		--draw order values
 		for side = 1, 2 do
 			if t_orderSelect[side] then
@@ -3982,6 +4044,7 @@ function start.f_selectVersus(active, t_orderSelect)
 		end
 		--draw layerno = 1 backgrounds
 		bgDraw(motif.versusbgdef.BGDef, 1)
+		renderProbeMode('versus', 'V3 versus bg1/top', 212, 220, 160, 96, 255)
 		-- hook
 		hook.run("start.f_selectVersus")
 		-- done key
