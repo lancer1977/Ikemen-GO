@@ -21,12 +21,14 @@
 - [x] Prove main menu to Arcade character-select route.
 - [x] Prove character-select route can continue into a live fight.
 - [x] Record pass-7 control/snapshot route observations and evidence paths.
+- [x] Add and verify explicit screen-space select header/footer text under the edge probe gate.
+- [x] Record pass-8 select header/footer evidence path.
 
 ## Observation Targets
 
-- [ ] Select screen: top band and bottom band; next pass should use an explicit screen-space helper because generic Lua probe blocks did not show in edge bands.
-- [x] Select screen: route reaches Arcade character select under Xvfb using `hold:z:0.25` confirmations.
-- [ ] Select screen: roster cells, cursors, names, title, stats overlay; confirm `SELECT PATH HIT` in interactive select mode.
+- [x] Select screen: top band and bottom band; explicit screen-space helper shows readable header/footer text over the live Arcade select view.
+- [x] Select screen: route reaches Arcade character select under Xvfb using held confirmation inputs.
+- [ ] Select screen: roster cells, cursors, names, title, stats overlay; convert current visual proof into a more complete mapping table.
 - [x] Fight screen: route reaches a live fight with lifebars, timer, stage, and spawned characters visible.
 - [ ] Versus screen: background, portraits, names, stage, top background.
 - [ ] Fight screen: compare `HP*`, `FACE*`, `PWR*`, and `NAME*` pre/post labels.
