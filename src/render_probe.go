@@ -66,17 +66,45 @@ func drawRenderProbeBlockMode(category, label string, x, y float32, w, h int32, 
 		return
 	}
 
+	drawRenderProbeBlock(label, x, y, w, h, r, g, b, [2]int32{240, 0})
+}
+
+func drawRenderProbeScreenBlockMode(category, label string, x, y float32, w, h int32, r, g, b int32) {
+	if !renderProbeCategoryEnabled(category) || sys.debugFont == nil || sys.debugFont.fnt == nil || sys.frameSkip {
+		return
+	}
+
+	// This helper intentionally reasserts screen-space bounds instead of inheriting
+	// any select-screenpack/perspective state. It is for top/bottom HUD seam probes.
+	maxW := sys.scrrect[2]
+	maxH := sys.scrrect[3]
+	xi := Clamp(int32(x), 0, maxW)
+	yi := Clamp(int32(y), 0, maxH)
+	if w <= 0 {
+		w = maxW - xi
+	}
+	if h <= 0 {
+		h = maxH - yi
+	}
+	if xi+w > maxW {
+		w = maxW - xi
+	}
+	if yi+h > maxH {
+		h = maxH - yi
+	}
+	if w < 12 || h < 12 {
+		return
+	}
+
+	drawRenderProbeBlock(label, float32(xi), float32(yi), w, h, r, g, b, [2]int32{255, 0})
+}
+
+func drawRenderProbeBlock(label string, x, y float32, w, h int32, r, g, b int32, alpha [2]int32) {
 	r = Clamp(r, 0, 255)
 	g = Clamp(g, 0, 255)
 	b = Clamp(b, 0, 255)
-	if w < 12 {
-		w = 12
-	}
-	if h < 12 {
-		h = 12
-	}
 
-	FillRect([4]int32{int32(x), int32(y), w, h}, uint32((r<<16)|(g<<8)|b), [2]int32{240, 0}, nil)
+	FillRect([4]int32{int32(x), int32(y), w, h}, uint32((r<<16)|(g<<8)|b), alpha, nil)
 	sys.debugFont.SetColor(255-r/2, 255-g/2, 255-b/2, 255)
 	sys.debugFont.fnt.Print(label, x+4, y+float32(h/2), sys.debugFont.xscl/sys.widthScale,
 		sys.debugFont.yscl/sys.heightScale, 0, Rotation{0, 0, 0}, 0, 0, 0, 0, &sys.scrrect,
