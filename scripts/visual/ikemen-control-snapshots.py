@@ -82,7 +82,8 @@ def parse_args() -> argparse.Namespace:
         default=[],
         help=(
             "Workflow step. Repeatable. Supported forms: wait:SECONDS, key:KEY, "
-            "keys:KEY+KEY, text:TEXT, snap:LABEL, focus. If omitted, captures boot and after-enter."
+            "hold:KEY:SECONDS, keys:KEY+KEY, text:TEXT, snap:LABEL, focus. "
+            "If omitted, captures boot and after-enter."
         ),
     )
     parser.add_argument("--dry-run", action="store_true", help="Print planned actions without launching, keying, or capturing")
@@ -173,8 +174,13 @@ class XKeySender:
         return int(code)
 
     def tap(self, key_name: str, settle: float) -> None:
+        self.hold(key_name, 0.05, settle)
+
+    def hold(self, key_name: str, duration: float, settle: float) -> None:
         code = self.keycode(key_name)
         self.xtst.XTestFakeKeyEvent(self.display, code, 1, 0)
+        self.x11.XFlush(self.display)
+        time.sleep(duration)
         self.xtst.XTestFakeKeyEvent(self.display, code, 0, 0)
         self.x11.XFlush(self.display)
         time.sleep(settle)
@@ -271,6 +277,12 @@ def main() -> int:
             elif command == "key":
                 focus_window(window, args.settle)
                 sender.tap(value, args.settle)
+            elif command == "hold":
+                focus_window(window, args.settle)
+                if ":" not in value:
+                    raise RuntimeError(f"hold step requires hold:KEY:SECONDS, got {raw!r}")
+                key_name, duration = value.rsplit(":", 1)
+                sender.hold(key_name.strip(), float(duration), args.settle)
             elif command == "keys":
                 focus_window(window, args.settle)
                 sender.combo([part.strip() for part in value.split("+") if part.strip()], args.settle)

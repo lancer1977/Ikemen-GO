@@ -119,6 +119,8 @@ These live in `external/script/start.lua` and map the script-driven roster and v
 
 Use [`control-snapshot-workflow.md`](control-snapshot-workflow.md) for the repeatable local X11 helper that can launch or attach to IKEMEN, send key input, and save named PNG screenshots for probe evidence passes.
 
+The proven route notes live in [`observations-pass-7-control-snapshot-routes.md`](observations-pass-7-control-snapshot-routes.md). That pass established the private-X/Xvfb control path, the reliable `hold:z:0.25` menu confirmation input, and screenshot evidence from main menu through Arcade character select into a live fight.
+
 Quick start:
 
 ```bash
@@ -130,6 +132,25 @@ scripts/visual/ikemen-control-snapshots.py \
   --step key:Return \
   --step wait:3 \
   --step snap:after-enter
+```
+
+For reliable menu automation, prefer the private-X wrapper plus `hold:` steps:
+
+```bash
+scripts/visual/ikemen-xvfb-control-snapshots.sh \
+  --workdir /home/lancer1977/code/ikemen-app \
+  --bin ./Ikemen_GO_Linux \
+  --probe-mode edge \
+  --output-dir /home/lancer1977/code/Ikemen-GO/artifacts/visual-probes/fight-pass \
+  --timeout 25 \
+  --step wait:8 \
+  --step snap:main-menu \
+  --step hold:z:0.25 \
+  --step wait:2 \
+  --step snap:arcade-submenu \
+  --step hold:z:0.25 \
+  --step wait:5 \
+  --step snap:character-select
 ```
 
 ## Next Evidence Pass
