@@ -3024,6 +3024,7 @@ func (m *Motif) shouldScopeMotifAspect() bool {
 }
 
 func (m *Motif) draw(layerno int16) {
+	drawRenderProbeMode("motif", fmt.Sprintf("M%d motif entry", layerno), 212, 12+float32(layerno)*16, 255, 255-int32(layerno)*40, 96+int32(layerno)*40)
 	if m.shouldScopeMotifAspect() {
 		prev := sys.captureAspectState()
 		sys.setGameSize(sys.scrrect[2], sys.scrrect[3])
@@ -3060,6 +3061,7 @@ func (m *Motif) draw(layerno int16) {
 	}
 	if m.me.active {
 		m.me.draw(m, layerno)
+		drawRenderProbeMode("motif", fmt.Sprintf("M%d menu", layerno), 212, 92+float32(layerno)*16, 96, 255, 160)
 	}
 	// Screen fading
 	if layerno == 3 {
@@ -3068,6 +3070,7 @@ func (m *Motif) draw(layerno int16) {
 		} else if m.fadeIn.isActive() {
 			m.fadeIn.draw()
 		}
+		drawRenderProbeMode("motif", "M3 fade", 212, 156, 255, 96, 220)
 	}
 }
 

@@ -2090,6 +2090,8 @@ func systemScriptInit(l *lua.LState) {
 
 			layerLocal := layer
 			sys.luaQueueLayerDraw(int(layerLocal), func() {
+				drawRenderProbeBlockMode("swarm-block", fmt.Sprintf("E%d", layerLocal), 204+float32(layerLocal)*56, 140, 48, 40, 0, 255, 180)
+				drawRenderProbeMode("swarm-batch", fmt.Sprintf("SWB batch L%d", layerLocal), 520, 160+float32(layerLocal)*18, 80, 255, 180)
 				(&aSnap).Draw(layerLocal)
 			})
 			aSnap.Update(true)
@@ -7157,6 +7159,49 @@ func systemScriptInit(l *lua.LState) {
 			userDataError(l, 1, ts)
 		}
 		ts.text = strArg(l, 2)
+		return 0
+	})
+	luaRegister(l, "renderProbe", func(*lua.LState) int {
+		/*Draw a labeled screen-mapping probe when IKEMEN_RENDER_PROBES is enabled.
+		@function renderProbe
+		@tparam string label Probe label.
+		@tparam float32 x X position.
+		@tparam float32 y Y position.
+		@tparam int r Red channel.
+		@tparam int g Green channel.
+		@tparam int b Blue channel.
+		function renderProbe(label, x, y, r, g, b) end*/
+		drawRenderProbe(strArg(l, 1), float32(numArg(l, 2)), float32(numArg(l, 3)), int32(numArg(l, 4)), int32(numArg(l, 5)), int32(numArg(l, 6)))
+		return 0
+	})
+	luaRegister(l, "renderProbeMode", func(*lua.LState) int {
+		/*Draw a categorized screen-mapping probe when the active IKEMEN_RENDER_PROBES mode matches.
+		@function renderProbeMode
+		@tparam string category Probe category, such as select, versus, fight-health, fight-face, fight-power, fight-name, motif, global.
+		@tparam string label Probe label.
+		@tparam float32 x X position.
+		@tparam float32 y Y position.
+		@tparam int r Red channel.
+		@tparam int g Green channel.
+		@tparam int b Blue channel.
+		function renderProbeMode(category, label, x, y, r, g, b) end*/
+		drawRenderProbeMode(strArg(l, 1), strArg(l, 2), float32(numArg(l, 3)), float32(numArg(l, 4)), int32(numArg(l, 5)), int32(numArg(l, 6)), int32(numArg(l, 7)))
+		return 0
+	})
+	luaRegister(l, "renderProbeBlockMode", func(*lua.LState) int {
+		/*Draw a large categorized screen-mapping probe block when the active IKEMEN_RENDER_PROBES mode matches.
+		@function renderProbeBlockMode
+		@tparam string category Probe category.
+		@tparam string label Short probe label.
+		@tparam float32 x X position.
+		@tparam float32 y Y position.
+		@tparam int width Block width.
+		@tparam int height Block height.
+		@tparam int r Red channel.
+		@tparam int g Green channel.
+		@tparam int b Blue channel.
+		function renderProbeBlockMode(category, label, x, y, width, height, r, g, b) end*/
+		drawRenderProbeBlockMode(strArg(l, 1), strArg(l, 2), float32(numArg(l, 3)), float32(numArg(l, 4)), int32(numArg(l, 5)), int32(numArg(l, 6)), int32(numArg(l, 7)), int32(numArg(l, 8)), int32(numArg(l, 9)))
 		return 0
 	})
 	luaRegister(l, "textImgSetTextDelay", func(*lua.LState) int {

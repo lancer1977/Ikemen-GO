@@ -3315,6 +3315,7 @@ func (s *System) roundEndDecision() bool {
 
 func (s *System) draw(x, y, scl float32) {
 	s.brightnessOld = s.brightness
+	drawRenderProbeMode("global", "G0 system.draw start", 28, 32, 255, 64, 64)
 	//s.brightness = 0x100 >> uint(Btoi(s.supertime > 0 && s.superdarken))
 	s.brightness = 1.0
 	if s.supertime > 0 && s.superbrightness >= 0 && s.superbrightness < 1 {
@@ -3346,6 +3347,7 @@ func (s *System) draw(x, y, scl float32) {
 
 		// Draw the background fill
 		FillRect(s.scrrect, fcol, [2]int32{255, 0}, nil)
+		drawRenderProbeMode("global", "G1 after bg fill", 28, 48, 255, 96, 64)
 
 		// Draw stage elements with layerNo == -1
 		if !s.gsf(GSF_nobg) {
@@ -3374,12 +3376,14 @@ func (s *System) draw(x, y, scl float32) {
 
 		// Draw fight screen layer -1
 		s.fightScreen.draw(-1)
+		drawRenderProbeMode("global", "G2 after fight -1", 28, 64, 255, 160, 64)
 
 		// Draw char texts layer -1
 		s.drawCharTexts(-1)
 
 		// Draw motif layer -1
 		s.motif.draw(-1)
+		drawRenderProbeMode("global", "G3 after motif -1", 28, 80, 255, 220, 64)
 
 		// Draw shadows
 		// Draw reflections on layer 0
@@ -3427,12 +3431,14 @@ func (s *System) draw(x, y, scl float32) {
 
 		// Draw fight screen layer 0
 		s.fightScreen.draw(0)
+		drawRenderProbeMode("global", "G4 after fight 0", 28, 96, 160, 255, 64)
 
 		// Draw char texts layer 0
 		s.drawCharTexts(0)
 
 		// Draw motif layer 0
 		s.motif.draw(0)
+		drawRenderProbeMode("global", "G5 after motif 0", 28, 112, 96, 255, 96)
 	}
 
 	// Draw EnvColor effect
@@ -3451,27 +3457,32 @@ func (s *System) draw(x, y, scl float32) {
 
 	// Draw fight screen layer 1
 	s.fightScreen.draw(1)
+	drawRenderProbeMode("global", "G6 after fight 1", 28, 128, 64, 255, 180)
 
 	// Draw char texts layer 1
 	s.drawCharTexts(1)
 
 	// Draw motif layer 1
 	s.motif.draw(1)
+	drawRenderProbeMode("global", "G7 after motif 1", 28, 144, 64, 220, 255)
 
 	// Draw character sprites in layer 1 (old "ontop")
 	s.spriteList.draw(1, false, x, y, scl*s.cam.BaseScale())
 
 	// Draw fight screen layer 2
 	s.fightScreen.draw(2)
+	drawRenderProbeMode("global", "G8 after fight 2", 28, 160, 64, 128, 255)
 
 	// Draw char texts layer 2
 	s.drawCharTexts(2)
 
 	// Draw motif layer 2
 	s.motif.draw(2)
+	drawRenderProbeMode("global", "G9 after motif 2", 28, 176, 128, 96, 255)
 
 	// Draw motif layer 3
 	s.motif.draw(3)
+	drawRenderProbeMode("global", "GA after motif 3/fade", 28, 192, 220, 96, 255)
 }
 
 func (s *System) drawCharTexts(layerno int16) {

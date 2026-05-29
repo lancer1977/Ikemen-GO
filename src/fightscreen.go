@@ -5327,17 +5327,20 @@ func (fs *FightScreen) visible() bool {
 }
 
 func (fs *FightScreen) draw(layerno int16) {
+	drawRenderProbeMode("fight", fmt.Sprintf("F%d entry", layerno), 168, 36+float32(layerno)*16, 96, 160+int32(layerno)*24, 255)
 	if fs.visible() {
 		if !sys.gsf(GSF_nobardisplay) && fs.bars {
 			// Helper to determine whether to iterate elements forward or backward (drawing order)
 			iterationOrder := func(leaderontop bool) (int, int, int) {
 				if leaderontop {
 					return MaxSimul - 1, -1, -1
-				}
-				return 0, MaxSimul, 1
 			}
+			return 0, MaxSimul, 1
+		}
+		drawRenderProbeMode("fight", fmt.Sprintf("F%d bars", layerno), 168, 92+float32(layerno)*16, 96, 255, 255)
 			// LifeBar
 			for side := 0; side < len(sys.tmode); side++ {
+				drawRenderProbeMode("fight-health", fmt.Sprintf("HP%d L%d pre", side+1, layerno), 196+float32(side)*136, 24+float32(layerno)*12, 255, 80, 80)
 				layout := fs.curLayout[side]
 				slotStart, slotEnd, slotStep := iterationOrder(fs.lifeBars[layout][side].leaderontop)
 
@@ -5354,10 +5357,12 @@ func (fs *FightScreen) draw(layerno int16) {
 					fs.lifeBars[layout][barpn].bgDraw(layerno)
 					fs.lifeBars[layout][barpn].draw(layerno, charpn, fs.lifeBars[layout][charpn], fs.fnt)
 				}
+				drawRenderProbeMode("fight-health", fmt.Sprintf("HP%d L%d post", side+1, layerno), 196+float32(side)*136, 36+float32(layerno)*12, 255, 150, 80)
 			}
 
 			// PowerBar
 			for side := 0; side < len(sys.tmode); side++ {
+				drawRenderProbeMode("fight-power", fmt.Sprintf("PWR%d L%d pre", side+1, layerno), 196+float32(side)*136, 184+float32(layerno)*12, 240, 220, 80)
 				layout := fs.curLayout[side]
 				slotStart, slotEnd, slotStep := iterationOrder(fs.powerBars[layout][side].leaderontop)
 
@@ -5378,6 +5383,7 @@ func (fs *FightScreen) draw(layerno int16) {
 					fs.powerBars[layout][barpn].bgDraw(layerno, barpn)
 					fs.powerBars[layout][barpn].draw(layerno, charpn, fs.powerBars[layout][charpn], fs.fnt)
 				}
+				drawRenderProbeMode("fight-power", fmt.Sprintf("PWR%d L%d post", side+1, layerno), 196+float32(side)*136, 196+float32(layerno)*12, 160, 240, 80)
 			}
 
 			// GuardBar
@@ -5422,6 +5428,7 @@ func (fs *FightScreen) draw(layerno int16) {
 
 			// Face
 			for side := 0; side < len(sys.tmode); side++ {
+				drawRenderProbeMode("fight-face", fmt.Sprintf("FACE%d L%d pre", side+1, layerno), 196+float32(side)*136, 56+float32(layerno)*12, 80, 220, 255)
 				layout := fs.curLayout[side]
 				slotStart, slotEnd, slotStep := iterationOrder(fs.faces[layout][side].leaderontop)
 
@@ -5442,10 +5449,12 @@ func (fs *FightScreen) draw(layerno int16) {
 					fs.faces[layout][barpn].bgDraw(layerno)
 					fs.faces[layout][barpn].draw(layerno, charpn, fs.faces[layout][charpn])
 				}
+				drawRenderProbeMode("fight-face", fmt.Sprintf("FACE%d L%d post", side+1, layerno), 196+float32(side)*136, 68+float32(layerno)*12, 80, 160, 255)
 			}
 
 			// Name
 			for side := 0; side < len(sys.tmode); side++ {
+				drawRenderProbeMode("fight-name", fmt.Sprintf("NAME%d L%d pre", side+1, layerno), 196+float32(side)*136, 216+float32(layerno)*12, 220, 120, 255)
 				layout := fs.curLayout[side]
 				slotStart, slotEnd, slotStep := iterationOrder(fs.names[layout][side].leaderontop)
 
@@ -5466,6 +5475,7 @@ func (fs *FightScreen) draw(layerno int16) {
 					fs.names[layout][barpn].bgDraw(layerno)
 					fs.names[layout][barpn].draw(layerno, charpn, fs.fnt, side)
 				}
+				drawRenderProbeMode("fight-name", fmt.Sprintf("NAME%d L%d post", side+1, layerno), 196+float32(side)*136, 228+float32(layerno)*12, 255, 120, 220)
 			}
 
 			// Time
@@ -5509,6 +5519,7 @@ func (fs *FightScreen) draw(layerno int16) {
 		}
 
 		// Combo
+		drawRenderProbeMode("fight", fmt.Sprintf("F%d combo/action", layerno), 168, 140+float32(layerno)*16, 160, 255, 255)
 		for i := 0; i < len(fs.combos); i++ {
 			if !sys.chars[i][0].asf(ASF_nocombodisplay) {
 				fs.combos[i].draw(layerno, fs.fnt, i)
@@ -5532,6 +5543,7 @@ func (fs *FightScreen) draw(layerno int16) {
 	if fs.active && !sys.postMatchFlg {
 		// Round
 		fs.round.draw(layerno, fs.fnt)
+		drawRenderProbeMode("fight", fmt.Sprintf("F%d round", layerno), 168, 236+float32(layerno)*12, 220, 255, 255)
 	}
 }
 
