@@ -67,6 +67,63 @@ If the desktop X server is unavailable or reports `Maximum number of clients rea
 
 This starts `Xvfb` plus `metacity`, launches IKEMEN into that private display, captures real window PNGs, and tears the private display down afterward.
 
+## Character-select route
+
+For menu automation, prefer `hold:` over instant `key:` taps. IKEMEN/SDL can miss same-frame press/release events, while a short hold is reliably picked up by the game loop.
+
+The verified route from the default boot/menu into Arcade character select is:
+
+```bash
+/home/lancer1977/code/Ikemen-GO/scripts/visual/ikemen-xvfb-control-snapshots.sh \
+  --workdir /home/lancer1977/code/ikemen-app \
+  --bin ./Ikemen_GO_Linux \
+  --probe-mode edge \
+  --output-dir /home/lancer1977/code/Ikemen-GO/artifacts/visual-probes/character-select-pass \
+  --timeout 25 \
+  --step wait:8 \
+  --step snap:main-menu \
+  --step hold:z:0.25 \
+  --step wait:2 \
+  --step snap:arcade-submenu \
+  --step hold:z:0.25 \
+  --step wait:5 \
+  --step snap:character-select
+```
+
+This reaches the `ARCADE` character-select screen with the random slot selected.
+
+## Fight route
+
+The verified route from boot/menu through character select into a live Arcade fight is:
+
+```bash
+/home/lancer1977/code/Ikemen-GO/scripts/visual/ikemen-xvfb-control-snapshots.sh \
+  --workdir /home/lancer1977/code/ikemen-app \
+  --bin ./Ikemen_GO_Linux \
+  --probe-mode edge \
+  --output-dir /home/lancer1977/code/Ikemen-GO/artifacts/visual-probes/fight-pass \
+  --timeout 25 \
+  --step wait:8 \
+  --step snap:main-menu \
+  --step hold:z:0.25 \
+  --step wait:2 \
+  --step snap:arcade-submenu \
+  --step hold:z:0.25 \
+  --step wait:5 \
+  --step snap:character-select \
+  --step hold:z:0.25 \
+  --step wait:3 \
+  --step snap:after-select-1 \
+  --step hold:z:0.25 \
+  --step wait:5 \
+  --step snap:after-select-2 \
+  --step hold:z:0.25 \
+  --step wait:8 \
+  --step snap:fight
+```
+
+This selects Arcade, enters the character-select flow, confirms the selected character path, and reaches an active fight. In the verified pass, the final fight screenshot showed Mike vs CPU-S Gill on the Ken Masters bridge stage with lifebars and timer visible.
+
 ## Attach to a manually positioned game window
 
 Use attach mode when the game is already running or when launch has to be done manually from a separate runtime tree such as `/home/lancer1977/code/ikemen-app`:
@@ -86,7 +143,8 @@ scripts/visual/ikemen-control-snapshots.py \
 ## Common steps
 
 - `wait:SECONDS` pauses for animation/transition settle time.
-- `key:KEY` taps one X11 key name, for example `Return`, `Escape`, `Up`, `Down`, `Left`, `Right`, `a`, `b`, `x`, or `y`.
+- `key:KEY` taps one X11 key name, for example `Return`, `Escape`, `Up`, `Down`, `Left`, `Right`, `a`, `b`, `x`, or `y`. Use this for non-critical navigation.
+- `hold:KEY:SECONDS` holds one key long enough for IKEMEN/SDL polling to see it, for example `hold:z:0.25`. Prefer this for menu confirmation and cursor movement.
 - `keys:KEY+KEY` sends a chord, for example `Alt+Return`.
 - `text:VALUE` types simple text.
 - `snap:LABEL` captures a named PNG.

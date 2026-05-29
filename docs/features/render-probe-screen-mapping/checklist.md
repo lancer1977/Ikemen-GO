@@ -16,13 +16,20 @@
 - [x] Record fifth-pass color-block select observation from the operator.
 - [x] Add sixth-pass edge-band probes for top/bottom select-screen paint seams.
 - [x] Run sixth-pass edge-band probes under Xvfb and record observations.
+- [x] Add reusable X11/Xvfb control and snapshot helpers.
+- [x] Prove boot/load screen to main-menu screenshot capture.
+- [x] Prove main menu to Arcade character-select route.
+- [x] Prove character-select route can continue into a live fight.
+- [x] Record pass-7 control/snapshot route observations and evidence paths.
 
 ## Observation Targets
 
 - [ ] Select screen: top band and bottom band; next pass should use an explicit screen-space helper because generic Lua probe blocks did not show in edge bands.
+- [x] Select screen: route reaches Arcade character select under Xvfb using `hold:z:0.25` confirmations.
 - [ ] Select screen: roster cells, cursors, names, title, stats overlay; confirm `SELECT PATH HIT` in interactive select mode.
+- [x] Fight screen: route reaches a live fight with lifebars, timer, stage, and spawned characters visible.
 - [ ] Versus screen: background, portraits, names, stage, top background.
-- [ ] Fight screen: lifebars, power bars, portraits, names, timer, round/action/combo text; compare `HP*`, `FACE*`, `PWR*`, and `NAME*` pre/post labels.
+- [ ] Fight screen: compare `HP*`, `FACE*`, `PWR*`, and `NAME*` pre/post labels.
 - [ ] Pause/menu overlay during a fight.
 - [ ] Fade and transition frames.
 
