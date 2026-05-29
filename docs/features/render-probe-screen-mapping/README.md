@@ -105,8 +105,11 @@ These live in `external/script/start.lua` and map the script-driven roster and v
 
 - `src/render_probe.go` owns the env gate and drawing helper.
 - `src/script.go` exposes `renderProbe(label, x, y, r, g, b)` to Lua.
+- `src/script.go` also exposes categorized block helpers for edge passes:
+  - `renderProbeBlockMode(...)` for regular select-loop local-coordinate blocks.
+  - `renderProbeScreenBlockMode(...)` for late queued screen-space header/footer blocks.
 - The probe helper uses the existing debug font and a small colored rectangle so probes are visually distinct but cheap.
-- The code path is inert unless `IKEMEN_RENDER_PROBES` is truthy: `1`, `true`, `yes`, or `on`.
+- The code path is inert unless `IKEMEN_RENDER_PROBES` is truthy: `1`, `true`, `yes`, or `on`, or matches the requested category such as `edge` or `edge-screen`.
 
 ## Initial Hypothesis
 
@@ -120,6 +123,8 @@ These live in `external/script/start.lua` and map the script-driven roster and v
 Use [`control-snapshot-workflow.md`](control-snapshot-workflow.md) for the repeatable local X11 helper that can launch or attach to IKEMEN, send key input, and save named PNG screenshots for probe evidence passes.
 
 The proven route notes live in [`observations-pass-7-control-snapshot-routes.md`](observations-pass-7-control-snapshot-routes.md). That pass established the private-X/Xvfb control path, the reliable `hold:z:0.25` menu confirmation input, and screenshot evidence from main menu through Arcade character select into a live fight.
+
+[`observations-pass-8-select-header-footer.md`](observations-pass-8-select-header-footer.md) records the follow-up select-screen header/footer proof. That pass added the late queued `renderProbeScreenBlockMode(...)` helper and verified readable `SELECT HEADER SCREEN-SPACE` / `SELECT FOOTER SCREEN-SPACE` text over the live Arcade select view.
 
 Quick start:
 

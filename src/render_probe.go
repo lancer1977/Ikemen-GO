@@ -87,8 +87,16 @@ func drawRenderProbeScreenBlockMode(category, label string, x, y float32, w, h i
 	sys.luaQueueLayerDraw(2, func() {
 		maxW := sys.scrrect[2]
 		maxH := sys.scrrect[3]
-		xi := Clamp(int32(xLocal), 0, maxW)
-		yi := Clamp(int32(yLocal), 0, maxH)
+		xi := int32(xLocal)
+		yi := int32(yLocal)
+		if xi < 0 {
+			xi = maxW + xi
+		}
+		if yi < 0 {
+			yi = maxH + yi
+		}
+		xi = Clamp(xi, 0, maxW)
+		yi = Clamp(yi, 0, maxH)
 		if wLocal <= 0 {
 			wLocal = maxW - xi
 		}

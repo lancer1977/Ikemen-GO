@@ -92,6 +92,32 @@ The verified route from the default boot/menu into Arcade character select is:
 
 This reaches the `ARCADE` character-select screen with the random slot selected.
 
+## Select header/footer route
+
+The verified route for the pass-8 header/footer proof intentionally confirms Arcade with `Return` before using `z` to enter character select:
+
+```bash
+/home/lancer1977/code/Ikemen-GO/scripts/visual/ikemen-xvfb-control-snapshots.sh \
+  --workdir /home/lancer1977/code/ikemen-app \
+  --bin ./Ikemen_GO_Linux \
+  --probe-mode edge-screen \
+  --output-dir /home/lancer1977/code/Ikemen-GO/artifacts/visual-probes/select-header-footer-pass \
+  --timeout 35 \
+  --step wait:8 \
+  --step snap:main-menu \
+  --step hold:z:0.4 \
+  --step wait:2 \
+  --step snap:arcade-submenu \
+  --step hold:Return:0.4 \
+  --step wait:3 \
+  --step snap:after-return \
+  --step hold:z:0.4 \
+  --step wait:5 \
+  --step snap:character-select
+```
+
+In the verified pass, `20260529-130345-character-select.png` showed the live `ARCADE` character-select screen plus visible cyan/red `SELECT HEADER SCREEN-SPACE` and `SELECT FOOTER SCREEN-SPACE` probe text.
+
 ## Fight route
 
 The verified route from boot/menu through character select into a live Arcade fight is:
