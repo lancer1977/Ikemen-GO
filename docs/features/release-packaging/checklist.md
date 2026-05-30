@@ -31,5 +31,5 @@
 
 ## Follow-up
 
-- [ ] Decide whether `make installers` should become the primary entry point
-- [ ] Decide whether the script should fail hard on missing screenpack assets or keep producing a partial package
+- [x] Decide whether `make installers` should become the primary entry point
+- [x] Decide whether the script should fail hard on missing screenpack assets or keep producing a partial package

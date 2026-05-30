@@ -11,6 +11,7 @@ APP_BUILDTIME="${APP_BUILDTIME:-$(date '+%Y.%m.%d')}"
 SCREENPACK_REPO="${SCREENPACK_REPO:-https://github.com/ikemen-engine/Ikemen-GO-Screenpack.git}"
 SCREENPACK_REF="${SCREENPACK_REF:-master}"
 SCREENPACK_DIR="${SCREENPACK_DIR:-}"
+ALLOW_PARTIAL_SCREENPACK="${ALLOW_PARTIAL_SCREENPACK:-0}"
 
 TARGETS=("linux" "windows")
 DO_BUILD=1
@@ -32,7 +33,7 @@ Options:
 
 Environment overrides:
   OUTPUT_ROOT, APP_VERSION, APP_BUILDTIME, BUILD_FFMPEG,
-  SCREENPACK_REPO, SCREENPACK_REF
+  SCREENPACK_REPO, SCREENPACK_REF, SCREENPACK_DIR, ALLOW_PARTIAL_SCREENPACK
 EOF
 }
 
@@ -322,18 +323,23 @@ main() {
     die "Output root is not writable: $OUTPUT_ROOT"
   fi
 
-  local screenpack_dir=""
-  if screenpack_dir="$(ensure_screenpack)"; then
-    :
-  else
-    warn "Could not clone or copy the screenpack tree; installer assets will be partial"
-    screenpack_dir=""
-  fi
-
-  local failures=0
   local target
   for target in "${TARGETS[@]}"; do
     ensure_target_supported "$target"
+  done
+
+  local screenpack_dir=""
+  if screenpack_dir="$(ensure_screenpack)"; then
+    :
+  elif [[ "$ALLOW_PARTIAL_SCREENPACK" == "1" ]]; then
+    warn "Could not clone or copy the screenpack tree; installer assets will be partial"
+    screenpack_dir=""
+  else
+    die "Could not clone or copy the screenpack tree; set SCREENPACK_DIR or enable ALLOW_PARTIAL_SCREENPACK=1 for a partial package"
+  fi
+
+  local failures=0
+  for target in "${TARGETS[@]}"; do
     case "$target" in
       linux)
         if [[ "$DO_BUILD" -eq 1 ]]; then

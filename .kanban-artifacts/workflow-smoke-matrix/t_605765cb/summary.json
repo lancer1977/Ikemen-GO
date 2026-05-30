@@ -1,0 +1,68 @@
+{
+  "manual_stage_result_shape": {
+    "matchesLength": 1,
+    "topLevelKeys": [
+      "continueFlg",
+      "persistRoundCount",
+      "statsLog"
+    ]
+  },
+  "matrix_exit_code": 1,
+  "matrix_findings": [
+    "startup/menu-oriented cases timed out at IKEMEN_WORKFLOW_TIMEOUT=25",
+    "quickvs, quickvs-stage-override, quickvs-resultfile, and quickvs-ai-palette passed in matrix run",
+    "quickvs-stage-override-resultfile timed out at 25s in full matrix but passed when rerun directly with 60s timeout"
+  ],
+  "matrix_log": ".kanban-artifacts/workflow-smoke-matrix/t_605765cb/workflow-matrix.log",
+  "panic_capture": {
+    "confirmed_patterns": [
+      "attempt to call a non-function object",
+      "stack traceback"
+    ],
+    "exit_code": 1,
+    "fake_binary": "/tmp/ikemen-fake-lua-panic.sh",
+    "first_fail": "FAIL: startup hit a startup/runtime error",
+    "log": ".kanban-artifacts/workflow-smoke-matrix/t_605765cb/panic-capture.log"
+  },
+  "preserved_work_root": "/tmp/ikemen-workflow.QR05s8",
+  "result_json_shape": {
+    "firstRoundFighterKeys": [
+      "aiLevel",
+      "drawGame",
+      "id",
+      "ko",
+      "life",
+      "lifeMax",
+      "memberNo",
+      "name",
+      "overKO",
+      "palNo",
+      "selectNo",
+      "win",
+      "winHyper",
+      "winKO",
+      "winPerfect",
+      "winQuote",
+      "winSpecial",
+      "winTime"
+    ],
+    "matchesLength": 1,
+    "matchesType": "list",
+    "statsLogKeys": [
+      "matches"
+    ],
+    "topLevelKeys": [
+      "continueFlg",
+      "persistRoundCount",
+      "statsLog"
+    ]
+  },
+  "sha256": {
+    "panic-capture.log": "42c8a8df34e277ad878e4f6278d946e6bcdc097352276fa73afd218a71056d40",
+    "quickvs-ai-palette.json": "8238081a1c8b4e500fb96f8b99b2d73c95551588ffbd3b315f480672ccb3817d",
+    "quickvs-result.json": "6f8a35a6f3e14a2eae6844035ba6d46536a245fe96a2a2dcd2c9ba3b9400790e",
+    "quickvs-stage-override-result-manual.json": "617a385a9759049a54671d7d0a835d0c6895f5204b61c109593f79ecff269990",
+    "workflow-matrix.log": "5c93c304b894f7385ed7eecc611095d1600f16b5582603b0e8735f7339b9527c"
+  },
+  "task": "t_605765cb"
+}
