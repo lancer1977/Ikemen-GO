@@ -110,16 +110,16 @@ You can also double-click **`build/Ikemen_GO.command`** on Linux.
 
 ### Package desktop installers
 
-To create release-style desktop archives in the shared output folder:
+To create the release-style desktop archive for the current host in the shared output folder, use the primary local entry point:
 
 ```bash
-OUTPUT_ROOT=/mnt/syn1/games/Ikemen ./scripts/package-installers.sh --all
+make installers
 ```
 
-If you just want the reusable local publish entrypoint, use:
+For lower-level script use, run the host-aware wrapper directly:
 
 ```bash
-./scripts/deploy-local.sh
+OUTPUT_ROOT=/mnt/syn1/games/Ikemen ./scripts/deploy-local.sh
 ```
 
 That wrapper picks the correct target for the current host:
@@ -132,6 +132,7 @@ If you want to force one side explicitly, use `./scripts/deploy-local-linux.sh` 
 The same flows are also available through `make`:
 
 ```bash
+make installers
 make deploy-local
 make deploy-local-linux
 make deploy-local-windows
@@ -148,6 +149,7 @@ The script writes:
 
 The default output root is `/mnt/syn1/games/Ikemen`.
 Windows packaging still requires the matching MinGW toolchain and a Windows or MSYS2 build host.
+Screenpack assets are required by default; set `SCREENPACK_DIR` to a local screenpack checkout/mirror if the upstream clone is unavailable, or set `ALLOW_PARTIAL_SCREENPACK=1` only when intentionally producing a diagnostic partial package.
 
 ### Use system FFmpeg instead (optional)
 

@@ -20,9 +20,9 @@ This note tracks the current per-character sweep failures from the
 - [x] Documented `brolyz2` as `long-intro` in metadata tags/notes.
 - [x] Normalized `stream-box` character folder names and `.def` filenames to
   remove whitespace-delimited launch path failures.
-- [ ] Investigate one remaining deterministic parser/content failure
+- [x] Investigate one remaining deterministic parser/content failure
   (`kfmZ/kfm.zss:657`).
-- [ ] Investigate one remaining runtime timeout (`BrolyZ2`).
+- [x] Investigate one remaining runtime timeout (`BrolyZ2`).
 
 ## Prior Throwing Characters
 
@@ -73,8 +73,8 @@ Latest status:
 
 Remaining incompatible characters:
 
-- `BrolyZ2`: `timeout` after 35s (match did not complete in the watchdog window)
-- `kfmZ`: `error` at `kfm.zss:657` with `animtype: Invalid animtype: Med`
+- `BrolyZ2`: classified as a watchdog timeout rather than a parser/content failure. The latest rebuilt sweep hit the 35s window without a completed match/result file, while nearby peers finished normally.
+- `kfmZ`: parser/content failure at `kfm.zss:657` with `animtype: Invalid animtype: Med`.
 
 This confirms the earlier broad failure class (`open data/demo.zss`) was a
 fixture bootstrap issue, not a character-wide engine regression.

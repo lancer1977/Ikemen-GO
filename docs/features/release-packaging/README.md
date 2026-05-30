@@ -14,6 +14,7 @@ The current packaging target is the shared output root at `/mnt/syn1/games/Ikeme
 - [x] Linux packaging validated end-to-end on this host
 - [x] Local package includes `external/script/main.lua` and the rest of the runtime tree
 - [x] Packaging flow wired into `make installers` and `make deploy-local`
+- [x] `make installers` is the primary local release-packaging entry point; `make deploy-local*` remains as explicit host/deploy aliases
 - [x] Explicit `make deploy-local-linux` and `make deploy-local-windows` targets added
 - [x] GitHub Actions workflow added for self-hosted local deploy
 - [ ] Windows GitHub Actions runs on the self-hosted runner registered as `ikemen-windows`
@@ -38,7 +39,8 @@ Each archive mirrors the release workflow shape:
 - Linux packages also include `Ikemen_GO.desktop` and `Ikemen_GO.command`
 - Windows packaging requires the MinGW toolchain that matches the existing release build
 - Screenpack assets are pulled from the upstream screenpack repository when they are not already present locally
+- Missing screenpack assets are a hard packaging failure by default; set `SCREENPACK_DIR` for a local mirror or `ALLOW_PARTIAL_SCREENPACK=1` only for explicit partial-package diagnostics
 - `./scripts/deploy-local.sh` now dispatches to the correct platform target instead of trying both on every host
-- Use `ssh stream-box` or `scripts/stream-box-ssh.sh --check` when validating
-  the Windows stream rig from the repo or from deploy automation.
+- Use `ssh stream-box` when validating the Windows stream rig from the repo or
+  deploy automation.
 - Copy the packaged Ikemen runtime into `C:\\mugen` for test deploys.
