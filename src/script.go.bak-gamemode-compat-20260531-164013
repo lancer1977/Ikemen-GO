@@ -4098,16 +4098,14 @@ func systemScriptInit(l *lua.LState) {
 		l.Push(lua.LString(time.Now().Format(format)))
 		return 1
 	})
-	getWinnerTeam := func(*lua.LState) int {
+	luaRegister(l, "getWinnerTeam", func(*lua.LState) int {
 		/*Get the winning team side of the current or last match.
 		@function getWinnerTeam
 		@treturn int32 teamSide Winning team side (`1` or `2`), `0` for draw/undecided, or `-1` when unavailable.
 		function getWinnerTeam() end*/
 		l.Push(lua.LNumber(sys.winnerTeam()))
 		return 1
-	}
-	luaRegister(l, "getWinnerTeam", getWinnerTeam)
-	luaRegister(l, "winnerteam", getWinnerTeam)
+	})
 	luaRegister(l, "isUIKeyAction", func(l *lua.LState) int {
 		/*Check whether a UI action name is currently active.
 		@function isUIKeyAction
@@ -8646,42 +8644,14 @@ func triggerFunctions(l *lua.LState) {
 		l.Push(lua.LNumber(sys.debugWC.gameHeight()))
 		return 1
 	})
-	luaRegister(l, "sszRandom", func(*lua.LState) int {
-		/*Return a synchronized pseudo-random int32 for legacy Lua scripts.
-		@function sszRandom
-		@treturn int32 Random number.
-		function sszRandom() end*/
-		l.Push(lua.LNumber(Random()))
-		return 1
-	})
-	luaRegister(l, "playBGM", func(*lua.LState) int {
-		/*Play background music from legacy Lua scripts.
-		@function playBGM
-		@tparam string filename BGM path.
-		@tparam int loop Loop flag.
-		@tparam int volume Volume percent.
-		@tparam int loopstart Loop start sample.
-		@tparam int loopend Loop end sample.
-		function playBGM(filename, loop, volume, loopstart, loopend) end*/
-		filename := strArg(l, 1)
-		if filename == "" {
-			sys.bgm.Stop()
-			return 0
-		}
-		sys.bgm.Open(filename, int(numArg(l, 2)), int(numArg(l, 3)), int(numArg(l, 4)), int(numArg(l, 5)), 0, 1, 0)
-		sys.playBgmFlg = true
-		return 0
-	})
-	gameMode := func(*lua.LState) int {
+	luaRegister(l, "gameMode", func(*lua.LState) int {
 		if !nilArg(l, 1) {
 			l.Push(lua.LBool(sys.gameMode == strArg(l, 1)))
 		} else {
 			l.Push(lua.LString(sys.gameMode))
 		}
 		return 1
-	}
-	luaRegister(l, "gameMode", gameMode)
-	luaRegister(l, "gamemode", gameMode)
+	})
 	luaRegister(l, "gameOption", func(l *lua.LState) int {
 		value, err := sys.cfg.GetValue(strArg(l, 1))
 		if err == nil {
@@ -9526,12 +9496,10 @@ func triggerFunctions(l *lua.LState) {
 		l.Push(lua.LNumber(sys.debugWC.mapArray[strings.ToLower(strArg(l, 1))]))
 		return 1
 	})
-	matchNo := func(*lua.LState) int {
+	luaRegister(l, "matchNo", func(*lua.LState) int {
 		l.Push(lua.LNumber(sys.match))
 		return 1
-	}
-	luaRegister(l, "matchNo", matchNo)
-	luaRegister(l, "matchno", matchNo)
+	})
 	luaRegister(l, "matchOver", func(*lua.LState) int {
 		l.Push(lua.LBool(sys.matchOver()))
 		return 1
@@ -10302,22 +10270,18 @@ func triggerFunctions(l *lua.LState) {
 		l.Push(lua.LNumber(sys.debugWC.rdDistZ(sys.debugWC.root(true), sys.debugWC).ToI()))
 		return 1
 	})
-	roundNo := func(*lua.LState) int {
+	luaRegister(l, "roundNo", func(*lua.LState) int {
 		l.Push(lua.LNumber(sys.round))
 		return 1
-	}
-	luaRegister(l, "roundNo", roundNo)
-	luaRegister(l, "roundno", roundNo)
+	})
 	luaRegister(l, "roundsExisted", func(*lua.LState) int {
 		l.Push(lua.LNumber(sys.debugWC.roundsExisted()))
 		return 1
 	})
-	roundState := func(*lua.LState) int {
+	luaRegister(l, "roundState", func(*lua.LState) int {
 		l.Push(lua.LNumber(sys.roundState()))
 		return 1
-	}
-	luaRegister(l, "roundState", roundState)
-	luaRegister(l, "roundstate", roundState)
+	})
 	luaRegister(l, "roundsWon", func(*lua.LState) int {
 		l.Push(lua.LNumber(sys.debugWC.roundsWon()))
 		return 1

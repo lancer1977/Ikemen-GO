@@ -444,10 +444,20 @@ func (pl *PaletteList) Get(i int) []uint32 {
 	if i < 0 || i >= len(pl.paletteMap) {
 		i = 0
 	}
-	return pl.palettes[pl.paletteMap[i]]
+	mapIdx := pl.paletteMap[i]
+	if mapIdx < 0 || mapIdx >= len(pl.palettes) {
+		mapIdx = 0
+	}
+	if mapIdx < 0 || mapIdx >= len(pl.palettes) {
+		return nil
+	}
+	return pl.palettes[mapIdx]
 }
 
 func (pl *PaletteList) Remap(source int, destination int) {
+	if source < 0 || source >= len(pl.paletteMap) {
+		return
+	}
 	pl.paletteMap[source] = destination
 }
 

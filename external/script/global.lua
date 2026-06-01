@@ -445,12 +445,12 @@ function loop()
 		toggleDialogueBars(false)
 		return
 	end
-	--credits
-	if main.credits ~= -1 and getKey(motif.attract_mode.credits_key) then
-		sndPlay(motif.files.snd_data, motif.attract_mode.credits_snd[1], motif.attract_mode.credits_snd[2])
-		main.credits = main.credits + 1
-		resetKey()
-	end
+		--credits
+		if main.credits ~= -1 and getKey(motif.attract_mode.credits_key) then
+			sndPlay(motif.files.snd_data, motif.attract_mode.credits_snd[1], motif.attract_mode.credits_snd[2])
+			main.credits = (main.credits or 0) + 1
+			resetKey()
+		end
 	--music
 	start.f_stageMusic()
 	--match start
@@ -476,13 +476,6 @@ function loop()
 		start.roundRecordSaved = false
 		start.dialogueInit = false
 	end
-	if winnerteam() ~= -1 and player(winnerteam()) and roundstate() == 4 and isasserted("over") then
-		if start.p[1] ~= nil and start.p[2] ~= nil and (start.p[1].teamMode ~= 0 or start.p[2].teamMode ~= 0) then
-			start.f_updateRoundCharRecords(winnerteam())
-		end
-		--turns or solo-vs-team life recovery
-		start.f_turnsRecovery()
-	end
 	--dialogue
 	if indialogue() then
 		start.f_dialogue()
@@ -507,61 +500,6 @@ function loop()
 		togglePostMatch(false)
 		end
 		hook.run("loop#" .. gamemode())
-		if start ~= nil and not indialogue() and not postmatch() and not main.pauseMenu and roundstate() > 0 and roundstate() < 4 then
-			if start.txt_fightRecord == nil then
-				start.txt_fightRecord = {
-					text:create({
-						font = 8,
-						bank = 0,
-						align = 1,
-						text = '',
-						x = 578,
-						y = 24,
-						scaleX = 1,
-						scaleY = 1,
-						r = 255,
-						g = 255,
-						b = 255,
-						a = 255,
-						height = -1,
-						xshear = 0,
-						angle = 0,
-						window = nil,
-						defsc = false,
-					}),
-					text:create({
-						font = 8,
-						bank = 0,
-						align = -1,
-						text = '',
-						x = 704,
-						y = 24,
-						scaleX = 1,
-						scaleY = 1,
-						r = 255,
-						g = 255,
-						b = 255,
-						a = 255,
-						height = -1,
-						xshear = 0,
-						angle = 0,
-						window = nil,
-						defsc = false,
-					}),
-				}
-			end
-			for side = 1, 2 do
-				local ref = start.f_getActiveCharRef(side)
-				if ref ~= nil then
-					local record = start.f_getCharRecord(ref)
-					local textValue = string.format('W:%d L:%d %s', record.wins, record.losses, start.f_getRecordTierText(record))
-					local x = side == 1 and 578 or 704
-					local align = side == 1 and 1 or -1
-					start.txt_fightRecord[side]:update({text = textValue, x = x, y = 24, align = align})
-					start.txt_fightRecord[side]:draw()
-				end
-			end
-		end
 		if start ~= nil and type(start.f_drawPlacementGrid) == 'function' and not postmatch() then
 			start.f_drawPlacementGrid()
 		end
@@ -570,7 +508,6 @@ function loop()
 		playerBufReset()
 		menu.f_run()
 	else
-		main.f_cmdInput()
 		--esc / m
 		if (esc() or (main.f_input(main.t_players, {'m'}) and not network())) and not start.challengerInit then
 			if network() or gamemode('demo') or (not gameOption('Config.EscOpensMenu') and esc()) then

@@ -19,21 +19,21 @@
       "tier": "F-"
     },
     "sf3_gill_k": {
-      "wins": 13,
-      "losses": 9,
-      "matches": 22,
-      "tier": "B"
+      "wins": 16,
+      "losses": 10,
+      "matches": 26,
+      "tier": "B+"
     },
     "supermario": {
-      "wins": 5,
+      "wins": 6,
       "losses": 6,
-      "matches": 11,
-      "tier": "C+"
+      "matches": 12,
+      "tier": "B-"
     },
     "akumahy": {
-      "wins": 3,
+      "wins": 4,
       "losses": 0,
-      "matches": 3,
+      "matches": 4,
       "tier": "Z+"
     },
     "kazuya": {
@@ -56,21 +56,21 @@
     },
     "dudley": {
       "wins": 7,
-      "losses": 4,
-      "matches": 11,
-      "tier": "B+"
+      "losses": 6,
+      "matches": 13,
+      "tier": "B-"
     },
     "akuma": {
-      "wins": 4,
-      "losses": 1,
-      "matches": 5,
-      "tier": "S-"
-    },
-    "awakened-clark": {
       "wins": 4,
       "losses": 2,
       "matches": 6,
       "tier": "A-"
+    },
+    "awakened-clark": {
+      "wins": 5,
+      "losses": 3,
+      "matches": 8,
+      "tier": "B+"
     },
     "kenshirou_ai-patch": {
       "wins": 1,
@@ -85,40 +85,40 @@
       "tier": "Z+"
     },
     "definitive rei ai alt": {
-      "wins": 2,
+      "wins": 4,
       "losses": 2,
-      "matches": 4,
-      "tier": "B-"
+      "matches": 6,
+      "tier": "A-"
     },
     "hugo": {
-      "wins": 10,
-      "losses": 7,
-      "matches": 17,
-      "tier": "B"
+      "wins": 11,
+      "losses": 10,
+      "matches": 21,
+      "tier": "B-"
     },
     "sabaki__ryuuken": {
       "wins": 0,
-      "losses": 31,
-      "matches": 31,
+      "losses": 32,
+      "matches": 32,
       "tier": "F-"
     },
     "l-magneto2": {
-      "wins": 7,
-      "losses": 3,
-      "matches": 10,
-      "tier": "A"
+      "wins": 9,
+      "losses": 4,
+      "matches": 13,
+      "tier": "A-"
     },
     "cfj_hit": {
       "wins": 16,
-      "losses": 9,
-      "matches": 25,
-      "tier": "B+"
+      "losses": 13,
+      "matches": 29,
+      "tier": "B"
     },
     "burai1.1": {
-      "wins": 4,
+      "wins": 6,
       "losses": 5,
-      "matches": 9,
-      "tier": "C"
+      "matches": 11,
+      "tier": "B-"
     },
     "mike/mike.def": {
       "wins": 0,
@@ -128,15 +128,15 @@
     },
     "lauren": {
       "wins": 13,
-      "losses": 5,
-      "matches": 18,
-      "tier": "A"
+      "losses": 6,
+      "matches": 19,
+      "tier": "A-"
     },
     "awk_morrigan": {
-      "wins": 4,
-      "losses": 3,
-      "matches": 7,
-      "tier": "B"
+      "wins": 5,
+      "losses": 5,
+      "matches": 10,
+      "tier": "B-"
     },
     "kenshin himura": {
       "wins": 0,
@@ -164,21 +164,21 @@
     },
     "tta'goku mui": {
       "wins": 11,
-      "losses": 1,
-      "matches": 12,
-      "tier": "S+"
+      "losses": 2,
+      "matches": 13,
+      "tier": "S-"
     },
     "kim_bx": {
       "wins": 20,
-      "losses": 3,
-      "matches": 23,
-      "tier": "S"
+      "losses": 5,
+      "matches": 25,
+      "tier": "S-"
     },
     "clone blood igniz": {
-      "wins": 3,
+      "wins": 4,
       "losses": 1,
-      "matches": 4,
-      "tier": "A+"
+      "matches": 5,
+      "tier": "S-"
     },
     "dark god ryu": {
       "wins": 4,
@@ -193,15 +193,15 @@
       "tier": "B-"
     },
     "rei-hnk-kofa": {
-      "wins": 4,
-      "losses": 11,
-      "matches": 15,
+      "wins": 5,
+      "losses": 14,
+      "matches": 19,
       "tier": "D"
     },
     "tomoka minato": {
-      "wins": 15,
-      "losses": 4,
-      "matches": 19,
+      "wins": 17,
+      "losses": 5,
+      "matches": 22,
       "tier": "A+"
     },
     "botan": {
@@ -211,10 +211,10 @@
       "tier": "F-"
     },
     "haohmaru kofm": {
-      "wins": 5,
-      "losses": 2,
-      "matches": 7,
-      "tier": "A"
+      "wins": 8,
+      "losses": 4,
+      "matches": 12,
+      "tier": "A-"
     },
     "burnken": {
       "wins": 4,
@@ -223,22 +223,22 @@
       "tier": "A-"
     },
     "hken": {
-      "wins": 6,
-      "losses": 1,
-      "matches": 7,
-      "tier": "S"
+      "wins": 7,
+      "losses": 2,
+      "matches": 9,
+      "tier": "A+"
     },
     "sf3_alex": {
-      "wins": 5,
+      "wins": 6,
       "losses": 4,
-      "matches": 9,
-      "tier": "B"
+      "matches": 10,
+      "tier": "B+"
     },
     "jin": {
       "wins": 11,
-      "losses": 1,
-      "matches": 12,
-      "tier": "S+"
+      "losses": 2,
+      "matches": 13,
+      "tier": "S-"
     },
     "ui_gokuz2": {
       "wins": 21,
@@ -247,16 +247,16 @@
       "tier": "B+"
     },
     "saber": {
-      "wins": 12,
-      "losses": 1,
-      "matches": 13,
-      "tier": "S+"
+      "wins": 14,
+      "losses": 3,
+      "matches": 17,
+      "tier": "S-"
     },
     "scwu_doraemon": {
       "wins": 10,
-      "losses": 4,
-      "matches": 14,
-      "tier": "A"
+      "losses": 5,
+      "matches": 15,
+      "tier": "A-"
     },
     "oldmon": {
       "wins": 14,
@@ -266,21 +266,21 @@
     },
     "nashai": {
       "wins": 15,
-      "losses": 2,
-      "matches": 17,
-      "tier": "S"
+      "losses": 3,
+      "matches": 18,
+      "tier": "S-"
     },
     "joe-l": {
       "wins": 6,
-      "losses": 1,
-      "matches": 7,
-      "tier": "S"
+      "losses": 3,
+      "matches": 9,
+      "tier": "A-"
     },
     "ryu": {
       "wins": 6,
-      "losses": 7,
-      "matches": 13,
-      "tier": "C+"
+      "losses": 8,
+      "matches": 14,
+      "tier": "C"
     },
     "nintendo_punchout_littlemac": {
       "wins": 0,
@@ -296,20 +296,20 @@
     },
     "boxer": {
       "wins": 4,
-      "losses": 3,
-      "matches": 7,
-      "tier": "B"
+      "losses": 4,
+      "matches": 8,
+      "tier": "B-"
     },
     "michael-max-kofa": {
-      "wins": 1,
-      "losses": 4,
-      "matches": 5,
-      "tier": "D-"
+      "wins": 3,
+      "losses": 8,
+      "matches": 11,
+      "tier": "D"
     },
     "m.bison_mx": {
       "wins": 0,
-      "losses": 2,
-      "matches": 2,
+      "losses": 4,
+      "matches": 4,
       "tier": "F-"
     },
     "tj comboai": {
@@ -325,10 +325,10 @@
       "tier": "C"
     },
     "heavyd_ai": {
-      "wins": 1,
+      "wins": 2,
       "losses": 3,
-      "matches": 4,
-      "tier": "D"
+      "matches": 5,
+      "tier": "C"
     },
     "makunoushi ippo": {
       "wins": 2,
@@ -338,9 +338,9 @@
     },
     "thor_avx": {
       "wins": 10,
-      "losses": 5,
-      "matches": 15,
-      "tier": "A-"
+      "losses": 6,
+      "matches": 16,
+      "tier": "B+"
     },
     "scorpionjuan": {
       "wins": 4,
@@ -362,15 +362,15 @@
     },
     "kenshiro_c2": {
       "wins": 4,
-      "losses": 1,
-      "matches": 5,
-      "tier": "S-"
+      "losses": 2,
+      "matches": 6,
+      "tier": "A-"
     },
     "hakufu sonsaku": {
-      "wins": 3,
-      "losses": 1,
-      "matches": 4,
-      "tier": "A+"
+      "wins": 6,
+      "losses": 3,
+      "matches": 9,
+      "tier": "A-"
     },
     "ultimate_sagat": {
       "wins": 2,
@@ -385,16 +385,16 @@
       "tier": "B-"
     },
     "ultimate_zangief": {
-      "wins": 3,
+      "wins": 4,
       "losses": 6,
-      "matches": 9,
-      "tier": "D+"
+      "matches": 10,
+      "tier": "C"
     },
     "geese-kof98": {
-      "wins": 4,
-      "losses": 3,
-      "matches": 7,
-      "tier": "B"
+      "wins": 6,
+      "losses": 5,
+      "matches": 11,
+      "tier": "B-"
     },
     "bloodñ+killer": {
       "wins": 2,
@@ -410,20 +410,20 @@
     },
     "jagi": {
       "wins": 3,
-      "losses": 18,
-      "matches": 21,
+      "losses": 24,
+      "matches": 27,
       "tier": "F+"
     },
     "deadly": {
-      "wins": 7,
+      "wins": 12,
       "losses": 1,
-      "matches": 8,
-      "tier": "S"
+      "matches": 13,
+      "tier": "S+"
     },
     "ultimate_dhalsim": {
-      "wins": 2,
-      "losses": 3,
-      "matches": 5,
+      "wins": 4,
+      "losses": 5,
+      "matches": 9,
       "tier": "C"
     },
     "shinryu 2.0": {
@@ -446,20 +446,20 @@
     },
     "gokuz2": {
       "wins": 2,
-      "losses": 5,
-      "matches": 7,
+      "losses": 6,
+      "matches": 8,
       "tier": "D"
     },
     "gill-enhancedai": {
       "wins": 4,
-      "losses": 2,
-      "matches": 6,
-      "tier": "A-"
+      "losses": 4,
+      "matches": 8,
+      "tier": "B-"
     },
     "ippo": {
-      "wins": 1,
-      "losses": 2,
-      "matches": 3,
+      "wins": 2,
+      "losses": 4,
+      "matches": 6,
       "tier": "D+"
     },
     "super ryu": {
@@ -469,16 +469,16 @@
       "tier": "Z+"
     },
     "geese": {
-      "wins": 1,
-      "losses": 3,
-      "matches": 4,
+      "wins": 2,
+      "losses": 6,
+      "matches": 8,
       "tier": "D"
     },
     "mvc2_oroai": {
       "wins": 2,
-      "losses": 3,
-      "matches": 5,
-      "tier": "C"
+      "losses": 4,
+      "matches": 6,
+      "tier": "D+"
     },
     "rei": {
       "wins": 3,
@@ -487,10 +487,10 @@
       "tier": "Z+"
     },
     "zerohaohmaru": {
-      "wins": 1,
+      "wins": 2,
       "losses": 3,
-      "matches": 4,
-      "tier": "D"
+      "matches": 5,
+      "tier": "C"
     },
     "majin starfish v3": {
       "wins": 4,
@@ -505,22 +505,22 @@
       "tier": "F-"
     },
     "emperor thouther": {
-      "wins": 5,
+      "wins": 6,
       "losses": 5,
-      "matches": 10,
+      "matches": 11,
       "tier": "B-"
     },
     "gogetasuper4": {
-      "wins": 7,
+      "wins": 8,
       "losses": 0,
-      "matches": 7,
+      "matches": 8,
       "tier": "Z+"
     },
     "kung fu man-kofm": {
       "wins": 3,
-      "losses": 2,
-      "matches": 5,
-      "tier": "B+"
+      "losses": 3,
+      "matches": 6,
+      "tier": "B-"
     },
     "akumagg": {
       "wins": 1,
@@ -529,16 +529,16 @@
       "tier": "B-"
     },
     "jin(the evil awakens 2)": {
-      "wins": 8,
-      "losses": 1,
-      "matches": 9,
-      "tier": "S"
+      "wins": 9,
+      "losses": 3,
+      "matches": 12,
+      "tier": "A+"
     },
     "mamiya": {
-      "wins": 5,
+      "wins": 6,
       "losses": 2,
-      "matches": 7,
-      "tier": "A"
+      "matches": 8,
+      "tier": "A+"
     },
     "cvsiori": {
       "wins": 0,
@@ -553,10 +553,10 @@
       "tier": "C"
     },
     "markiplier": {
-      "wins": 1,
+      "wins": 4,
       "losses": 5,
-      "matches": 6,
-      "tier": "F+"
+      "matches": 9,
+      "tier": "C"
     },
     "ryuuken": {
       "wins": 4,
@@ -571,16 +571,16 @@
       "tier": "D+"
     },
     "2024sf3gouki": {
-      "wins": 2,
+      "wins": 3,
       "losses": 3,
-      "matches": 5,
-      "tier": "C"
+      "matches": 6,
+      "tier": "B-"
     },
     "kenoh": {
-      "wins": 3,
+      "wins": 5,
       "losses": 1,
-      "matches": 4,
-      "tier": "A+"
+      "matches": 6,
+      "tier": "S-"
     },
     "s.yashiro.driver": {
       "wins": 7,
@@ -590,9 +590,9 @@
     },
     "yuri kyaku": {
       "wins": 3,
-      "losses": 3,
-      "matches": 6,
-      "tier": "B-"
+      "losses": 4,
+      "matches": 7,
+      "tier": "C"
     },
     "chun_li_jj": {
       "wins": 4,
@@ -601,9 +601,9 @@
       "tier": "A-"
     },
     "orochi gill": {
-      "wins": 1,
-      "losses": 1,
-      "matches": 2,
+      "wins": 2,
+      "losses": 2,
+      "matches": 4,
       "tier": "B-"
     },
     "mvc2_cammy delta": {
@@ -620,15 +620,15 @@
     },
     "shin ryu": {
       "wins": 2,
-      "losses": 2,
-      "matches": 4,
-      "tier": "B-"
+      "losses": 3,
+      "matches": 5,
+      "tier": "C"
     },
     "fei-long": {
-      "wins": 0,
+      "wins": 1,
       "losses": 1,
-      "matches": 1,
-      "tier": "F-"
+      "matches": 2,
+      "tier": "B-"
     },
     "god akuma": {
       "wins": 3,
@@ -638,15 +638,15 @@
     },
     "kanae": {
       "wins": 0,
-      "losses": 5,
-      "matches": 5,
+      "losses": 6,
+      "matches": 6,
       "tier": "F-"
     },
     "jin_kazama": {
       "wins": 1,
-      "losses": 0,
-      "matches": 1,
-      "tier": "Z+"
+      "losses": 1,
+      "matches": 2,
+      "tier": "B-"
     },
     "albertweskerai": {
       "wins": 2,
@@ -673,10 +673,10 @@
       "tier": "F-"
     },
     "goku": {
-      "wins": 5,
-      "losses": 1,
-      "matches": 6,
-      "tier": "S-"
+      "wins": 8,
+      "losses": 3,
+      "matches": 11,
+      "tier": "A"
     },
     "geese_ys": {
       "wins": 3,
@@ -686,45 +686,45 @@
     },
     "avgn": {
       "wins": 3,
-      "losses": 2,
-      "matches": 5,
-      "tier": "B+"
+      "losses": 3,
+      "matches": 6,
+      "tier": "B-"
     },
     "cyberryuevil": {
-      "wins": 0,
-      "losses": 4,
-      "matches": 4,
-      "tier": "F-"
+      "wins": 4,
+      "losses": 5,
+      "matches": 9,
+      "tier": "C"
     },
     "juggernault": {
-      "wins": 1,
-      "losses": 4,
-      "matches": 5,
+      "wins": 2,
+      "losses": 7,
+      "matches": 9,
       "tier": "D-"
     },
     "pewdiepie": {
       "wins": 2,
-      "losses": 3,
-      "matches": 5,
-      "tier": "C"
+      "losses": 4,
+      "matches": 6,
+      "tier": "D+"
     },
     "banzoku-alex": {
-      "wins": 3,
-      "losses": 0,
-      "matches": 3,
-      "tier": "Z+"
+      "wins": 7,
+      "losses": 2,
+      "matches": 9,
+      "tier": "A+"
     },
     "zeroreika": {
-      "wins": 1,
-      "losses": 1,
-      "matches": 2,
+      "wins": 2,
+      "losses": 2,
+      "matches": 4,
       "tier": "B-"
     },
     "guy": {
-      "wins": 3,
+      "wins": 4,
       "losses": 4,
-      "matches": 7,
-      "tier": "C"
+      "matches": 8,
+      "tier": "B-"
     },
     "ultimate c.falcon": {
       "wins": 1,
@@ -770,9 +770,9 @@
     },
     "kenoh[fleshdoomdbl&lordmike]": {
       "wins": 4,
-      "losses": 2,
-      "matches": 6,
-      "tier": "A-"
+      "losses": 3,
+      "matches": 7,
+      "tier": "B"
     },
     "striderhiryu": {
       "wins": 2,
@@ -823,10 +823,10 @@
       "tier": "F-"
     },
     "yuki": {
-      "wins": 1,
-      "losses": 2,
-      "matches": 3,
-      "tier": "D+"
+      "wins": 2,
+      "losses": 3,
+      "matches": 5,
+      "tier": "C"
     },
     "iqs_kishima_ai": {
       "wins": 2,
@@ -835,10 +835,10 @@
       "tier": "B-"
     },
     "holy ryu3": {
-      "wins": 1,
+      "wins": 2,
       "losses": 2,
-      "matches": 3,
-      "tier": "D+"
+      "matches": 4,
+      "tier": "B-"
     },
     "mugen ryup": {
       "wins": 3,
@@ -871,10 +871,10 @@
       "tier": "D"
     },
     "morrigan aensland": {
-      "wins": 5,
-      "losses": 1,
-      "matches": 6,
-      "tier": "S-"
+      "wins": 7,
+      "losses": 2,
+      "matches": 9,
+      "tier": "A+"
     },
     "blackprincess_tohka": {
       "wins": 1,
@@ -907,9 +907,9 @@
       "tier": "Z+"
     },
     "iori": {
-      "wins": 4,
+      "wins": 5,
       "losses": 1,
-      "matches": 5,
+      "matches": 6,
       "tier": "S-"
     },
     "____m206 sagat beta 5.3": {
@@ -919,9 +919,9 @@
       "tier": "B-"
     },
     "omegath": {
-      "wins": 1,
+      "wins": 2,
       "losses": 0,
-      "matches": 1,
+      "matches": 2,
       "tier": "Z+"
     },
     "haohmaru": {
@@ -931,10 +931,10 @@
       "tier": "F-"
     },
     "ace": {
-      "wins": 0,
-      "losses": 4,
-      "matches": 4,
-      "tier": "F-"
+      "wins": 3,
+      "losses": 5,
+      "matches": 8,
+      "tier": "C-"
     },
     "bomber_hugo": {
       "wins": 0,
@@ -949,22 +949,22 @@
       "tier": "B-"
     },
     "kenshiro-kofm": {
-      "wins": 21,
+      "wins": 22,
       "losses": 5,
-      "matches": 26,
+      "matches": 27,
       "tier": "S-"
     },
     "toki-kofa": {
-      "wins": 3,
-      "losses": 10,
-      "matches": 13,
-      "tier": "D-"
+      "wins": 4,
+      "losses": 11,
+      "matches": 15,
+      "tier": "D"
     },
     "felicia redhot": {
-      "wins": 1,
+      "wins": 2,
       "losses": 2,
-      "matches": 3,
-      "tier": "D+"
+      "matches": 4,
+      "tier": "B-"
     },
     "tearyu": {
       "wins": 1,
@@ -985,9 +985,9 @@
       "tier": "Z+"
     },
     "xryu": {
-      "wins": 2,
-      "losses": 1,
-      "matches": 3,
+      "wins": 4,
+      "losses": 2,
+      "matches": 6,
       "tier": "A-"
     },
     "zhou lee": {
@@ -1003,10 +1003,10 @@
       "tier": "A-"
     },
     "vega": {
-      "wins": 1,
+      "wins": 2,
       "losses": 1,
-      "matches": 2,
-      "tier": "B-"
+      "matches": 3,
+      "tier": "A-"
     },
     "pekora": {
       "wins": 1,
@@ -1021,10 +1021,10 @@
       "tier": "B-"
     },
     "ultimate_e_honda": {
-      "wins": 3,
+      "wins": 4,
       "losses": 2,
-      "matches": 5,
-      "tier": "B+"
+      "matches": 6,
+      "tier": "A-"
     },
     "ultimate_deejay": {
       "wins": 0,
@@ -1063,15 +1063,15 @@
       "tier": "F-"
     },
     "shadow": {
-      "wins": 0,
+      "wins": 1,
       "losses": 1,
-      "matches": 1,
-      "tier": "F-"
+      "matches": 2,
+      "tier": "B-"
     },
     "super better mario": {
-      "wins": 2,
-      "losses": 2,
-      "matches": 4,
+      "wins": 4,
+      "losses": 4,
+      "matches": 8,
       "tier": "B-"
     },
     "super better luigi": {
@@ -1082,21 +1082,21 @@
     },
     "waluigi": {
       "wins": 2,
-      "losses": 4,
-      "matches": 6,
-      "tier": "D+"
-    },
-    "jin kazama": {
-      "wins": 1,
-      "losses": 3,
-      "matches": 4,
+      "losses": 5,
+      "matches": 7,
       "tier": "D"
     },
+    "jin kazama": {
+      "wins": 3,
+      "losses": 4,
+      "matches": 7,
+      "tier": "C"
+    },
     "suisei": {
-      "wins": 0,
-      "losses": 1,
-      "matches": 1,
-      "tier": "F-"
+      "wins": 2,
+      "losses": 2,
+      "matches": 4,
+      "tier": "B-"
     },
     "i-geese": {
       "wins": 1,
@@ -1111,15 +1111,15 @@
       "tier": "Z+"
     },
     "o_gill": {
-      "wins": 1,
+      "wins": 2,
       "losses": 0,
-      "matches": 1,
+      "matches": 2,
       "tier": "Z+"
     },
     "one ken": {
-      "wins": 1,
+      "wins": 2,
       "losses": 0,
-      "matches": 1,
+      "matches": 2,
       "tier": "Z+"
     },
     "bbl_tricky": {
@@ -1129,22 +1129,22 @@
       "tier": "Z+"
     },
     "wario": {
-      "wins": 17,
-      "losses": 4,
-      "matches": 21,
-      "tier": "S-"
+      "wins": 18,
+      "losses": 5,
+      "matches": 23,
+      "tier": "A+"
     },
     "blake v3-1.1": {
-      "wins": 2,
+      "wins": 3,
       "losses": 0,
-      "matches": 2,
+      "matches": 3,
       "tier": "Z+"
     },
     "dark side ryu": {
-      "wins": 1,
-      "losses": 2,
-      "matches": 3,
-      "tier": "D+"
+      "wins": 2,
+      "losses": 3,
+      "matches": 5,
+      "tier": "C"
     },
     "demon ken (f.f. style)": {
       "wins": 1,
@@ -1178,9 +1178,9 @@
     },
     "holyhiryu": {
       "wins": 1,
-      "losses": 0,
-      "matches": 1,
-      "tier": "Z+"
+      "losses": 1,
+      "matches": 2,
+      "tier": "B-"
     },
     "dempsy ippo": {
       "wins": 1,
@@ -1189,10 +1189,10 @@
       "tier": "B-"
     },
     "orochi flamme shingo": {
-      "wins": 2,
-      "losses": 0,
-      "matches": 2,
-      "tier": "Z+"
+      "wins": 3,
+      "losses": 1,
+      "matches": 4,
+      "tier": "A+"
     },
     "k-feilong_wls": {
       "wins": 1,
@@ -1202,9 +1202,9 @@
     },
     "nicotine": {
       "wins": 2,
-      "losses": 0,
-      "matches": 2,
-      "tier": "Z+"
+      "losses": 1,
+      "matches": 3,
+      "tier": "A-"
     },
     "hitto": {
       "wins": 1,
@@ -1225,10 +1225,10 @@
       "tier": "B-"
     },
     "kyo mi-kofm": {
-      "wins": 1,
-      "losses": 0,
-      "matches": 1,
-      "tier": "Z+"
+      "wins": 3,
+      "losses": 1,
+      "matches": 4,
+      "tier": "A+"
     },
     "angry ryu": {
       "wins": 1,
@@ -1244,8 +1244,8 @@
     },
     "lord evil ryu": {
       "wins": 0,
-      "losses": 2,
-      "matches": 2,
+      "losses": 3,
+      "matches": 3,
       "tier": "F-"
     },
     "ssf2x_gouki": {
@@ -1273,16 +1273,40 @@
       "tier": "Z+"
     },
     "violent_ken": {
-      "wins": 1,
+      "wins": 2,
       "losses": 2,
-      "matches": 3,
-      "tier": "D+"
+      "matches": 4,
+      "tier": "B-"
     },
     "evilsagat/definition.def": {
       "wins": 1,
       "losses": 0,
       "matches": 1,
       "tier": "Z+"
+    },
+    "coco": {
+      "wins": 0,
+      "losses": 0,
+      "matches": 0,
+      "tier": "U"
+    },
+    "definition": {
+      "wins": 0,
+      "losses": 0,
+      "matches": 0,
+      "tier": "U"
+    },
+    "evilryusf'2": {
+      "wins": 0,
+      "losses": 0,
+      "matches": 0,
+      "tier": "U"
+    },
+    "shovelknight": {
+      "wins": 0,
+      "losses": 0,
+      "matches": 0,
+      "tier": "U"
     }
   }
 }

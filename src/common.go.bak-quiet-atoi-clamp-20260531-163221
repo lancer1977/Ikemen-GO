@@ -184,9 +184,8 @@ func Atoi(str string) int32 {
 			}
 			n = n*10 + int64(a[i]-'0')
 			if n > 2147483647 {
-				// Many legacy MUGEN characters use oversized values such as 9999999999
-				// as a practical "forever" sentinel for pause/super/bind times. Clamp
-				// silently to int32 range instead of flooding startup/runtime logs.
+				sys.appendToConsole(fmt.Sprintf("WARNING: Atoi conversion outside int32 range: %v", a[:i+1]))
+				LogMessage("Atoi conversion outside int32 range: %v", a[:i+1])
 				if str[0] == '-' {
 					return IErr
 				}

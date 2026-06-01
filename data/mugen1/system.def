@@ -221,6 +221,7 @@ menu.itemname.menumission.bonusgames.back = "BACK"           ;Ikemen feature
 menu.itemname.menuwatch = "WATCH MODE"                       ;Ikemen feature
 menu.itemname.menuwatch.watch = "CPU MATCH"
 menu.itemname.menuwatch.endlesswatch = "ENDLESS RANDOM"      ;Ikemen feature
+menu.itemname.menuwatch.onevonewatch = "1 VS 1 RANDOM"       ;Ikemen feature
 menu.itemname.menuwatch.tierbattles = "TIER BATTLES"         ;Ikemen feature
 menu.itemname.menuwatch.ztierwatch = "Z TIER"                ;Ikemen feature
 menu.itemname.menuwatch.stierwatch = "S TIER"                ;Ikemen feature

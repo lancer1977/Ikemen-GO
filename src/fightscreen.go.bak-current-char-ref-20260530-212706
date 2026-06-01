@@ -1901,17 +1901,10 @@ func (fa *FightScreenFace) drawTeammates(layerno int16, charpn int) {
 
 	teamSize := int32(len(fa.teammate_face))
 
-	// Determine how many teammates to draw using the actual loaded Turns
-	// member, not just the accumulated KO counter. This keeps portraits
-	// rotating correctly after every defeated teammate.
-	activeMember := turnsFightScreenActiveMember(charpn, teamSize, fa.numko)
-	defeatedCount := fa.numko
-	if activeMember > defeatedCount {
-		defeatedCount = activeMember
-	}
+	// Determine how many teammates to draw
 	visibleCount := teamSize - 1
 	if fa.teammate_ko_hide {
-		visibleCount -= defeatedCount
+		visibleCount -= fa.numko
 	}
 
 	if visibleCount <= 0 {
@@ -1927,10 +1920,10 @@ func (fa *FightScreenFace) drawTeammates(layerno int16, charpn int) {
 	for j := visibleCount - 1; j >= 0; j-- {
 		// Round-robin rotation
 		// Start after active player, wrap around to dead players so they appear last
-		i := (j + activeMember + 1) % teamSize
+		i := (j + fa.numko + 1) % teamSize
 
-		// Skip the active player if the modulo lands on them
-		if i == activeMember {
+		// Skip the active player (numko) if the modulo lands on them
+		if i == fa.numko {
 			i = (i + 1) % teamSize
 		}
 
@@ -1944,7 +1937,7 @@ func (fa *FightScreenFace) drawTeammates(layerno int16, charpn int) {
 		pfx := fa.teammate_face_pfx[i]
 
 		// TODO: Defeated PalFX
-		//if pfx != nil && i < defeatedCount {
+		//if pfx != nil && i < fa.numko {
 		//}
 
 		// Draw face
@@ -1952,7 +1945,7 @@ func (fa *FightScreenFace) drawTeammates(layerno int16, charpn int) {
 			fa.teammate_face[i], pfx, fa.teammate_scale[i]*sys.fightScreen.portraitScale, &fa.teammate_face_lay.window)
 
 		// Draw KO layer
-		if i < defeatedCount {
+		if i < fa.numko {
 			fa.teammate_ko.Draw((x + sys.fightScreen.offsetX), y, layerno, sys.fightScreen.scale)
 		}
 
@@ -2016,49 +2009,14 @@ func (nm *FightScreenName) reset() {
 	nm.top.Reset()
 }
 
-func turnsFightScreenActiveMember(charpn int, teamSize int32, fallback int32) int32 {
-	active := fallback
-	if charpn >= 0 && charpn < len(sys.chars) && len(sys.chars[charpn]) > 0 && sys.chars[charpn][0] != nil {
-		member := sys.chars[charpn][0].memberNo
-		if member >= 0 {
-			active = int32(member)
-		}
-	}
-	if teamSize <= 0 {
-		return 0
-	}
-	if active < 0 {
-		active = 0
-	} else if active >= teamSize {
-		active = teamSize - 1
-	}
-	return active
-}
-
 func (nm *FightScreenName) bgDraw(layerno int16) {
 	nm.bg.Draw(float32(nm.pos[0])+sys.fightScreen.offsetX, float32(nm.pos[1]), layerno, sys.fightScreen.scale)
 }
 
 func (nm *FightScreenName) draw(layerno int16, charpn int, f map[int]*Fnt, side int) {
 	if nm.name.font[0] >= 0 && getFont(f, nm.name.font[0]) != nil {
-		name := sys.cgi[charpn].lifebarname
-		if side >= 0 && side < len(sys.tmode) && charpn >= 0 && charpn < len(sys.chars) && len(sys.chars[charpn]) > 0 && sys.chars[charpn][0] != nil {
-			selectNo := sys.chars[charpn][0].selectNo
-			// In team modes, selectNo can stay on the first picked character while
-			// memberNo tracks the currently loaded Turns/Tag fighter. Resolve through
-			// sys.sel.selected so lifebar names update immediately after a KO/switch.
-			member := sys.chars[charpn][0].memberNo
-			if member >= 0 && side < len(sys.sel.selected) && member < len(sys.sel.selected[side]) && len(sys.sel.selected[side][member]) > 0 {
-				selectNo = sys.sel.selected[side][member][0]
-			}
-			if selectNo >= 0 && selectNo < len(sys.sel.charlist) {
-				if sys.sel.charlist[selectNo].lifebarname != "" {
-					name = sys.sel.charlist[selectNo].lifebarname
-				}
-			}
-		}
 		nm.name.lay.DrawText((float32(nm.pos[0]) + sys.fightScreen.offsetX), float32(nm.pos[1]), sys.fightScreen.scale, layerno,
-			name, getFont(f, nm.name.font[0]), nm.name.font[1], nm.name.font[2], nm.name.palfx, nm.name.frgba)
+			sys.cgi[charpn].lifebarname, getFont(f, nm.name.font[0]), nm.name.font[1], nm.name.font[2], nm.name.palfx, nm.name.frgba)
 	}
 
 	nm.top.Draw(float32(nm.pos[0])+sys.fightScreen.offsetX, float32(nm.pos[1]), layerno, sys.fightScreen.scale)
@@ -2071,15 +2029,10 @@ func (nm *FightScreenName) drawTeammates(layerno int16, charpn int, f map[int]*F
 
 	teamSize := int32(len(nm.teammate_name_strings))
 
-	// Determine how many names to draw using the actual loaded Turns member.
-	activeMember := turnsFightScreenActiveMember(charpn, teamSize, nm.numko)
-	defeatedCount := nm.numko
-	if activeMember > defeatedCount {
-		defeatedCount = activeMember
-	}
+	// Determine how many names to draw
 	visibleCount := teamSize - 1
 	if nm.teammate_ko_hide {
-		visibleCount -= defeatedCount
+		visibleCount -= nm.numko
 	}
 
 	if visibleCount <= 0 {
@@ -2094,9 +2047,9 @@ func (nm *FightScreenName) drawTeammates(layerno int16, charpn int, f map[int]*F
 	for j := visibleCount - 1; j >= 0; j-- {
 		// Round-robin rotation
 		// Start after active player, wrap around to dead players so they appear last
-		i := (j + activeMember + 1) % teamSize
+		i := (j + nm.numko + 1) % teamSize
 
-		if i == activeMember {
+		if i == nm.numko {
 			i = (i + 1) % teamSize
 		}
 

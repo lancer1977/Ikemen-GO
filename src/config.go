@@ -99,6 +99,28 @@ type Config struct {
 				Bonus float32 `ini:"Bonus" sync:"host"`
 			} `ini:"Recovery"`
 		} `ini:"Turns"`
+		Ratio struct {
+			Recovery struct {
+				Base  float32 `ini:"Base" sync:"host"`
+				Bonus float32 `ini:"Bonus" sync:"host"`
+			} `ini:"Recovery"`
+			Level1 struct {
+				Attack float32 `ini:"Attack" sync:"host"`
+				Life   float32 `ini:"Life" sync:"host"`
+			} `ini:"Level1"`
+			Level2 struct {
+				Attack float32 `ini:"Attack" sync:"host"`
+				Life   float32 `ini:"Life" sync:"host"`
+			} `ini:"Level2"`
+			Level3 struct {
+				Attack float32 `ini:"Attack" sync:"host"`
+				Life   float32 `ini:"Life" sync:"host"`
+			} `ini:"Level3"`
+			Level4 struct {
+				Attack float32 `ini:"Attack" sync:"host"`
+				Life   float32 `ini:"Life" sync:"host"`
+			} `ini:"Level4"`
+		} `ini:"Ratio"`
 	} `ini:"Options"`
 	Config struct {
 		Motif             string   `ini:"Motif" sync:"strict"`
@@ -122,6 +144,7 @@ type Config struct {
 		TrainingStage     string   `ini:"TrainingStage"`
 		GamepadMappings   string   `ini:"GamepadMappings"`
 		LegacyTime        bool     `ini:"LegacyTime" sync:"host"`
+		Framerate         int      `ini:"Framerate" sync:"strict"`
 	} `ini:"Config"`
 	Debug struct {
 		AllowDebugMode      bool    `ini:"AllowDebugMode"`
@@ -193,6 +216,9 @@ type Config struct {
 		Survival struct {
 			AIramp AIrampProperties `ini:"AIramp"`
 		} `ini:"survival"`
+		Ratio struct {
+			AIramp AIrampProperties `ini:"AIramp"`
+		} `ini:"ratio"`
 	} `ini:"Arcade"`
 	Netplay struct {
 		ListenPort      string             `ini:"ListenPort"`

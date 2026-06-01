@@ -11898,9 +11898,7 @@ func (c *Char) actionFinish() {
 	c.zScale = sys.updateZScale(c.pos[2], c.localscl)
 	// KO behavior
 	if !c.hitPause() && !c.pauseBool {
-		// Local rule: once a real fighter's life truly reaches 0, they die.
-		// Do not let NoKO / NoGuardKO assertions keep a 0-life healthbar alive.
-		if c.alive() && c.life <= 0 {
+		if c.alive() && c.life <= 0 && !sys.gsf(GSF_globalnoko) && !c.asf(ASF_noko) && (!c.ghv.guarded || !c.asf(ASF_noguardko)) {
 			// KO sound
 			if !sys.gsf(GSF_nokosnd) {
 				c.playSound("", false, 0, 11, 0, -1, 100, 0, 1, c.localscl, &c.pos[0], false, 0, 0, 0, 0, false, false)

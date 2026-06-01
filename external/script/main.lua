@@ -39,6 +39,72 @@ end
 --; COMMON FUNCTIONS
 --;===========================================================
 
+main.fadeType = 'fadein'
+main.fadeActive = false
+main.fadeCnt = 0
+
+function main.f_bgReset(bg)
+	if bg ~= nil then
+		bgReset(bg)
+	end
+end
+
+function main.f_fadeReset(fadeType, fadeGroup)
+	main.fadeType = fadeType
+	main.fadeActive = true
+	main.fadeCnt = 0
+	if fadeGroup == nil then
+		return
+	end
+	if fadeType == 'fadeout' and fadeGroup.fadeout ~= nil then
+		fadeOutInit(fadeGroup.fadeout.FadeData)
+	elseif fadeGroup.fadein ~= nil then
+		fadeInInit(fadeGroup.fadein.FadeData)
+	end
+end
+
+function main.f_fadeAnim(_)
+	main.fadeActive = fadeActive()
+end
+
+function main.f_playBGM(interrupt, bgm, loop, volume, loopstart, loopend)
+	if bgm == nil or bgm == '' then
+		playBgm({interrupt = interrupt})
+	else
+		playBgm({bgm = bgm, loop = loop, volume = volume, loopstart = loopstart, loopend = loopend, interrupt = interrupt})
+	end
+end
+
+function main.f_frameChange()
+	return true
+end
+
+function main.f_refresh()
+	refresh()
+end
+
+function main.f_extractKeys(keys)
+	if keys == nil then
+		return {}
+	elseif type(keys) == 'table' then
+		return keys
+	end
+	return {keys}
+end
+
+function main.f_input(players, keys)
+	return getInput(players, main.f_extractKeys(keys))
+end
+
+if type(gamemode) ~= 'function' and type(gameMode) == 'function' then
+	function gamemode(mode)
+		if mode ~= nil then
+			return gameMode(mode)
+		end
+		return gameMode()
+	end
+end
+
 --return file content
 function main.f_fileRead(path, mode, noError)
 	local file = io.open(path, mode or 'r')
@@ -99,6 +165,19 @@ function main.f_saveBaseRemapInput()
 	for i = 1, gameOption('Config.Players') do
 		main.t_baseRemapInput[i] = getRemapInput(i)
 	end
+end
+
+function main.f_stringToTeamMode(tm)
+	if tm == 'single' then
+		return 0
+	elseif tm == 'simul' then
+		return 1
+	elseif tm == 'turns' then
+		return 2
+	elseif tm == 'tag' then
+		return 3
+	end
+	return tonumber(tm)
 end
 
 --check if file exists
@@ -719,9 +798,9 @@ function main.f_commandLine()
 			hook.run("main.f_commandLine.player", t[#t], flags, num, player)
 			refresh()
 		elseif k:match('^-tmode1$') then
-			t_teamMode[1] = tonumber(v)
+			t_teamMode[1] = main.f_stringToTeamMode(v) or t_teamMode[1]
 		elseif k:match('^-tmode2$') then
-			t_teamMode[2] = tonumber(v)
+			t_teamMode[2] = main.f_stringToTeamMode(v) or t_teamMode[2]
 		elseif k:match('^-time$') then
 			roundTime = tonumber(v)
 		elseif k:match('^-rounds$') then
@@ -1684,6 +1763,142 @@ end
 
 -- Associative elements table storing functions controlling behaviour of each
 -- menu item (modes configuration). Can be appended via external module.
+local function f_watchRandomChars()
+	if main.t_randomChars ~= nil and #main.t_randomChars > 0 then
+		return main.t_randomChars
+	end
+	local ret = {}
+	for _, data in ipairs(main.t_selChars or {}) do
+		if data.char_ref ~= nil and data.hidden ~= 2 then
+			table.insert(ret, data.char_ref)
+		end
+	end
+	return ret
+end
+
+local function f_watchResetSavedData()
+	start.t_savedData = {
+		win = {0, 0},
+		lose = {0, 0},
+		time = {total = 0, matches = {}},
+		score = {total = {0, 0}, matches = {}},
+		consecutive = {0, 0},
+		debugflag = {false, false},
+	}
+end
+
+local function f_watchReturnToTitle()
+	main.endlessWatchActive = false
+	main.oneVsAllActive = false
+	main.f_bgReset(motif[main.background].BGDef)
+	main.f_fadeReset('fadein', motif[main.group])
+	playBgm({source = "motif.title", interrupt = true})
+end
+
+local function f_watchPrepareMatch(p1Char, p2Char)
+	setTeamMode(1, 0, 1)
+	setTeamMode(2, 0, 1)
+	start.p[1].teamMode = 0
+	start.p[2].teamMode = 0
+	start.p[1].numChars = 1
+	start.p[2].numChars = 1
+	start.p[1].t_selected = {}
+	start.p[2].t_selected = {}
+	start.p[1].t_selTemp = {}
+	start.p[2].t_selTemp = {}
+	start.p[1].t_selCmd = {}
+	start.p[2].t_selCmd = {}
+	for side, ch in ipairs({p1Char, p2Char}) do
+		selectChar(side, ch, 1)
+		start.p[side].t_selected[1] = {
+			ref = ch,
+			pal = 1,
+			pn = side,
+			ratioLevel = 1,
+		}
+	end
+	start.f_remapAI()
+	start.f_setRounds(nil, {})
+	local stage = start.f_setStage()
+	start.f_setMusic(stage)
+	loadStart()
+end
+
+local function f_randomDifferentPair(chars)
+	if #chars < 2 then
+		return nil, nil
+	end
+	local p1 = chars[math.random(1, #chars)]
+	local p2 = chars[math.random(1, #chars)]
+	local tries = 0
+	while p2 == p1 and tries < 20 do
+		p2 = chars[math.random(1, #chars)]
+		tries = tries + 1
+	end
+	if p2 == p1 then
+		return nil, nil
+	end
+	return p1, p2
+end
+
+local function f_watchModeSetup(t, item, modeName)
+	main.cpuSide[1] = true
+	main.cpuSide[2] = true
+	main.charparam.music = true
+	textImgSetText(motif.select_info.title.TextSpriteData, motif.select_info.title.text.watch)
+	remapInput(1, getLastInputController())
+	remapInput(getLastInputController(), 1)
+	setGameMode(modeName or 'watch')
+	setHomeTeam(1)
+	hook.run("main.t_itemname", t, item)
+end
+
+local function f_endlessWatchLoop(selectPair)
+	main.endlessWatchActive = true
+	clearColor(0, 0, 0)
+	setMatchNo(1)
+	f_watchResetSavedData()
+	refresh()
+	clearSelected()
+	while not esc() do
+		local p1Char, p2Char = selectPair()
+		if p1Char == nil or p2Char == nil then
+			break
+		end
+		f_watchPrepareMatch(p1Char, p2Char)
+		local winner = game() or getWinnerTeam() or 0
+		clearColor(0, 0, 0)
+		clearSelected()
+		if winner < 0 or esc() then
+			break
+		end
+		setMatchNo(matchno() + 1)
+		refresh()
+	end
+	f_watchReturnToTitle()
+end
+
+local function f_lockedTierWatchMode(tierList)
+	return function(t, item)
+		f_watchModeSetup(t, item, 'watch')
+		return function()
+			local allowed = {}
+			for _, tier in ipairs(tierList) do
+				allowed[tier] = true
+			end
+			f_endlessWatchLoop(function()
+				local chars = {}
+				for _, ref in ipairs(f_watchRandomChars()) do
+					if allowed[start.f_getRecordTier(start.f_getCharRecord(ref))] then
+						table.insert(chars, ref)
+					end
+				end
+				return f_randomDifferentPair(chars)
+			end)
+		end
+	end
+end
+
 main.t_itemname = {
 	--ARCADE / TEAM ARCADE
 	['arcade'] = function(t, item)
@@ -2246,6 +2461,267 @@ main.t_itemname = {
 		setHomeTeam(1)
 		hook.run("main.t_itemname", t, item)
 		return start.f_selectMode
+	end,
+	--ENDLESS RANDOM WATCH
+	['endlesswatch'] = function(t, item)
+		f_watchModeSetup(t, item, 'watch')
+		return function()
+			f_endlessWatchLoop(function()
+				return f_randomDifferentPair(f_watchRandomChars())
+			end)
+		end
+	end,
+	['onevonewatch'] = function(t, item)
+		f_watchModeSetup(t, item, 'watch')
+		return function()
+			f_endlessWatchLoop(function()
+				return f_randomDifferentPair(f_watchRandomChars())
+			end)
+		end
+	end,
+	--TIER BATTLES WATCH
+	['tierbattles'] = function(t, item)
+		f_watchModeSetup(t, item, 'watch')
+		return function()
+			local tierOrder = {'U', 'F-', 'F', 'F+', 'D-', 'D', 'D+', 'C-', 'C', 'C+', 'B-', 'B', 'B+', 'A-', 'A', 'A+', 'S-', 'S', 'S+', 'Z-', 'Z', 'Z+'}
+			local tierIndex = {}
+			for i, tier in ipairs(tierOrder) do
+				tierIndex[tier] = i
+			end
+			local tierBattleRank = 1
+			f_endlessWatchLoop(function()
+				local buckets = {order = tierOrder}
+				for i = 1, #tierOrder do
+					buckets[i] = {}
+				end
+				for _, ref in ipairs(f_watchRandomChars()) do
+					local idx = tierIndex[start.f_getRecordTier(start.f_getCharRecord(ref))] or tierIndex.U
+					table.insert(buckets[idx], ref)
+				end
+				local attempts = 0
+				while attempts < #tierOrder do
+					if buckets[tierBattleRank] ~= nil and #buckets[tierBattleRank] > 0 then
+						local p1 = buckets[tierBattleRank][math.random(1, #buckets[tierBattleRank])]
+						local candidateRanks = {}
+						for _, rank in ipairs({tierBattleRank - 1, tierBattleRank, tierBattleRank + 1}) do
+							if buckets[rank] ~= nil and (rank ~= tierBattleRank or #buckets[rank] > 1) then
+								table.insert(candidateRanks, rank)
+							end
+						end
+						if #candidateRanks > 0 then
+							local p2Rank = candidateRanks[math.random(1, #candidateRanks)]
+							local p2 = buckets[p2Rank][math.random(1, #buckets[p2Rank])]
+							local tries = 0
+							while p2Rank == tierBattleRank and p2 == p1 and tries < 20 do
+								p2 = buckets[p2Rank][math.random(1, #buckets[p2Rank])]
+								tries = tries + 1
+							end
+							if p2 ~= p1 then
+								tierBattleRank = tierBattleRank + 1
+								if tierBattleRank > #tierOrder then
+									tierBattleRank = 1
+								end
+								return p1, p2
+							end
+						end
+					end
+					tierBattleRank = tierBattleRank + 1
+					if tierBattleRank > #tierOrder then
+						tierBattleRank = 1
+					end
+					attempts = attempts + 1
+				end
+				return nil, nil
+			end)
+		end
+	end,
+	['ztierwatch'] = f_lockedTierWatchMode({'Z-', 'Z', 'Z+'}),
+	['stierwatch'] = f_lockedTierWatchMode({'S-', 'S', 'S+'}),
+	['atierwatch'] = f_lockedTierWatchMode({'A-', 'A', 'A+'}),
+	['btierwatch'] = f_lockedTierWatchMode({'B-', 'B', 'B+'}),
+	['ctierwatch'] = f_lockedTierWatchMode({'C-', 'C', 'C+'}),
+	['dtierwatch'] = f_lockedTierWatchMode({'D-', 'D', 'D+'}),
+	['ftierwatch'] = f_lockedTierWatchMode({'F-', 'F', 'F+'}),
+	['utierwatch'] = f_lockedTierWatchMode({'U'}),
+	--1 VS ALL WATCH
+	['onevsall'] = function(t, item)
+		main.cpuSide[1] = true
+		main.cpuSide[2] = true
+		main.selectMenu[1] = true
+		main.selectMenu[2] = false
+		main.stageMenu = true
+		main.teamMenu[1].single = true
+		main.teamMenu[2].single = true
+		main.charparam.music = true
+		textImgSetText(motif.select_info.title.TextSpriteData, motif.select_info.title.text.watch)
+		remapInput(1, getLastInputController())
+		remapInput(getLastInputController(), 1)
+		setGameMode('onevsall')
+		hook.run("main.t_itemname", t, item)
+		return function()
+			main.oneVsAllActive = true
+			clearColor(0, 0, 0)
+			setMatchNo(1)
+			f_watchResetSavedData()
+			refresh()
+			clearSelected()
+			start.f_selectReset(true)
+			if not start.f_selectScreen() then
+				f_watchReturnToTitle()
+				return
+			end
+			local selected = start.p[1].t_selected[1]
+			if selected == nil or start.f_getCharData(selected.ref) == nil then
+				f_watchReturnToTitle()
+				return
+			end
+			local chosenRef = selected.ref
+			local chosenPal = selected.pal or 1
+			local chosenDef = start.f_getCharData(chosenRef).char
+			local roster = {}
+			for _, ref in ipairs(f_watchRandomChars()) do
+				if ref ~= chosenRef then
+					table.insert(roster, ref)
+				end
+			end
+			start.f_shuffleTable(roster)
+			for _, opponentRef in ipairs(roster) do
+				if esc() then
+					break
+				end
+				local opponentData = start.f_getCharData(opponentRef)
+				if opponentData ~= nil then
+					main.t_availableChars = main.f_tableCopy(main.t_orderChars)
+					start.p[1].teamMode = 0
+					start.p[2].teamMode = 0
+					start.p[1].numChars = 1
+					start.p[2].numChars = 1
+					local ok = launchFight{
+						p1char = {chosenDef},
+						p1pal = chosenPal,
+						p2char = {opponentData.char},
+						p2pal = start.f_selectPal(opponentRef),
+						p1teammode = 'single',
+						p2teammode = 'single',
+						p1numchars = 1,
+						p2numchars = 1,
+						p1rounds = 2,
+						p2rounds = 2,
+						vsscreen = false,
+						victoryscreen = false,
+						continue = false,
+						quickcontinue = true,
+					}
+					clearColor(0, 0, 0)
+					clearSelected()
+					if not ok or esc() then
+						break
+					end
+					setMatchNo(matchno() + 1)
+					refresh()
+				end
+			end
+			f_watchReturnToTitle()
+		end
+	end,
+	['onevsallteam'] = function(t, item)
+		local function f_teamModeString(mode)
+			if mode == 1 then
+				return 'simul'
+			elseif mode == 2 then
+				return 'turns'
+			elseif mode == 3 then
+				return 'tag'
+			end
+			return 'single'
+		end
+		main.cpuSide[1] = true
+		main.cpuSide[2] = true
+		main.selectMenu[1] = true
+		main.selectMenu[2] = false
+		main.stageMenu = true
+		main.teamMenu[1].simul = true
+		main.teamMenu[1].single = true
+		main.teamMenu[1].tag = true
+		main.teamMenu[1].turns = true
+		main.teamMenu[2].simul = true
+		main.teamMenu[2].single = true
+		main.teamMenu[2].tag = true
+		main.teamMenu[2].turns = true
+		main.charparam.music = true
+		textImgSetText(motif.select_info.title.TextSpriteData, motif.select_info.title.text.watch)
+		remapInput(1, getLastInputController())
+		remapInput(getLastInputController(), 1)
+		setGameMode('onevsallteam')
+		hook.run("main.t_itemname", t, item)
+		return function()
+			main.oneVsAllActive = true
+			clearColor(0, 0, 0)
+			setMatchNo(1)
+			f_watchResetSavedData()
+			refresh()
+			clearSelected()
+			start.f_selectReset(true)
+			if not start.f_selectScreen() then
+				f_watchReturnToTitle()
+				return
+			end
+			if start.p[1].t_selected[1] == nil then
+				f_watchReturnToTitle()
+				return
+			end
+			local chosenRefs = {}
+			for _, v in ipairs(start.p[1].t_selected) do
+				chosenRefs[v.ref] = true
+			end
+			local roster = {}
+			for _, ref in ipairs(f_watchRandomChars()) do
+				if not chosenRefs[ref] then
+					table.insert(roster, ref)
+				end
+			end
+			start.f_shuffleTable(roster)
+			local p1Mode = f_teamModeString(start.p[1].teamMode)
+			local playerTeam = main.f_tableCopy(start.p[1].t_selected)
+			local playerTeamTemp = main.f_tableCopy(start.p[1].t_selTemp)
+			for _, opponentRef in ipairs(roster) do
+				if esc() then
+					break
+				end
+				local opponentData = start.f_getCharData(opponentRef)
+				if opponentData ~= nil then
+					start.p[1].t_selected = main.f_tableCopy(playerTeam)
+					start.p[1].t_selTemp = main.f_tableCopy(playerTeamTemp)
+					start.p[1].numChars = #playerTeam
+					start.p[2].teamMode = 0
+					start.p[2].numChars = 1
+					start.p[2].t_selected = {}
+					start.p[2].t_selTemp = {}
+					main.t_availableChars = main.f_tableCopy(main.t_orderChars)
+					local ok = launchFight{
+						p2char = {opponentData.char},
+						p2pal = start.f_selectPal(opponentRef),
+						p2numchars = 1,
+						p1teammode = p1Mode,
+						p2teammode = 'single',
+						p1rounds = 2,
+						p2rounds = 2,
+						vsscreen = false,
+						victoryscreen = false,
+						continue = false,
+						quickcontinue = true,
+					}
+					clearColor(0, 0, 0)
+					clearSelected()
+					if not ok or esc() then
+						break
+					end
+					setMatchNo(matchno() + 1)
+					refresh()
+				end
+			end
+			f_watchReturnToTitle()
+		end
 	end,
 	--WATCH
 	['watch'] = function(t, item)
