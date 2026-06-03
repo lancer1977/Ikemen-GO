@@ -20,12 +20,19 @@
 
 ## Validation
 
+- [x] Confirm full-library manifest ownership moved to `Api.Ikemen` / `Ikemen.Core`
 - [ ] Generate manifests for the full exported character library
 - [ ] Spot-check a few large and oddly named packs
 - [ ] Verify the manifests are readable by downstream tooling
 
 ## Follow-up
 
-- [ ] Decide whether stage folders need the same manifest rule
-- [ ] Decide whether to create a root index file for all manifests
-- [ ] Decide whether to add palette/stat extraction beyond `.def` parsing
+- [x] Decide whether stage folders need the same manifest rule
+- [x] Decide whether to create a root index file for all manifests
+- [x] Decide whether to add palette/stat extraction beyond `.def` parsing
+
+## Decision Notes
+
+- Root indexing is not added; consumers should walk the per-folder manifests instead.
+- Stage manifests remain a separate generator concern outside the character rule.
+- Palette/stat extraction stays `.def`-only for this feature.

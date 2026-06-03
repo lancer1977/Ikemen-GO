@@ -7,6 +7,7 @@
    - `-p<n>` family for players and overrides
    - `-tmode<n>`, `-time`, `-rounds`, `-s` for match configuration
    - `-resultfile <path>` for durable bridge consumption
+   - `-livedatafile <path>` for live snapshots during an active match
 3. `src/main.go` parses and forwards flags unchanged to `external/script/main.lua`.
 4. `main.lua` runs startup initialization in safe mode:
    - normal startup path first
@@ -34,6 +35,7 @@
 - `-resultfile` is the primary transport for automation/bridge workflows.
 - `-jsonstdout` remains available for operator diagnostics and local workflow
   smoke.
+- `-livedatafile` streams atomic match snapshots while the fight is active.
 - Result output is expected to be JSON containing `statsLog`.
 
 ## Operating Notes

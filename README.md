@@ -7,6 +7,21 @@
 
 Ikemen GO is an open source fighting game engine that supports resources from the [M.U.G.E.N](https://en.wikipedia.org/wiki/Mugen_(game_engine)) engine, written in Google’s programming language, [Go](https://go.dev/). It is a complete rewrite of a prior engine known simply as Ikemen.
 
+## Tags
+
+- ikemen
+- ikemen-go
+- game-dev
+- streaming
+- dotnet
+- docker
+
+## Related Repos
+
+- [`Ikemen.Desktop`](../Ikemen.Desktop/)
+- [`_ikemen`](../_ikemen/)
+- [`channel-cheevos`](../channel-cheevos/)
+
 ## ChannelCheevos Ownership Note
 
 - Canonical streamer/debug and remote-launch docs live in [`../channel-cheevos/docs/features/ikemen-go/README.md`](../channel-cheevos/docs/features/ikemen-go/README.md).

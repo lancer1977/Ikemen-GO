@@ -1,0 +1,1 @@
+ERROR: Could not clone or copy the screenpack tree; set SCREENPACK_DIR or enable ALLOW_PARTIAL_SCREENPACK=1 for a partial package

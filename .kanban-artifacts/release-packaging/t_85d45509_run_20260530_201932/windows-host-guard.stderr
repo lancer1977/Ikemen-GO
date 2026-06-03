@@ -1,0 +1,1 @@
+ERROR: Windows packaging requires Windows or MSYS2/MINGW64. Use scripts/deploy-local-windows.sh on that host.

@@ -19,6 +19,8 @@ type StatsFighterState struct {
 	// Health / quotes
 	Life     int32 `json:"life"`     // life remaining at round end
 	LifeMax  int32 `json:"lifeMax"`  // max life
+	Power    int32 `json:"power"`    // power remaining at round end
+	PowerMax int32 `json:"powerMax"` // max power
 	WinQuote int32 `json:"winQuote"` // -1 if unused
 
 	// Outcome flags for this round
@@ -193,6 +195,8 @@ func (s *StatsLog) nextRound() {
 				PalNo:      p[0].gi().palno,
 				Life:       p[0].life,
 				LifeMax:    p[0].lifeMax,
+				Power:      p[0].power,
+				PowerMax:   p[0].powerMax,
 				WinQuote:   p[0].winquote,
 				Win:        p[0].win(),
 				WinKO:      p[0].winKO(),

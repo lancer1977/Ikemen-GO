@@ -1,0 +1,12 @@
+2026-05-31T01:10Z external access recheck
+
+gh auth status: exit 1; not logged into any GitHub hosts.
+GITHUB_TOKEN_present=False
+GH_TOKEN_present=False
+~/.git-credentials=absent
+~/.config/gh/hosts.yml=absent
+stream-box SSH: exit 255; ssh: connect to host 192.168.0.222 port 22: No route to host
+GitHub SSH: authenticated as lancer1977 for git/SSH only; no shell access and not usable for workflow_dispatch/API.
+public GitHub API local-deploy.yml workflow runs: total_count=0
+
+gh workflow list -R lancer1977/Ikemen-GO: exit 4; requires gh auth login or GH_TOKEN.
