@@ -5337,7 +5337,8 @@ func (fs *FightScreen) draw(layerno int16) {
 			}
 			return 0, MaxSimul, 1
 		}
-		drawRenderProbeMode("fight", fmt.Sprintf("F%d bars", layerno), 168, 92+float32(layerno)*16, 96, 255, 255)
+		if !sys.gsf(GSF_nobardisplay) && fs.bars {
+			drawRenderProbeMode("fight", fmt.Sprintf("F%d bars", layerno), 168, 92+float32(layerno)*16, 96, 255, 255)
 			// LifeBar
 			for side := 0; side < len(sys.tmode); side++ {
 				drawRenderProbeMode("fight-health", fmt.Sprintf("HP%d L%d pre", side+1, layerno), 196+float32(side)*136, 24+float32(layerno)*12, 255, 80, 80)
