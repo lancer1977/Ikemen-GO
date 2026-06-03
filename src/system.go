@@ -905,15 +905,21 @@ func (s *System) update() bool {
 		} else {
 			s.await(s.gameRenderSpeed())
 		}
-		return s.replayFile.Update()
+		ok := s.replayFile.Update()
+		s.maybeWriteLiveSnapshot()
+		return ok
 	}
 
 	if s.netConnection != nil {
 		s.await(s.gameRenderSpeed())
-		return s.netConnection.Update()
+		ok := s.netConnection.Update()
+		s.maybeWriteLiveSnapshot()
+		return ok
 	}
 
-	return s.await(s.gameRenderSpeed())
+	ok := s.await(s.gameRenderSpeed())
+	s.maybeWriteLiveSnapshot()
+	return ok
 }
 
 func (s *System) tickSound() {

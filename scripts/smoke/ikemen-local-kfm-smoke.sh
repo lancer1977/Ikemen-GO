@@ -16,6 +16,7 @@ to keep a temp workdir for log/result inspection when a run fails.
 
 Runs one kfm-style quick-vs match against local fixture data and emits a pass/fail
 result quickly for iteration loops. Default timing is best-2-of-3 (2 rounds) at 10 seconds each.
+This smoke also validates that a live snapshot file is produced during the match.
 EOF
 }
 
@@ -264,6 +265,7 @@ if [[ ! -f "$IKEMEN_LOCAL_KFM_FIXTURE_ROOT/save/config.json" ]]; then
 fi
 
 WORK_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/ikemen-local-kfm.XXXXXX")"
+LIVE_FILE="$WORK_ROOT/live-match.json"
 cleanup() {
   if [[ "$IKEMEN_LOCAL_KFM_KEEP_WORKDIR" != "1" ]]; then
     rm -rf "$WORK_ROOT"
@@ -384,6 +386,8 @@ LAUNCH_ARGS=(
   "$IKEMEN_LOCAL_KFM_TIME"
   -resultfile
   "$RESULT_FILE"
+  -livedatafile
+  "$LIVE_FILE"
 )
 if [[ "$IKEMEN_LOCAL_KFM_SUPPRESS_UI_ERROR" == "1" ]]; then
   LAUNCH_ARGS+=(-noerrordialog)
@@ -396,7 +400,19 @@ fi
   IKEMEN_SUPPRESS_ERROR_DIALOG="$IKEMEN_LOCAL_KFM_SUPPRESS_UI_ERROR" \
   timeout "${IKEMEN_LOCAL_KFM_TIMEOUT}s" "${RUNNER[@]}" "$IKEMEN_BIN" \
     "${LAUNCH_ARGS[@]}"
-) >"$RUN_LOG" 2>&1
+) >"$RUN_LOG" 2>&1 &
+run_pid=$!
+live_seen=0
+live_seen_ts=""
+while kill -0 "$run_pid" 2>/dev/null; do
+  if [[ -s "$LIVE_FILE" ]]; then
+    live_seen=1
+    live_seen_ts=$(date +%s)
+    break
+  fi
+  sleep 0.25
+done
+wait "$run_pid"
 run_status=$?
 set -e
 end_ts=$(date +%s)
@@ -434,7 +450,27 @@ if ! grep -q '"statsLog"' "$RESULT_FILE"; then
   exit 1
 fi
 
+if [[ "$live_seen" -ne 1 ]]; then
+  echo "FAIL: live snapshot file was not observed during the match"
+  tail -n 80 "$RUN_LOG" || true
+  ls -l "$LIVE_FILE" "$RESULT_FILE" 2>/dev/null || true
+  exit 1
+fi
+
+if [[ ! -s "$LIVE_FILE" ]]; then
+  echo "FAIL: live snapshot file missing or empty after the match: $LIVE_FILE"
+  tail -n 80 "$RUN_LOG" || true
+  exit 1
+fi
+
+if ! grep -q '"currentRound"' "$LIVE_FILE"; then
+  echo "FAIL: live snapshot file is missing expected live payload"
+  head -n 40 "$LIVE_FILE" || true
+  exit 1
+fi
+
 echo "OK: local kfm-style match completed."
 echo "result: $RESULT_FILE"
+echo "live: $LIVE_FILE"
 echo "log: $RUN_LOG"
 echo "workdir: $WORK_ROOT"

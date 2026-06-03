@@ -14,8 +14,15 @@ tools without needing to inspect every asset manually.
 - [x] Manifest rule defined
 - [x] Generator script added and migrated to `Api.Ikemen`
 - [x] Export pipeline can invoke manifest generation
+- [x] Full-library backfill ownership moved to `Api.Ikemen` / `Ikemen.Core`
 - [ ] Backfill manifests for the full shared character library
-- [ ] Decide whether stages should get a separate manifest rule
+- [x] Decide whether stages should get a separate manifest rule
+
+## Scope Decisions
+
+- No root index file is generated; downstream tooling should index the per-folder `manifest.md` / `manifest.json` files directly.
+- Stage folders are a separate manifest-generator concern and stay out of the character-manifest rule.
+- Palette/stat extraction stays limited to data parsed from the primary `.def` file; no extra scraping is in scope for this feature.
 
 ## Manifest Contract
 
