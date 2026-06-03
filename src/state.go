@@ -91,6 +91,7 @@ func (gs *GameState) String() (str string) {
 	}
 	return
 }
+
 const MaxSaveStates = 8
 
 type GameState struct {
@@ -483,102 +484,6 @@ func (gs *GameState) stageCanMutate() bool {
 		}
 	}
 	return false
-}
-
-func (gs *GameState) getID() string {
-	return strconv.Itoa(int(gs.id))
-}
-
-// Not to be confused with the live checksum. This one's for debugging
-func (gs *GameState) Checksum() int {
-	//	buf := bytes.Buffer{}
-	//	enc := gob.NewEncoder(&buf)
-	//	err := enc.Encode(gs)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	gs.bytes = buf.Bytes()
-	gs.bytes = []byte(gs.String())
-	h := fnv.New32a()
-	h.Write(gs.bytes)
-	return int(h.Sum32())
-}
-
-// Returns some state variables as a string for debugging
-func (gs *GameState) String() (str string) {
-	// Add match data
-	str = fmt.Sprintf("MatchTime %d CurRoundTime: %d\n", gs.matchTime, gs.curRoundTime)
-
-	// Add bytecode data
-	// TODO: Every log seems to have these empty. May not be needed
-	str += fmt.Sprintf("bcStack: %v\n", gs.bcStack)
-	str += fmt.Sprintf("bcVarStack: %v\n", gs.bcVarStack)
-	str += fmt.Sprintf("bcVar: %v\n", gs.bcVar)
-	str += fmt.Sprintf("workBe: %v\n", gs.workBe)
-
-	// Add char data
-	for i := 0; i < len(gs.charData); i++ {
-		for j := 0; j < len(gs.charData[i]); j++ {
-			str += gs.charData[i][j].String()
-			str += "\n"
-		}
-	}
-
-	return
-}
-
-// Returns char status as a string for debugging
-func (cs Char) String() string {
-	// Save button states if char has keyctrl
-	inputBufStr := "none"
-	if cs.keyctrl[0] && len(cs.cmd) > 0 && cs.cmd[0].Buffer != nil {
-		ib := cs.cmd[0].Buffer
-		inputBufStr = fmt.Sprintf(
-			"U:%d D:%d L:%d R:%d B:%d F:%d N:%d a:%d b:%d c:%d x:%d y:%d z:%d s:%d d:%d w:%d m:%d",
-			ib.Ub, ib.Db, ib.Lb, ib.Rb, ib.Bb, ib.Fb, ib.Nb,
-			ib.ab, ib.bb, ib.cb, ib.xb, ib.yb, ib.zb,
-			ib.sb, ib.db, ib.wb, ib.mb,
-		)
-	}
-
-	str := fmt.Sprintf(`Char %s
-	Controller          :%d
-	PlayerNo            :%d
-	HelperIndex         :%d
-	Life                :%d
-	RedLife             :%d
-	DizzyPoints         :%d
-	GuardPoints         :%d
-	Power               :%d
-	Localcoord          :%f
-	Localscl            :%f
-	Pos                 :%v
-	Vel                 :%v
-	Facing              :%f
-	Id                  :%d
-	HelperId            :%d
-	ParentId            :%d
-	StateNo             :%d
-	StateTime           :%d
-	AnimNo              :%d
-	Mctime              :%d
-	Targets             :%v
-	Preserve            :%t
-	MapsActive          :%d
-	CnsVar              :%v
-	CnsFvar             :%v
-	InputBuffer         :%s`,
-		cs.name, cs.controller, cs.playerNo, cs.helperIndex,
-		cs.life, cs.redLife, cs.dizzyPoints, cs.guardPoints, cs.power,
-		cs.localcoord, cs.localscl,
-		cs.pos, cs.vel, cs.facing,
-		cs.id, cs.helperId, cs.parentId,
-		cs.ss.no, cs.ss.time, cs.animNo, // Move/Statetype would require interpreting the flags so they're not worth it
-		cs.mctime, cs.targets,
-		cs.preserve,
-		len(cs.mapArray), cs.cnsvar, cs.cnsfvar, inputBufStr) // Dumping entire map is too verbose so we'll just log how many are active
-
-	return str
 }
 
 type GameStatePool struct {

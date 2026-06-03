@@ -5329,11 +5329,10 @@ func (fs *FightScreen) visible() bool {
 func (fs *FightScreen) draw(layerno int16) {
 	drawRenderProbeMode("fight", fmt.Sprintf("F%d entry", layerno), 168, 36+float32(layerno)*16, 96, 160+int32(layerno)*24, 255)
 	if fs.visible() {
-		if !sys.gsf(GSF_nobardisplay) && fs.bars {
-			// Helper to determine whether to iterate elements forward or backward (drawing order)
-			iterationOrder := func(leaderontop bool) (int, int, int) {
-				if leaderontop {
-					return MaxSimul - 1, -1, -1
+		// Helper to determine whether to iterate elements forward or backward (drawing order)
+		iterationOrder := func(leaderontop bool) (int, int, int) {
+			if leaderontop {
+				return MaxSimul - 1, -1, -1
 			}
 			return 0, MaxSimul, 1
 		}
