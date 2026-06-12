@@ -18,15 +18,21 @@ Ikemen GO is an open source fighting game engine that supports resources from th
 
 ## Related Repos
 
-- [`Ikemen.Desktop`](../Ikemen.Desktop/)
+- `Ikemen.Desktop`
 - [`_ikemen`](../_ikemen/)
 - [`channel-cheevos`](../channel-cheevos/)
 
 ## ChannelCheevos Ownership Note
 
-- Canonical streamer/debug and remote-launch docs live in [`../channel-cheevos/docs/features/ikemen-go/README.md`](../channel-cheevos/docs/features/ikemen-go/README.md).
-- The matching phased roadmap lives in [`../channel-cheevos/docs/roadmaps/ikemen-remote-launch-and-debug/README.md`](../channel-cheevos/docs/roadmaps/ikemen-remote-launch-and-debug/README.md).
+- Canonical streamer/debug and remote-launch docs live in [`./docs/features/ikemen-go/README.md`](./docs/features/ikemen-go/README.md).
+- The matching phased roadmap lives in [`./docs/roadmaps/ikemen-go-launch-customization/README.md`](./docs/roadmaps/ikemen-go-launch-customization/README.md).
 - This repo stays the engine/runtime reference while product ownership lives in Channel Cheevos.
+
+## Documentation
+
+- [Docs Index](./docs/README.md)
+- [Feature Index](./docs/features/README.md)
+- [Roadmap Index](./docs/roadmaps/README.md)
 
 ## Features
 Ikemen GO aims for backwards-compatibility on par with M.U.G.E.N version 1.1 Beta, while simultaneously expanding on its features in a variety of ways.
@@ -69,7 +75,7 @@ If you run into any issues with Ikemen Go, you can report it on our [issue track
 ## License
 Ikemen GO engine is under the MIT License.
 Bundled screenpack assets are under Creative Commons licenses.
-See [LICENSE.txt](LICENSE.txt) for more details.
+See the bundled license files for more details.
 This program statically links FFmpeg (LGPL v2.1).
 
 The exact corresponding source for the FFmpeg build is provided on the [release page](https://github.com/ikemen-engine/Ikemen-GO/releases/latest) as Source-code-FFmpeg.tar.gz. You may rebuild this application against a modified FFmpeg.
