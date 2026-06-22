@@ -1,11 +1,15 @@
 ---
-name: 🚀 Feature request
-about: This issue tracker is not for feature requests. Please suggest your idea using GitHub Discussions.
-title: Wrong section
-labels: ''
-assignees: ''
+name: Feature request
+about: Suggest a new capability
+title: "[Feature]: "
+labels: ["type:feature"]
+assignees: ""
 ---
 
-Please open feature requests using GitHub Discussions at https://github.com/ikemen-engine/Ikemen-GO/discussions
+## What should this do?
 
-The main issue tracker is reserved for bug reports and compatibility issues.
+## Why is it useful?
+
+## Safety Notes
+
+Could this trigger shell input, expose a remote session, or leak private information?
