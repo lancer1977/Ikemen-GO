@@ -98,6 +98,52 @@ function main.f_fileWriteAtomic(path, str)
 	end
 end
 
+function main.f_ackCommandInbox(commandInboxPath)
+	if commandInboxPath == nil or commandInboxPath == '' then
+		commandInboxPath = 'save/command_inbox.json'
+	end
+	if not main.f_fileExists(commandInboxPath) then
+		return false
+	end
+
+	local ack = {
+		schema = 'live-lancero/command-ack/v1',
+		sourceFile = commandInboxPath,
+		acknowledgedAtUtc = os.date('!%Y-%m-%dT%H:%M:%SZ'),
+	}
+
+	local ok, decoded = pcall(jsonDecode, commandInboxPath)
+	if ok and type(decoded) == 'table' then
+		local commands = decoded.commands
+		local ids = {}
+		local count = 0
+		if type(commands) == 'table' then
+			for _, cmd in ipairs(commands) do
+				if type(cmd) == 'table' then
+					count = count + 1
+					if cmd.id ~= nil then
+						table.insert(ids, tostring(cmd.id))
+					end
+				end
+			end
+		end
+		ack.status = 'acknowledged'
+		ack.inboxSchema = decoded.schema
+		ack.commandCount = count
+		ack.commandIds = ids
+	else
+		ack.status = 'malformed'
+		ack.error = tostring(decoded)
+	end
+
+	local ackPath = commandInboxPath:gsub('%.json$', '.ack.json')
+	if ackPath == commandInboxPath then
+		ackPath = commandInboxPath .. '.ack.json'
+	end
+	jsonEncode(ack, ackPath)
+	return true
+end
+
 --returns value depending on button pressed (a = 1; a + start = 7 etc.)
 function main.f_btnPalNo(p)
 	local s = 0
@@ -1135,6 +1181,7 @@ function main.f_commandLine()
 		f_startupTrace("writing result file to " .. tostring(resultFilePath))
 		main.f_fileWriteAtomic(resultFilePath, gameStatsJson)
 	end
+	main.f_ackCommandInbox(safeCommandLineValue("-commandinbox"))
 	if flags['-jsonstdout'] ~= nil or flags['-nojsonstdout'] == nil then
 		f_startupTrace("writing json stdout")
 		print(gameStatsJson)
