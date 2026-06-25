@@ -4,6 +4,7 @@ type GameStatsSnapshot struct {
 	StatsLog          StatsLog `json:"statsLog"`
 	ContinueFlg       bool     `json:"continueFlg"`
 	PersistRoundCount int32    `json:"persistRoundCount"`
+	MatchOver         bool     `json:"matchOver"`
 }
 
 // StatsFighterState captures an end-of-round snapshot for a fighter on one side.
@@ -54,6 +55,7 @@ type StatsMatch struct {
 
 	// Outcome & tallies
 	WinSide    int      `json:"winSide"`    // 0 or 1 (which side won the match)
+	Ended      bool     `json:"ended"`      // true once the fight has fully ended
 	LastRound  int32    `json:"lastRound"`  // index of the final round played (1-based)
 	Draws      int32    `json:"draws"`      // number of drawn rounds
 	Wins       [2]int32 `json:"wins"`       // wins per side across all rounds: [P1Wins, P2Wins]
@@ -122,6 +124,7 @@ func (s *StatsLog) finalizeMatch() {
 
 	// Copy outcome/tallies directly from engine state.
 	m.WinSide = sys.winTeam
+	m.Ended = sys.matchOver()
 	// Last round played should be derived from what we recorded, not from sys.round math.
 	if len(m.Rounds) > 0 {
 		m.LastRound = m.Rounds[len(m.Rounds)-1].Index

@@ -11741,9 +11741,13 @@ func (c *Char) actionRun() {
 			c.updateCurFrame()
 		}
 		if c.ghv.damage != 0 {
+			lifeBefore := c.life
+			attackerPlayerNo := c.ghv.playerno
+			requestedDamage := c.ghv.damage
 			if c.ss.moveType == MT_H || (c.ghv.keepstate && c.hoverIdx == -1) {
 				c.lifeAdd(-float64(c.ghv.damage), true, true)
 			}
+			sys.recordCombatDamage(c, attackerPlayerNo, requestedDamage, lifeBefore, c.life)
 			c.ghv.damage = 0
 		}
 		if c.ghv.redlife != 0 {

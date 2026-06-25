@@ -9,6 +9,8 @@ fi
 
 sudo apt-get update
 sudo apt-get install -y \
+  git \
+  golang-go \
   pkg-config \
   build-essential \
   make \

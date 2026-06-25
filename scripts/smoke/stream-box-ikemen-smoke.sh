@@ -110,6 +110,9 @@ check_any_motif() {
 check_deploy() {
   check_required_file "$(remote_file "Ikemen_GO.exe")"
   check_required_file "$(remote_file "external\\script\\main.lua")"
+  check_required_file "$(remote_file "external\\icons\\IkemenCylia_256.png")"
+  check_required_file "$(remote_file "external\\icons\\IkemenCylia_96.png")"
+  check_required_file "$(remote_file "external\\icons\\IkemenCylia_48.png")"
   check_any_motif
 
   check_marker "safeGameOption"

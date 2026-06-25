@@ -273,6 +273,9 @@ func processCommandLine() {
 -resultfile <jsonfile>  Writes the final match JSON to <jsonfile> (canonical bridge contract)
 -jsonstdout             Writes match data JSON to stdout (default for Quick VS)
 -livedatafile <jsonfile> Writes live match snapshots to <jsonfile> during the fight
+-combateventsfile <jsonlfile> Writes combat telemetry events to <jsonlfile>
+-commandinboxfile <jsonfile> Reads LiveLancero gameplay commands from <jsonfile>
+-commandresultsfile <jsonlfile> Writes gameplay command results to <jsonlfile>
 -nojsonlog              Disables default JSON file output
 -nojsonstdout           Disables default JSON stdout output
 -noerrordialog          Logs errors without showing a blocking desktop dialog

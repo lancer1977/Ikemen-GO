@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net10.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>Ikemen.Go.Contracts</RootNamespace>
+    <AssemblyName>Ikemen.Go.Contracts</AssemblyName>
+    <PackageId>Ikemen.Go.Contracts</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>ChannelCheevos</Authors>
+    <Description>Strong C# models for the Ikemen GO JSON result and live snapshot V1 contract.</Description>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+</Project>

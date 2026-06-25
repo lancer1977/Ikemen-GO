@@ -13,6 +13,15 @@ The current shape is intentionally split:
   result emission.
 - stdout remains a fast local/debug lane, while a per-match result file is the
   canonical bridge integration path.
+- The final result payload and live snapshot both carry end-state signals:
+  `fightEnded` in the result contract and `matchOver` in the live contract.
+- The existing JSON output shape is documented as
+  [Result Contract V1](./result-contract-v1.md) and mirrored by the
+  `contracts/Ikemen.Go.Contracts` C# model library.
+- Live player-visible overlays use a separate file snapshot contract at
+  `-overlayfile` (default `save/live_overlays.json`) so sidecars can inject
+  text, emoji, and PNG-backed image sprites during a fight without rewriting
+  the main result snapshot.
 
 ## Current State
 
@@ -20,6 +29,8 @@ The current shape is intentionally split:
 - [x] Preserve the current quick-vs and debug stdout path
 - [x] Add canonical `-resultfile` output for bridge consumption
 - [x] Keep `-jsonlog` and `-jsonstdout` as developer-friendly lanes
+- [x] Define the existing result/live JSON shape as a V1 contract
+- [x] Add a file-backed live overlay transport for in-fight text/image injects
 - [ ] Add a structured JSON launch payload if the flag surface becomes too wide
 - [ ] Add live round-event transport for match-by-match streaming
 
@@ -69,6 +80,8 @@ These are already expressible through Ikemen GO’s CLI and runtime output.
 - `-nojsonlog`
 - `-nojsonstdout`
 - `-resultfile`
+- `-livedatafile`
+- `-overlayfile`
 
 ### Engine change later
 
@@ -98,6 +111,11 @@ These should stay out of Ikemen GO itself.
   it as the source of truth.
 - The bridge can keep using the same flag surface even if the roster policy or
   result transport changes later.
+- Consumer apps should treat the file result as canonical and can use
+  `fightEnded`/`matchOver` to distinguish an active fight from a completed one
+  without parsing message text.
+- Consumer apps that use C# can reference `Ikemen.Go.Contracts.V1` for strong
+  models of the current result and live snapshot payloads.
 
 ## Launch Mapping
 
@@ -130,3 +148,10 @@ Stable run metadata convention:
   (`ikemen-workflow-smoke.<runId>.json`, `.../ikemen-results/<runId>.json`, etc.)
 - Keep both `-jsonstdout` and `-resultfile` enabled for local/dev validation,
   but treat `-resultfile` as canonical for bridge integration.
+- Use `-livedatafile` when a caller needs pollable in-flight match state such as
+  health, current round score, or `matchOver` during the fight. The live file
+  is also refreshed once the fight ends so the last snapshot records that the
+  match is over and the result has been finalized.
+- Use `-overlayfile` when a sidecar wants the engine to render player-visible
+  overlay requests. The file is treated as a snapshot of current overlays and
+  can include text, emoji, and PNG-backed image effects.

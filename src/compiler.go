@@ -6153,11 +6153,13 @@ func (c *CharCompiler) paramAnimtype(is IniSection, sc *StateControllerBase, par
 				return Error("Invalid " + paramName + ": " + data)
 			}
 		} else {
-			// ZSS: require full word
+			// ZSS: accept the canonical words plus common shorthand used by older content.
 			switch dataLower {
 			case "light":
 				ra = RA_Light
 			case "medium":
+				ra = RA_Medium
+			case "med":
 				ra = RA_Medium
 			case "hard":
 				ra = RA_Hard

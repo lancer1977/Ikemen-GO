@@ -100,6 +100,24 @@ def require_tool(name: str) -> None:
         raise RuntimeError(f"Required tool not found on PATH: {name}")
 
 
+def require_icon_assets(workdir: Path) -> None:
+    missing = [
+        rel
+        for rel in (
+            Path("external/icons/IkemenCylia_256.png"),
+            Path("external/icons/IkemenCylia_96.png"),
+            Path("external/icons/IkemenCylia_48.png"),
+        )
+        if not (workdir / rel).is_file()
+    ]
+    if missing:
+        rendered = "\n".join(f"  - {path}" for path in missing)
+        raise RuntimeError(
+            f"Missing required Ikemen icon assets in {workdir}:\n{rendered}\n"
+            "The default config expects the Cylia icon set under external/icons/."
+        )
+
+
 def list_windows() -> list[Window]:
     proc = run(["wmctrl", "-lpG"], check=False)
     windows: list[Window] = []
@@ -228,6 +246,7 @@ def launch(args: argparse.Namespace) -> subprocess.Popen[str] | None:
         raise RuntimeError(f"Ikemen binary not found: {binary}")
     if not os.access(binary, os.X_OK):
         raise RuntimeError(f"Ikemen binary is not executable: {binary}")
+    require_icon_assets(workdir)
     return subprocess.Popen([str(binary)], cwd=str(workdir), env=env, text=True)
 
 

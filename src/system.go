@@ -211,79 +211,84 @@ const (
 type System struct {
 	SystemStateVars
 
-	window              *Window
-	redrawWait          struct{ nextTime, lastDraw time.Time }
-	debugFont           *TextSprite
-	debugDisplay        bool
-	debugRef            [2]int // player number, helper index
-	debugLastID         int32
-	soundMixer          *beep.Mixer
-	bgm                 Bgm
-	pauseVolumeApplied  bool
-	soundChannels       SoundChannels // System sounds. Lifebars etc
-	charSoundChannels   [MaxPlayerNo]SoundChannels
-	allPalFX            *PalFX
-	bgPalFX             *PalFX
-	fightScreen         FightScreen
-	motif               Motif
-	storyboard          Storyboard
-	cfg                 Config
-	ffx                 map[string]*FightFx
-	sel                 Select
-	keyState            map[Key]bool
-	netConnection       *NetConnection
-	replayFile          *ReplayFile
-	keyConfig           []KeyConfig
-	joystickConfig      []KeyConfig
-	loader              Loader
-	chars               [MaxPlayerNo][]*Char
-	charList            CharList
-	cgi                 [MaxPlayerNo]CharGlobalInfo
-	loadMutex           sync.Mutex
-	ignoreMostErrors    bool
-	stringPool          [MaxPlayerNo]StringPool
-	bcStack, bcVarStack BytecodeStack
-	bcVar               []BytecodeValue
-	workingChar         *Char          // Char currently running its states
-	workingState        *StateBytecode // State currently running
-	stage               *Stage
-	stageList           map[int32]*Stage
-	stageLocalcoords    map[string][2]int32
-	wireframeDisplay    bool
-	shortcutScripts     map[ShortcutKey]*ShortcutScript
-	commandLine         chan string
-	debugWC             *Char
-	projs               [MaxPlayerNo][]*Projectile
-	explods             [MaxPlayerNo][]*Explod
-	explodRunOrder      []*Explod
-	chartexts           [MaxPlayerNo][]*TextSprite // From Text sctrl
-	spriteList          DrawList
-	shadowList          ShadowList
-	reflectionList      ReflectionList
-	afterImageCount     [MaxPlayerNo]int32
-	debugc1hit          DebugClsn
-	debugc1rev          DebugClsn
-	debugc1not          DebugClsn
-	debugc2             DebugClsn
-	debugc2hb           DebugClsn
-	debugc2mtk          DebugClsn
-	debugc2grd          DebugClsn
-	debugc2stb          DebugClsn
-	debugcsize          DebugClsn
-	debugch             DebugClsn
-	debugAccel          float32
-	clsnSpr             Sprite
-	clsnDisplay         bool
-	lifebarHide         bool
-	mainThreadTask      chan func()
-	workpal             []uint32
-	workBe              []BytecodeExp
-	timerCount          []int32
-	cmdFlags            map[string]string
-	whitePalTex         Texture
-	usePalette          bool
-	credits             int32
-	gameRunning         bool
+	window                    *Window
+	redrawWait                struct{ nextTime, lastDraw time.Time }
+	debugFont                 *TextSprite
+	debugDisplay              bool
+	debugRef                  [2]int // player number, helper index
+	debugLastID               int32
+	soundMixer                *beep.Mixer
+	bgm                       Bgm
+	pauseVolumeApplied        bool
+	soundChannels             SoundChannels // System sounds. Lifebars etc
+	charSoundChannels         [MaxPlayerNo]SoundChannels
+	allPalFX                  *PalFX
+	bgPalFX                   *PalFX
+	fightScreen               FightScreen
+	motif                     Motif
+	storyboard                Storyboard
+	cfg                       Config
+	ffx                       map[string]*FightFx
+	sel                       Select
+	keyState                  map[Key]bool
+	netConnection             *NetConnection
+	replayFile                *ReplayFile
+	keyConfig                 []KeyConfig
+	joystickConfig            []KeyConfig
+	loader                    Loader
+	chars                     [MaxPlayerNo][]*Char
+	charList                  CharList
+	cgi                       [MaxPlayerNo]CharGlobalInfo
+	loadMutex                 sync.Mutex
+	ignoreMostErrors          bool
+	stringPool                [MaxPlayerNo]StringPool
+	bcStack, bcVarStack       BytecodeStack
+	bcVar                     []BytecodeValue
+	workingChar               *Char          // Char currently running its states
+	workingState              *StateBytecode // State currently running
+	stage                     *Stage
+	stageList                 map[int32]*Stage
+	stageLocalcoords          map[string][2]int32
+	wireframeDisplay          bool
+	shortcutScripts           map[ShortcutKey]*ShortcutScript
+	commandLine               chan string
+	debugWC                   *Char
+	projs                     [MaxPlayerNo][]*Projectile
+	explods                   [MaxPlayerNo][]*Explod
+	explodRunOrder            []*Explod
+	chartexts                 [MaxPlayerNo][]*TextSprite // From Text sctrl
+	liveOverlayRuntime        []*liveOverlayRuntime
+	liveOverlayCapturePending bool
+	liveOverlayCaptureDone    bool
+	liveProcessedCommandIDs   map[string]bool
+	lastLiveCommandPollFrame  int32
+	spriteList                DrawList
+	shadowList                ShadowList
+	reflectionList            ReflectionList
+	afterImageCount           [MaxPlayerNo]int32
+	debugc1hit                DebugClsn
+	debugc1rev                DebugClsn
+	debugc1not                DebugClsn
+	debugc2                   DebugClsn
+	debugc2hb                 DebugClsn
+	debugc2mtk                DebugClsn
+	debugc2grd                DebugClsn
+	debugc2stb                DebugClsn
+	debugcsize                DebugClsn
+	debugch                   DebugClsn
+	debugAccel                float32
+	clsnSpr                   Sprite
+	clsnDisplay               bool
+	lifebarHide               bool
+	mainThreadTask            chan func()
+	workpal                   []uint32
+	workBe                    []BytecodeExp
+	timerCount                []int32
+	cmdFlags                  map[string]string
+	whitePalTex               Texture
+	usePalette                bool
+	credits                   int32
+	gameRunning               bool
 
 	msaa               int32
 	externalShaders    [][][]byte
@@ -847,6 +852,7 @@ func (s *System) renderFrame() {
 	// Render top elements
 	if !s.frameSkip {
 		s.drawTop()
+		s.drawLiveOverlays()
 	}
 
 	// Render debug elements
@@ -904,6 +910,9 @@ func (s *System) update() bool {
 			s.await(s.gameRenderSpeed())
 		}
 		ok := s.replayFile.Update()
+		s.maybeRefreshLiveOverlays()
+		s.maybeProcessLiveCommandInbox()
+		s.runMainThreadTask()
 		s.maybeWriteLiveSnapshot()
 		return ok
 	}
@@ -911,11 +920,17 @@ func (s *System) update() bool {
 	if s.netConnection != nil {
 		s.await(s.gameRenderSpeed())
 		ok := s.netConnection.Update()
+		s.maybeRefreshLiveOverlays()
+		s.maybeProcessLiveCommandInbox()
+		s.runMainThreadTask()
 		s.maybeWriteLiveSnapshot()
 		return ok
 	}
 
 	ok := s.await(s.gameRenderSpeed())
+	s.maybeRefreshLiveOverlays()
+	s.maybeProcessLiveCommandInbox()
+	s.runMainThreadTask()
 	s.maybeWriteLiveSnapshot()
 	return ok
 }

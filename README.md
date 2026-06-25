@@ -51,6 +51,22 @@ On macOS or Linux, double-click `Ikemen_GO.command`.
 ## Developing
 These instructions are for those interested in developing the Ikemen GO engine itself. Instructions for creating custom stages, fonts, characters and other resources can be found in the community forum.
 
+### Source prerequisites
+
+To build from source, install the toolchain listed in
+[`BUILDING.md`](./BUILDING.md): Go 1.20 or newer, `git`, `make`,
+`pkg-config`, `nasm`, `yasm`, `libxmp`, and `SDL2`.
+Use the Windows/MSYS2 or Linux sections in that file for the exact
+per-OS install commands.
+
+On apt-based Linux systems, [`scripts/install-linux-build-deps.sh`](./scripts/install-linux-build-deps.sh)
+installs the Linux build package set plus the optional FFmpeg development
+packages and the extra `libgl` / `gtk` packages used by its pkg-config checks.
+
+`build/build.sh` auto-builds a minimal FFmpeg by default, so system FFmpeg
+development packages are optional unless you want to use them. Android APK
+builds also require Docker.
+
 ### Building
 For setup and platform-specific steps, see [BUILDING.md](./BUILDING.md).
 It covers Windows, Linux (including ARM64), macOS (Apple Silicon and Intel), and Android (APK via Docker).

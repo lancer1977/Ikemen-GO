@@ -69,7 +69,7 @@ BUILD_FFMPEG=no ./build/build.sh Win64   # or Win32
 
 ```bash
 sudo apt update && sudo apt install -y \
-  golang-go git pkg-config make nasm yasm build-essential \
+  git golang-go pkg-config make nasm yasm build-essential \
   libxmp-dev libsdl2-dev
 ```
 

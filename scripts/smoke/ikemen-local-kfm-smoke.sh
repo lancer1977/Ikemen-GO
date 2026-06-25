@@ -170,6 +170,29 @@ resolve_fixture_root() {
   return 1
 }
 
+ensure_icon_assets() {
+  local root="$1"
+  local missing=()
+  local icon
+
+  for icon in \
+    external/icons/IkemenCylia_256.png \
+    external/icons/IkemenCylia_96.png \
+    external/icons/IkemenCylia_48.png
+  do
+    if [[ ! -f "$root/$icon" ]]; then
+      missing+=("$icon")
+    fi
+  done
+
+  if (( ${#missing[@]} > 0 )); then
+    printf 'ERROR: missing required Ikemen icon assets in %s:\n' "$root" >&2
+    printf '  - %s\n' "${missing[@]}" >&2
+    echo "The default config expects the Cylia icon set under external/icons/." >&2
+    exit 1
+  fi
+}
+
 if [[ "$#" -gt 0 ]]; then
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -296,6 +319,8 @@ fi
 if [[ ! -f "$WORK_ROOT/external/script/main.lua" ]]; then
   die "external/script/main.lua missing in workdir."
 fi
+
+ensure_icon_assets "$WORK_ROOT"
 
 if [[ ! -f "$WORK_ROOT/save/config.json" ]]; then
   printf '[warn] save/config.json missing after copy; creating minimal placeholder for smoke run.\n' >&2

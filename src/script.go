@@ -3166,6 +3166,7 @@ func systemScriptInit(l *lua.LState) {
 					sys.statsLog.discardCurrentMatch()
 				} else {
 					sys.statsLog.finalizeMatch()
+					sys.maybeWriteLiveSnapshot()
 				}
 				// Cleanup
 				sys.restorePauseVolume()
@@ -3549,6 +3550,7 @@ func systemScriptInit(l *lua.LState) {
 			StatsLog:          sys.statsLog,
 			ContinueFlg:       sys.continueFlg,
 			PersistRoundCount: sys.persistRoundCount,
+			MatchOver:         sys.matchOver(),
 		}
 		data, err := json.Marshal(s)
 		if err != nil {
