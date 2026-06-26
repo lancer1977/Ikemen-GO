@@ -63,6 +63,8 @@ per-OS install commands.
 On apt-based Linux systems, [`scripts/install-linux-build-deps.sh`](./scripts/install-linux-build-deps.sh)
 installs the Linux build package set plus the optional FFmpeg development
 packages and the extra `libgl` / `gtk` packages used by its pkg-config checks.
+The current engine code uses Go's experimental `arena` package, so Linux
+builds and tests must run with `GOEXPERIMENT=arenas` set in the environment.
 
 `build/build.sh` auto-builds a minimal FFmpeg by default, so system FFmpeg
 development packages are optional unless you want to use them. Android APK

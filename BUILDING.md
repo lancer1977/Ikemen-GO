@@ -95,6 +95,10 @@ cd Ikemen-GO
 make Ikemen_GO_Linux
 ```
 
+The Linux build path currently uses Go's experimental `arena` package. Export
+`GOEXPERIMENT=arenas` before running `./build/build.sh`, `make`, or `go test`
+on Linux.
+
 ### Build ARM64 on an ARM host (Ikemen_GO_LinuxARM)
 
 > On an **ARM64 (aarch64) machine**, the same dependencies apply.
@@ -115,6 +119,12 @@ make Ikemen_GO_LinuxARM
 ./Ikemen_GO_LinuxARM     # ARM64
 # If you need a GL fallback on some drivers:
 MESA_GL_VERSION_OVERRIDE=2.1 ./Ikemen_GO_Linux
+```
+
+To run tests on Linux, use:
+
+```bash
+GOEXPERIMENT=arenas go test ./...
 ```
 
 You can also double-click **`build/Ikemen_GO.command`** on Linux.
