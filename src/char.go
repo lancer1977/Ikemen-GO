@@ -11826,7 +11826,7 @@ func (c *Char) actionRun() {
 			if c.ss.moveType == MT_H || (c.ghv.keepstate && c.hoverIdx == -1) {
 				c.lifeAdd(-float64(c.ghv.damage), true, true)
 			}
-			sys.recordCombatDamage(c, attackerPlayerNo, requestedDamage, lifeBefore, c.life)
+			sys.recordCombatDamage(c, int32(attackerPlayerNo), requestedDamage, lifeBefore, c.life)
 			c.ghv.damage = 0
 		}
 		if c.ghv.redlife != 0 {

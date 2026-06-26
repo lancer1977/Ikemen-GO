@@ -325,7 +325,7 @@ func (s *System) teamRoot(teamSide int32) *Char {
 func (s *System) playerByNo(playerNo int32) *Char {
 	for _, side := range s.chars {
 		for _, c := range side {
-			if c != nil && c.playerNo == playerNo {
+			if c != nil && int32(c.playerNo) == playerNo {
 				return c
 			}
 		}

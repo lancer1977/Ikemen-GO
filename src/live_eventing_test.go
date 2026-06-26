@@ -59,7 +59,7 @@ func TestRecordCombatDamage_WritesCombatAndThresholdEvents(t *testing.T) {
 	s.chars[1] = []*Char{defender}
 	s.frameCounter = 480
 
-	s.recordCombatDamage(defender, attacker.playerNo, 180, 180, 0)
+	s.recordCombatDamage(defender, int32(attacker.playerNo), 180, 180, 0)
 
 	raw, err := os.ReadFile(path)
 	if err != nil {

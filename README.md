@@ -55,7 +55,8 @@ These instructions are for those interested in developing the Ikemen GO engine i
 
 To build from source, install the toolchain listed in
 [`BUILDING.md`](./BUILDING.md): Go 1.20 or newer, `git`, `make`,
-`pkg-config`, `nasm`, `yasm`, `libxmp`, and `SDL2`.
+`pkg-config`, `nasm`, `yasm`, and `SDL2`. `libxmp` is optional unless you
+want native module playback, in which case build with `-tags libxmp`.
 Use the Windows/MSYS2 or Linux sections in that file for the exact
 per-OS install commands.
 

@@ -1,7 +1,7 @@
 # Building Ikemen GO
 
 Ikemen GO links against **FFmpeg** (background video: VP9/Opus/Vorbis in WebM/Matroska), **libxmp** (module music: MOD/XM/S3M/IT, etc.), and **SDL2** (windowing, input, and game controller support via go-sdl2).
-All three must be available as development packages via **pkg-config** (`libav*`, `libxmp`, and `sdl2`).
+FFmpeg and SDL2 are required. libxmp is optional at build time: the default build ships with a stub decoder, and `-tags libxmp` enables the native module decoder when the headers and library are installed.
 `build/build.sh` **auto-detects your OS** and, by default, **auto-builds a minimal FFmpeg**
 (same config as CI). You don't need system FFmpeg dev packages unless you prefer them.
 
@@ -61,6 +61,14 @@ Install `mingw-w64-x86_64-ffmpeg` (and/or i686 variant for 32-bit), then:
 BUILD_FFMPEG=no ./build/build.sh Win64   # or Win32
 ```
 
+### Enable libxmp module playback
+
+Install the libxmp development package for your platform, then build with:
+
+```bash
+go build -tags libxmp ./src
+```
+
 ---
 
 ## Linux
@@ -72,6 +80,9 @@ sudo apt update && sudo apt install -y \
   git golang-go pkg-config make nasm yasm build-essential \
   libxmp-dev libsdl2-dev
 ```
+
+If you do not need native module playback, you can skip `libxmp-dev` and build
+without the `libxmp` tag.
 
 ### Build x86-64 (Ikemen_GO_Linux)
 
