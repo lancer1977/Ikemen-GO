@@ -969,6 +969,10 @@ func (c *CharCompiler) explodSub(is IniSection, sc *StateControllerBase) error {
 		explod_shadow, VT_Int, 3, false); err != nil {
 		return err
 	}
+	if err := c.paramValue(is, sc, "reflection",
+		explod_reflection, VT_Int, 1, false); err != nil {
+		return err
+	}
 	if err := c.paramValue(is, sc, "removeongethit",
 		explod_removeongethit, VT_Bool, 1, false); err != nil {
 		return err
@@ -2165,6 +2169,14 @@ func (c *CharCompiler) hitDefSub(is IniSection, sc *StateControllerBase) error {
 		hitDef_envshake_dir, VT_Float, 1, false); err != nil {
 		return err
 	}
+	if err := c.paramValue(is, sc, "envshake.diradd",
+		hitDef_envshake_diradd, VT_Float, 1, false); err != nil {
+		return err
+	}
+	if err := c.paramValue(is, sc, "envshake.decay",
+		hitDef_envshake_decay, VT_Float, 1, false); err != nil {
+		return err
+	}
 	if err := c.paramValue(is, sc, "fall.envshake.time",
 		hitDef_fall_envshake_time, VT_Int, 1, false); err != nil {
 		return err
@@ -2361,6 +2373,10 @@ func (c *CharCompiler) projectileSub(is IniSection, sc *StateControllerBase) err
 	}
 	if err := c.paramValue(is, sc, "projshadow",
 		projectile_projshadow, VT_Int, 3, false); err != nil {
+		return err
+	}
+	if err := c.paramValue(is, sc, "projreflection",
+		projectile_projreflection, VT_Int, 1, false); err != nil {
 		return err
 	}
 	if err := c.paramValue(is, sc, "projmisstime",
@@ -3325,6 +3341,14 @@ func (c *CharCompiler) envShake(is IniSection, sc *StateControllerBase) (StateCo
 		}
 		if err := c.paramValue(is, sc, "dir",
 			envShake_dir, VT_Float, 1, false); err != nil {
+			return err
+		}
+		if err := c.paramValue(is, sc, "diradd",
+			envShake_diradd, VT_Float, 1, false); err != nil {
+			return err
+		}
+		if err := c.paramValue(is, sc, "decay",
+			envShake_decay, VT_Float, 1, false); err != nil {
 			return err
 		}
 		return nil
@@ -4705,6 +4729,10 @@ func (c *CharCompiler) lifebarAction(is IniSection, sc *StateControllerBase) (St
 		}
 		if err := c.paramValue(is, sc, "font.color",
 			lifebarAction_fontcolor, VT_Int, 4, false); err != nil {
+			return err
+		}
+		if err := c.paramValue(is, sc, "refreshtype",
+			lifebarAction_refreshtype, VT_Int, 1, false); err != nil {
 			return err
 		}
 		return nil
@@ -6498,28 +6526,36 @@ func (c *CharCompiler) getHitVarSet(is IniSection, sc *StateControllerBase) (Sta
 			getHitVarSet_fall_damage, VT_Int, 1, false); err != nil {
 			return err
 		}
-		if err := c.paramValue(is, sc, "fall.envshake.ampl",
-			getHitVarSet_fall_envshake_ampl, VT_Int, 1, false); err != nil {
+		if err := c.paramValue(is, sc, "fall.envshake.time",
+			getHitVarSet_fall_envshake_time, VT_Int, 1, false); err != nil {
 			return err
 		}
 		if err := c.paramValue(is, sc, "fall.envshake.freq",
 			getHitVarSet_fall_envshake_freq, VT_Float, 1, false); err != nil {
 			return err
 		}
-		if err := c.paramValue(is, sc, "fall.envshake.mul",
-			getHitVarSet_fall_envshake_mul, VT_Float, 1, false); err != nil {
-			return err
-		}
 		if err := c.paramValue(is, sc, "fall.envshake.phase",
 			getHitVarSet_fall_envshake_phase, VT_Float, 1, false); err != nil {
 			return err
 		}
-		if err := c.paramValue(is, sc, "fall.envshake.time",
-			getHitVarSet_fall_envshake_time, VT_Int, 1, false); err != nil {
+		if err := c.paramValue(is, sc, "fall.envshake.ampl",
+			getHitVarSet_fall_envshake_ampl, VT_Int, 1, false); err != nil {
+			return err
+		}
+		if err := c.paramValue(is, sc, "fall.envshake.mul",
+			getHitVarSet_fall_envshake_mul, VT_Float, 1, false); err != nil {
 			return err
 		}
 		if err := c.paramValue(is, sc, "fall.envshake.dir",
 			getHitVarSet_fall_envshake_dir, VT_Float, 1, false); err != nil {
+			return err
+		}
+		if err := c.paramValue(is, sc, "fall.envshake.diradd",
+			getHitVarSet_fall_envshake_diradd, VT_Float, 1, false); err != nil {
+			return err
+		}
+		if err := c.paramValue(is, sc, "fall.envshake.decay",
+			getHitVarSet_fall_envshake_decay, VT_Float, 1, false); err != nil {
 			return err
 		}
 		if err := c.paramValue(is, sc, "fall.kill",
