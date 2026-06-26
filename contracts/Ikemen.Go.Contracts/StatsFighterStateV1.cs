@@ -49,6 +49,9 @@ public sealed record StatsFighterStateV1
     [JsonPropertyName("winPerfect")]
     public bool WinPerfect { get; init; }
 
+    [JsonPropertyName("winClutch")]
+    public bool WinClutch { get; init; }
+
     [JsonPropertyName("winSpecial")]
     public bool WinSpecial { get; init; }
 

@@ -127,6 +127,7 @@ The live payload is represented by
 - `winKO`: true when the side won by KO.
 - `winTime`: true when the side won by time-out.
 - `winPerfect`: true when the side won perfectly.
+- `winClutch`: true when the side won a clutch round.
 - `winSpecial`: true when the side won with a special.
 - `winHyper`: true when the side won with a hyper.
 - `drawGame`: true when the round was declared a draw.

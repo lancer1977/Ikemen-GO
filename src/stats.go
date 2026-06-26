@@ -29,7 +29,7 @@ type StatsFighterState struct {
 	WinKO      bool `json:"winKO"`      // won by KO
 	WinTime    bool `json:"winTime"`    // won on time-out
 	WinPerfect bool `json:"winPerfect"` // perfect round
-	WinClutch  bool `json:"winClutch`   // clutch round
+	WinClutch  bool `json:"winClutch"`  // clutch round
 	WinSpecial bool `json:"winSpecial"` // won with a special
 	WinHyper   bool `json:"winHyper"`   // won with a hyper
 	DrawGame   bool `json:"drawGame"`   // round was declared a draw
