@@ -218,6 +218,8 @@ type System struct {
 	debugDisplay              bool
 	debugRef                  [2]int // player number, helper index
 	debugLastID               int32
+	pauseProofStarted         bool
+	pauseProofCapturePhase    int
 	soundMixer                *beep.Mixer
 	bgm                       Bgm
 	pauseVolumeApplied        bool
@@ -870,6 +872,7 @@ func (s *System) renderFrame() {
 	// Render top elements
 	if !s.frameSkip {
 		s.drawTop()
+		s.drawPauseProofOverlay()
 	}
 
 	// Render debug elements
@@ -2636,6 +2639,8 @@ func (s *System) action() {
 			s.envcol_time--
 		}
 
+		s.updatePauseProof()
+
 		// Step pause timers
 		if s.supertime > 0 {
 			s.supertime--
@@ -3616,6 +3621,73 @@ func (s *System) drawTop() {
 		s.debugcsize.draw(0xff303030, alpha)
 		// Crosshair
 		s.debugch.draw(0xffffffff, alpha)
+	}
+}
+
+func (s *System) drawPauseProofOverlay() {
+	if _, ok := s.cmdFlags["-pauseproof"]; !ok || s.pausetime <= 0 || s.debugFont == nil || s.debugFont.fnt == nil {
+		return
+	}
+
+	seconds := int32(math.Ceil(float64(s.pausetime) / 60.0))
+	if seconds < 1 {
+		seconds = 1
+	}
+
+	s.debugFont.SetColor(255, 255, 0, 255)
+	s.debugFont.fnt.Print(
+		fmt.Sprintf("PAUSED %d", seconds),
+		20,
+		float32(s.gameHeight)*0.68,
+		s.debugFont.xscl/s.widthScale,
+		s.debugFont.yscl/s.heightScale,
+		1,
+		Rotation{0, 0, 0},
+		0,
+		0,
+		0,
+		0,
+		&s.scrrect,
+		s.debugFont.palfx,
+		s.debugFont.frgba)
+}
+
+func (s *System) updatePauseProof() {
+	if _, ok := s.cmdFlags["-pauseproof"]; !ok {
+		return
+	}
+
+	if !s.pauseProofStarted {
+		if s.roundState() != 2 || s.intro != 0 || s.timeElapsed() < 60 {
+			return
+		}
+
+		s.pausetime = 180
+		s.pauseProofStarted = true
+		s.pauseProofCapturePhase = 1
+		s.isTakingScreenshot = true
+		LogMessage("pauseproof started pausetime=%d", s.pausetime)
+		return
+	}
+
+	if s.pauseProofCapturePhase == 1 && s.pausetime <= 120 {
+		s.pauseProofCapturePhase = 2
+		s.isTakingScreenshot = true
+		LogMessage("pauseproof countdown capture pausetime=%d", s.pausetime)
+		return
+	}
+
+	if s.pauseProofCapturePhase == 2 && s.pausetime <= 1 {
+		s.pauseProofCapturePhase = 3
+		s.isTakingScreenshot = true
+		LogMessage("pauseproof final pause capture pausetime=%d", s.pausetime)
+		return
+	}
+
+	if s.pauseProofCapturePhase == 3 && s.pausetime <= 0 {
+		s.pauseProofCapturePhase = 4
+		s.isTakingScreenshot = true
+		LogMessage("pauseproof resumed capture timeElapsed=%d", s.timeElapsed())
 	}
 }
 

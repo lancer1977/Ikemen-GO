@@ -244,6 +244,7 @@ func processCommandLine() {
 			"-nojsonstdout":   true,
 			"-debugstartup":   true,
 			"-noerrordialog":  true,
+			"-pauseproof":     true,
 		}
 		key := ""
 		player := 1
@@ -279,6 +280,7 @@ func processCommandLine() {
 -nojsonlog              Disables default JSON file output
 -nojsonstdout           Disables default JSON stdout output
 -noerrordialog          Logs errors without showing a blocking desktop dialog
+-pauseproof             Draws a debug pause countdown while pauseTime is active
 
 -fight <path>           Loads fight screen <path>. eg. -fight data/fight.def
 -storyboard <path>      Loads storyboard <path>. eg. -storyboard chars/kfm/intro.def
