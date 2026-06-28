@@ -41,6 +41,9 @@ $root = 'C:\Apps\mugen'
 $required = @(
   "$root\Ikemen_GO.exe",
   "$root\external\script\main.lua",
+  "$root\external\icons\IkemenCylia_256.png",
+  "$root\external\icons\IkemenCylia_96.png",
+  "$root\external\icons\IkemenCylia_48.png",
   "$root\external\script\start.lua"
 )
 $missing = @()
@@ -91,6 +94,16 @@ New-Item -Path 'HKCU:\Software\Microsoft\Windows\Windows Error Reporting' -Force
 Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\Windows Error Reporting' -Name DontShowUI -Type DWord -Value 1
 $env:IKEMEN_SUPPRESS_ERROR_DIALOG = '1'
 Stop-Process -Name Ikemen_GO -Force -ErrorAction SilentlyContinue
+foreach ($icon in @(
+  (Join-Path $root 'external\icons\IkemenCylia_256.png'),
+  (Join-Path $root 'external\icons\IkemenCylia_96.png'),
+  (Join-Path $root 'external\icons\IkemenCylia_48.png')
+)) {
+  if (-not (Test-Path $icon)) {
+    Write-Error "Missing required icon asset: $icon"
+    exit 1
+  }
+}
 Remove-Item (Join-Path $root 'Ikemen.log') -Force -ErrorAction SilentlyContinue
 Remove-Item $stdout -Force -ErrorAction SilentlyContinue
 Remove-Item $stderr -Force -ErrorAction SilentlyContinue
@@ -163,6 +176,16 @@ New-Item -Path 'HKCU:\Software\Microsoft\Windows\Windows Error Reporting' -Force
 Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\Windows Error Reporting' -Name DontShowUI -Type DWord -Value 1
 $env:IKEMEN_SUPPRESS_ERROR_DIALOG = '1'
 Stop-Process -Name Ikemen_GO -Force -ErrorAction SilentlyContinue
+foreach ($icon in @(
+  (Join-Path $root 'external\icons\IkemenCylia_256.png'),
+  (Join-Path $root 'external\icons\IkemenCylia_96.png'),
+  (Join-Path $root 'external\icons\IkemenCylia_48.png')
+)) {
+  if (-not (Test-Path $icon)) {
+    Write-Error "Missing required icon asset: $icon"
+    exit 1
+  }
+}
 Remove-Item (Join-Path $root 'Ikemen.log') -Force -ErrorAction SilentlyContinue
 Remove-Item $stdout -Force -ErrorAction SilentlyContinue
 Remove-Item $stderr -Force -ErrorAction SilentlyContinue

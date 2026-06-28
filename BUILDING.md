@@ -1,7 +1,7 @@
 # Building Ikemen GO
 
 Ikemen GO links against **FFmpeg** (background video: VP9/Opus/Vorbis in WebM/Matroska), **libxmp** (module music: MOD/XM/S3M/IT, etc.), and **SDL2** (windowing, input, and game controller support via go-sdl2).
-All three must be available as development packages via **pkg-config** (`libav*`, `libxmp`, and `sdl2`).
+FFmpeg and SDL2 are required. libxmp is optional at build time: the default build ships with a stub decoder, and `-tags libxmp` enables the native module decoder when the headers and library are installed.
 `build/build.sh` **auto-detects your OS** and, by default, **auto-builds a minimal FFmpeg**
 (same config as CI). You don't need system FFmpeg dev packages unless you prefer them.
 
@@ -61,6 +61,14 @@ Install `mingw-w64-x86_64-ffmpeg` (and/or i686 variant for 32-bit), then:
 BUILD_FFMPEG=no ./build/build.sh Win64   # or Win32
 ```
 
+### Enable libxmp module playback
+
+Install the libxmp development package for your platform, then build with:
+
+```bash
+go build -tags libxmp ./src
+```
+
 ---
 
 ## Linux
@@ -69,9 +77,12 @@ BUILD_FFMPEG=no ./build/build.sh Win64   # or Win32
 
 ```bash
 sudo apt update && sudo apt install -y \
-  golang-go git pkg-config make nasm yasm build-essential \
+  git golang-go pkg-config make nasm yasm build-essential \
   libxmp-dev libsdl2-dev
 ```
+
+If you do not need native module playback, you can skip `libxmp-dev` and build
+without the `libxmp` tag.
 
 ### Build x86-64 (Ikemen_GO_Linux)
 
@@ -83,6 +94,10 @@ cd Ikemen-GO
 # or make
 make Ikemen_GO_Linux
 ```
+
+The Linux build path currently uses Go's experimental `arena` package. Export
+`GOEXPERIMENT=arenas` before running `./build/build.sh`, `make`, or `go test`
+on Linux.
 
 ### Build ARM64 on an ARM host (Ikemen_GO_LinuxARM)
 
@@ -104,6 +119,12 @@ make Ikemen_GO_LinuxARM
 ./Ikemen_GO_LinuxARM     # ARM64
 # If you need a GL fallback on some drivers:
 MESA_GL_VERSION_OVERRIDE=2.1 ./Ikemen_GO_Linux
+```
+
+To run tests on Linux, use:
+
+```bash
+GOEXPERIMENT=arenas go test ./...
 ```
 
 You can also double-click **`build/Ikemen_GO.command`** on Linux.

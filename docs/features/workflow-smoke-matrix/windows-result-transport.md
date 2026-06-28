@@ -33,9 +33,11 @@ The expected flow:
 - [ ] `cc-desktopbridge` creates a run id
 - [x] bridge passes `-resultfile` when launching Ikemen
 - [x] Ikemen writes the final fight result atomically
+- [x] The result payload marks the fight as ended and includes winner / round
+  outcome metadata
 - [ ] bridge waits for process exit or file creation
-- [ ] bridge parses winner, rounds, fighters, and exit metadata
-- [ ] smoke fails on missing file, invalid JSON, crash log, or timeout
+- [x] bridge parses winner, rounds, fighters, and exit metadata
+- [x] smoke fails on missing file, invalid JSON, crash log, or timeout
 
 This should become the primary Windows automation contract. Console stdout can
 remain useful for Linux and local developer smoke, but it is too fragile as the
@@ -59,11 +61,17 @@ first version should focus on reliable final result delivery.
 - [x] Linux smoke still emits useful JSON for fast local testing
 - [x] Windows smoke writes a result file for quick-vs
 - [x] stream-box smoke proves no crash popup and no stale process
+- [x] Live snapshots expose a pollable `matchOver` flag for health checks
+- [x] Local consumers can read `fightEnded` from recorded results and `matchOver`
+  from live snapshots without parsing status text
 - [ ] bridge smoke proves it can read and forward the result
-- [ ] result file cleanup avoids stale run reuse
+- [x] Result and live snapshot cleanup avoids stale run reuse in the smoke
+  harness
 
 ## Cross-Repo Ownership
 
 - `Ikemen-GO` owns the CLI transports and result schema emission.
 - `cc-desktopbridge` owns OS detection, strategy selection, launch arguments,
   result collection, and forwarding to the rest of the ChannelCheevos stack.
+- The remaining bridge smoke line above is still an external validation item in
+  `cc-desktopbridge` and is not verifiable from this workspace alone.

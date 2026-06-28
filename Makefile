@@ -101,6 +101,11 @@ smoke-stream-box:
 smoke-local-kfm:
 	./scripts/smoke/ikemen-local-kfm-smoke.sh $(IKEMEN_LOCAL_KFM_ARGS)
 
+.PHONY: contracts
+contracts:
+	python -m unittest scripts.tests.test_ikemen_json_contract_v1 scripts.tests.test_ikemen_state_contracts
+	dotnet build contracts/Ikemen.Go.Contracts/Ikemen.Go.Contracts.csproj
+
 # MacOS x64 target
 Ikemen_GO_MacOS: ${srcFiles}
 	bash ./build/build.sh MacOS

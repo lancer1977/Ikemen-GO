@@ -1,0 +1,116 @@
+name: workflow-smoke-matrix
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Which self-hosted runner lane to run'
+        type: choice
+        required: true
+        default: both
+        options:
+          - both
+          - linux
+          - windows
+      char_sweep:
+        description: 'Include the per-character sweep'
+        type: boolean
+        required: true
+        default: true
+      fixture_root:
+        description: 'Fixture tree for quick-vs and char sweep'
+        type: string
+        required: true
+        default: /mnt/shared/Emu/ikemen
+
+jobs:
+  linux:
+    name: Workflow smoke matrix (Linux)
+    if: ${{ github.event.inputs.target != 'windows' }}
+    runs-on: [self-hosted, linux, ikemen-linux]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.20.x'
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            **/go.sum
+
+      - name: Build Linux binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x build/build.sh
+          ./build/build.sh Linux
+
+      - name: Run workflow smoke matrix
+        shell: bash
+        env:
+          IKEMEN_WORKFLOW_FIXTURE_ROOT: ${{ github.event.inputs.fixture_root }}
+          IKEMEN_WORKFLOW_CHAR_SWEEP: ${{ github.event.inputs.char_sweep }}
+        run: |
+          set -euo pipefail
+          chmod +x scripts/smoke/ikemen-workflow-matrix.sh
+          if [[ "${IKEMEN_WORKFLOW_CHAR_SWEEP}" == "true" ]]; then
+            ./scripts/smoke/ikemen-workflow-matrix.sh --char-sweep
+          else
+            ./scripts/smoke/ikemen-workflow-matrix.sh
+          fi
+
+  windows:
+    name: Workflow smoke matrix (Windows)
+    if: ${{ github.event.inputs.target != 'linux' }}
+    runs-on: [self-hosted, windows, ikemen-windows]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.20.x'
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            **/go.sum
+
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          path-type: inherit
+          install: >-
+            git
+            make
+            diffutils
+            mingw-w64-x86_64-pkg-config
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-bzip2
+            mingw-w64-x86_64-nasm
+            mingw-w64-x86_64-tools-git
+            mingw-w64-x86_64-SDL2
+            mingw-w64-x86_64-yasm
+            mingw-w64-x86_64-libxmp
+
+      - name: Build Windows binary
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          chmod +x build/build.sh
+          ./build/build.sh Win64
+
+      - name: Run workflow smoke matrix
+        shell: cmd
+        env:
+          IKEMEN_WORKFLOW_FIXTURE_ROOT: ${{ github.event.inputs.fixture_root }}
+          IKEMEN_WORKFLOW_CHAR_SWEEP: ${{ github.event.inputs.char_sweep }}
+        run: |
+          if /I "%IKEMEN_WORKFLOW_CHAR_SWEEP%"=="true" (
+            call scripts\smoke\ikemen-workflow-matrix.cmd --char-sweep
+          ) else (
+            call scripts\smoke\ikemen-workflow-matrix.cmd
+          )

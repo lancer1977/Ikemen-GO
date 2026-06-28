@@ -13,6 +13,7 @@ type GameLiveSnapshot struct {
 	StatsLog          StatsLog   `json:"statsLog"`
 	ContinueFlg       bool       `json:"continueFlg"`
 	PersistRoundCount int32      `json:"persistRoundCount"`
+	MatchOver         bool       `json:"matchOver"`
 	FrameCounter      int32      `json:"frameCounter"`
 	MatchTime         int32      `json:"matchTime"`
 	CurRoundTime      int32      `json:"curRoundTime"`
@@ -30,6 +31,7 @@ func (s *System) liveMatchSnapshot() GameLiveSnapshot {
 		StatsLog:          s.statsLog,
 		ContinueFlg:       s.continueFlg,
 		PersistRoundCount: s.persistRoundCount,
+		MatchOver:         s.matchOver(),
 		FrameCounter:      s.frameCounter,
 		MatchTime:         s.matchTime,
 		CurRoundTime:      s.curRoundTime,
@@ -83,7 +85,10 @@ func (s *System) maybeWriteLiveSnapshot() {
 	if !ok || path == "" {
 		return
 	}
-	if !s.middleOfMatch() || s.frameCounter%2 != 0 {
+	if !s.middleOfMatch() && !s.matchOver() {
+		return
+	}
+	if s.middleOfMatch() && s.frameCounter%2 != 0 {
 		return
 	}
 

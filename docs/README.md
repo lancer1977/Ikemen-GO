@@ -5,6 +5,7 @@ Canonical documentation for the Ikemen GO engine and its support surface.
 ## Entry Points
 
 - [Feature Index](./features/README.md)
+- [Setup Index](./setup/README.md)
 - [Roadmap Index](./roadmaps/README.md)
 
 ## Current References

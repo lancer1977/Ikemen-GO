@@ -37,6 +37,10 @@
   smoke.
 - `-livedatafile` streams atomic match snapshots while the fight is active.
 - Result output is expected to be JSON containing `statsLog`.
+- The existing result and live snapshot shapes are documented in
+  [Result Contract V1](./result-contract-v1.md).
+- The matching C# model/interface library lives in
+  `contracts/Ikemen.Go.Contracts` and builds independently from the Go engine.
 
 ## Operating Notes
 
@@ -44,3 +48,6 @@
   path.
 - Debug smoke helpers keep process stdio in `C:\\Apps` and suppress Windows crash
   popups.
+- Run `make contracts` after JSON contract changes to compare the Go JSON tags
+  against the V1 docs/C# attributes and prove the C# consumer surface still
+  compiles.

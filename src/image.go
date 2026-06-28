@@ -20,6 +20,7 @@ const (
 	TT_none TransType = iota
 	TT_add
 	TT_sub
+	TT_subadd
 	TT_default
 )
 
@@ -166,36 +167,33 @@ func (pf *PalFX) getFxPal(blendMode TransType, pal []uint32, neg bool) []uint32 
 	return sys.workpal
 }
 
-func (pf *PalFX) getFinalPalFx(blendMode TransType, alpha [2]int32) (neg bool, grayscale float32,
-	add, mul [3]float32, invblend int32, hue float32) {
-
+func (pf *PalFX) getFinalPalFx(blendMode TransType, alpha [2]int32) (state ShaderPalFX) {
 	p := pf.getSynFx(blendMode, alpha)
+
 	if !p.enable {
-		neg = false
-		grayscale = 0
-		for i := range add {
-			add[i] = 0
-		}
-		for i := range mul {
-			mul[i] = 1
-		}
+		state.neg = false
+		state.gray = 0
+		state.add = [3]float32{0, 0, 0}
+		state.mult = [3]float32{1, 1, 1}
+		state.hue = 0
+		state.invblend = 0
 		return
 	}
-	neg = p.eInvertall
-	grayscale = 1 - p.eColor
-	invblend = p.eInvertblend
-	hue = p.eHue
+
+	state.neg = p.eInvertall
+	state.gray = 1 - p.eColor
+	state.invblend = p.eInvertblend
+	state.hue = p.eHue
 
 	// Determine if we use negative color math based on blendMode
 	useNeg := blendMode == TT_sub && p.eAllowNeg
 
 	for i, v := range p.eAdd {
-		add[i] = float32(v) / 255
+		state.add[i] = float32(v) / 255
 		if useNeg {
-			//add[i] *= -1
-			mul[i] = float32(p.eMul[(i+1)%3]+p.eMul[(i+2)%3]) / 512
+			state.mult[i] = float32(p.eMul[(i+1)%3]+p.eMul[(i+2)%3]) / 512
 		} else {
-			mul[i] = float32(p.eMul[i]) / 256
+			state.mult[i] = float32(p.eMul[i]) / 256
 		}
 	}
 	return
@@ -1490,8 +1488,16 @@ func findActiveSff(filename string) *Sff {
 	return nil
 }
 
+// Deep loaders should be able to abort quickly when pre-match load is canceled.
+func loadingCanceled() bool {
+	return sys.loader.cancelRequested() || sys.gameEnd || sys.loader.state == LS_Cancel
+}
+
 // Loads the full SFF file
 func loadSff(filename string, char bool, isMainThread bool, isActPal bool) (*Sff, error) {
+	if loadingCanceled() {
+		return nil, ErrLoadingCanceled
+	}
 	// Borrow an existing SFF if possible
 	if s := findActiveSff(filename); s != nil {
 		return s, nil
@@ -1524,6 +1530,9 @@ func loadSff(filename string, char bool, isMainThread bool, isActPal bool) (*Sff
 	var prev *Sprite
 	shofs := int64(s.header.FirstSpriteHeaderOffset)
 	for i := 0; i < len(spriteList); i++ {
+		if loadingCanceled() {
+			return nil, ErrLoadingCanceled
+		}
 		f.Seek(shofs, 0)
 		spriteList[i] = newSprite()
 		var xofs, size uint32
@@ -1543,6 +1552,9 @@ func loadSff(filename string, char bool, isMainThread bool, isActPal bool) (*Sff
 		if size == 0 {
 			if int(indexOfPrevious) < i {
 				dst, src := spriteList[i], spriteList[int(indexOfPrevious)]
+				if loadingCanceled() {
+					return nil, ErrLoadingCanceled
+				}
 				// Moved to shareCopy() itself
 				//sys.mainThreadTask <- func() {
 				dst.shareCopy(src)
@@ -1581,8 +1593,14 @@ func loadSff(filename string, char bool, isMainThread bool, isActPal bool) (*Sff
 			shofs += 28
 		}
 		if isMainThread {
+			if loadingCanceled() {
+				return nil, ErrLoadingCanceled
+			}
 			sys.runMainThreadTask()
 		}
+	}
+	if loadingCanceled() {
+		return nil, ErrLoadingCanceled
 	}
 
 	/*
@@ -1904,6 +1922,9 @@ func (s *Sff) loadPalettes(f io.ReadSeeker, lofs uint32) error {
 	uniquePals := make(map[[2]uint16]int)
 
 	for i := 0; i < int(s.header.NumberOfPalettes); i++ {
+		if loadingCanceled() {
+			return ErrLoadingCanceled
+		}
 		f.Seek(int64(s.header.FirstPaletteHeaderOffset)+int64(i*16), 0)
 		var gn [3]uint16
 		if err := read(gn[:]); err != nil {

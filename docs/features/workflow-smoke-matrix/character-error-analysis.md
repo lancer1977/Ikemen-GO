@@ -23,6 +23,12 @@ This note tracks the current per-character sweep failures from the
 - [x] Investigate one remaining deterministic parser/content failure
   (`kfmZ/kfm.zss:657`).
 - [x] Investigate one remaining runtime timeout (`BrolyZ2`).
+- [x] Update the ZSS `animtype` parser to accept `Med` shorthand for legacy
+  content in source.
+- [x] Add quick-vs watchdog reporting so a timeout with no result file is
+  tracked as a harness failure instead of a character compatibility verdict.
+- [x] Extend sweep timeouts for `long-intro` characters so `BrolyZ2` can use a
+  longer run window without weakening the default matrix.
 
 ## Prior Throwing Characters
 
@@ -74,7 +80,7 @@ Latest status:
 Remaining incompatible characters:
 
 - `BrolyZ2`: classified as a watchdog timeout rather than a parser/content failure. The latest rebuilt sweep hit the 35s window without a completed match/result file, while nearby peers finished normally.
-- `kfmZ`: parser/content failure at `kfm.zss:657` with `animtype: Invalid animtype: Med`.
+- `kfmZ`: parser/content failure at `kfm.zss:657` with `animtype: Invalid animtype: Med` in the currently deployed binary. The source tree already accepts `Med`; it still needs to be rebuilt and rerun in the live fixture.
 
 This confirms the earlier broad failure class (`open data/demo.zss`) was a
 fixture bootstrap issue, not a character-wide engine regression.
@@ -83,9 +89,10 @@ fixture bootstrap issue, not a character-wide engine regression.
 
 - [x] Preserve per-character stderr/stdout logs with
   `IKEMEN_WORKFLOW_CHAR_SWEEP_LOG_DIR`.
-- [ ] Add a quick-vs watchdog mode that treats a still-running process with no
+- [x] Add a quick-vs watchdog mode that treats a still-running process with no
   result file as a harness failure, not a character compatibility verdict.
 - [x] Reproduce prior throwing characters with full logs.
-- [ ] Fix `kfmZ/kfm.zss:657` (`animtype: Med`) for current parser rules.
-- [ ] Investigate why `BrolyZ2` fails to finish within 35s while most peers
-  complete and write `-resultfile`.
+- [ ] Rebuild and rerun the sweep to confirm `kfmZ/kfm.zss:657` clears after
+  the `Med` compatibility update.
+- [ ] Rerun the sweep to verify `BrolyZ2` completes with the longer
+  `long-intro` timeout window and still writes `-resultfile`.

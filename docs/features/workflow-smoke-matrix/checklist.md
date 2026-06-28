@@ -25,16 +25,16 @@
   names with dry-run and apply modes
 - [x] Add character self-play sweep and compatibility JSON output in smoke matrix
 - [x] Pass AI levels into character self-play sweep launches
-- [ ] Add stream-box native character sweep reporting
-- [ ] Add a Windows/MSYS2 execution wrapper if we want native Windows coverage
-- [ ] Add CI wiring or a self-hosted runner hook
+- [x] Add stream-box native character sweep reporting
+- [x] Add a Windows/MSYS2 execution wrapper if we want native Windows coverage
+- [x] Add CI wiring or a self-hosted runner hook
 
 ## Validation
 
-- [ ] Run the startup matrix against the local Linux binary (blocked by current startup menu crash)
+- [x] Run the startup matrix against the local Linux binary
 - [ ] Run the matrix with `/mnt/shared/Emu/ikemen` for quick-vs coverage
 - [ ] Run `make smoke-stream-box`-equivalent checks against the stream-box rig
-- [ ] Confirm the harness catches the known Lua startup panic class
+- [x] Confirm the harness catches the known Lua startup panic class
 - [x] Add a strict stream-box assertion for quick-vs result-file output
 - [x] Replace repeated ad hoc launch commands with named toolbox scripts
 - [x] Prefer the launcher toolbox for candidate-library validation over repo-side analysis

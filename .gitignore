@@ -5,6 +5,7 @@ vendor/*
 # Runtime
 *.log
 *.cmd
+!scripts/smoke/ikemen-workflow-matrix.cmd
 *.bat
 /*.sh
 !build/**/*.sh
@@ -54,6 +55,8 @@ external/mods/*
 # Temp
 src/lua_triggers.go
 external/script/wip/*
+__pycache__/
+*.pyc
 
 # IDE Files
 .vscode/*

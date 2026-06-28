@@ -273,6 +273,9 @@ func processCommandLine() {
 -resultfile <jsonfile>  Writes the final match JSON to <jsonfile> (canonical bridge contract)
 -jsonstdout             Writes match data JSON to stdout (default for Quick VS)
 -livedatafile <jsonfile> Writes live match snapshots to <jsonfile> during the fight
+-combateventsfile <jsonlfile> Writes combat telemetry events to <jsonlfile>
+-commandinboxfile <jsonfile> Reads LiveLancero gameplay commands from <jsonfile>
+-commandresultsfile <jsonlfile> Writes gameplay command results to <jsonlfile>
 -nojsonlog              Disables default JSON file output
 -nojsonstdout           Disables default JSON stdout output
 -noerrordialog          Logs errors without showing a blocking desktop dialog
@@ -283,6 +286,7 @@ func processCommandLine() {
 -width <num>            Sets game width
 -height <num>           Sets game height
 -setvolume <num>        Sets master volume to <num> (0-100)
+-setport <num>          Overrides port number
 	
 Quick VS Options:
 -p<n> <playername>      Loads player n, eg. -p3 kfm
@@ -290,11 +294,17 @@ Quick VS Options:
 -p<n>.color <col>       Sets player n's color to <col>
 -p<n>.power <power>     Sets player n's power to <power>
 -p<n>.life <life>       Sets player n's life to <life>
+-p<n>.lifeMax <life>    Sets player n's max life to <life>
+-p<n>.dizzyPoints <pts> Sets player n's dizzy points to <pts>
+-p<n>.guardPoints <pts> Sets player n's guard points to <pts>
+-p<n>.input <pn>        Sets player n's controls to use <pn>'s input settings
 -tmode1 <tmode>         Sets p1 team mode to <tmode>
 -tmode2 <tmode>         Sets p2 team mode to <tmode>
 -time <num>             Round time (-1 to disable)
 -rounds <num>           Plays for <num> rounds, and then quits
 -s <stagename>          Loads stage <stagename>
+-loadmotif              Fully loads motif/chars/stages
+-ip <hostip>            Connect to <hostip> for netplay; leave blank for host
 	
 Debug Options:
 -nojoy                  Disables joysticks
@@ -395,11 +405,21 @@ func handlePanic(r interface{}) {
 
 	// Show popup message
 	displayErr := errStr
+
+	// Remove stack traces from the popup to keep it concise. The full details already go to the log file
+	// Remove the Lua stack trace
 	if _, ok := r.(*lua.ApiError); ok {
-		parts := strings.SplitN(errStr, "stack traceback:", 2)
-		displayErr = strings.TrimSpace(parts[0]) // Remove the Lua traceback from this one
+		if idx := strings.Index(displayErr, "\nstack traceback:"); idx >= 0 {
+			displayErr = displayErr[:idx]
+		}
+		displayErr = strings.TrimSpace(displayErr)
+	}
+	// Also remove any Go stack trace that may have appeared
+	if idx := strings.Index(displayErr, "\ngoroutine "); idx >= 0 {
+		displayErr = displayErr[:idx]
 	}
 
+	// Limit message to 1000 characters just in case
 	if len(displayErr) > 1000 {
 		displayErr = displayErr[:1000] + "..."
 	}

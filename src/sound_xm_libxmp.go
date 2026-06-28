@@ -1,3 +1,5 @@
+//go:build cgo && libxmp
+
 package main
 
 /*
@@ -8,6 +10,7 @@ package main
 #include <stdio.h>
 */
 import "C"
+
 import (
 	"fmt"
 	"io"
@@ -105,20 +108,6 @@ func newXMStreamer(f *os.File) (*xmStreamer, error) {
 		return nil, Error("failed to load XM module")
 	}
 
-	// Convert Go file to C FILE*
-	// mode := C.CString("rb")
-	// defer C.free(unsafe.Pointer(mode))
-	// cFileStream := C.fdopen(C.int(f.Fd()), mode)
-	// if cFileStream == nil {
-	//     C.xmp_free_context(ctx)
-	//     return nil, Error("fdopen failed")
-	// }
-
-	// if C.xmp_load_module_from_file(ctx, unsafe.Pointer(cFileStream), 0) != 0 {
-	// 	C.xmp_free_context(ctx)
-	// 	return nil, Error("failed to load XM module")
-	// }
-
 	var info C.struct_xmp_frame_info
 	C.xmp_get_frame_info(ctx, &info)
 
@@ -133,7 +122,7 @@ func newXMStreamer(f *os.File) (*xmStreamer, error) {
 		channels:    2,
 		sampleRate:  audioFrequency,
 		totalFrames: int(float64(info.total_time) * float64(audioFrequency) / 1000.0),
-		buffer:      make([]int16, audioOutLen*2), // 2048 stereo frames → lower memory
+		buffer:      make([]int16, audioOutLen*2),
 	}
 	runtime.SetFinalizer(s, func(s *xmStreamer) { s.Close() })
 	return s, nil
