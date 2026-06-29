@@ -185,6 +185,9 @@ func (s *StatsLog) discardCurrentMatch() {
 }
 
 func (s *StatsLog) nextRound() {
+	// Record the round result before the engine advances into the next round.
+	sys.recordRoundOutcome()
+
 	// Build per-side fighter snapshots for the stats system
 	var fighters [2][]StatsFighterState
 	for _, p := range sys.chars {

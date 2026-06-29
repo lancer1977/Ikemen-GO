@@ -5806,6 +5806,15 @@ func (fs *FightScreen) draw(layerno int16) {
 		fs.round.draw(layerno, fs.fnt)
 		drawRenderProbeMode("fight", fmt.Sprintf("F%d round", layerno), 168, 236+float32(layerno)*12, 220, 255, 255)
 	}
+
+	if fs.active && layerno == 2 {
+		if sys.postMatchFlg {
+			drawRenderProbeBlockMode("paint-proof-result", "RESULT FOOTER", 0, 216, 320, 24, 64, 255, 128)
+		} else {
+			drawRenderProbeBlockMode("paint-proof-fight", "FIGHT LEFT", 0, 72, 32, 96, 255, 64, 64)
+			drawRenderProbeBlockMode("paint-proof-fight", "FIGHT RIGHT", 288, 72, 32, 96, 64, 160, 255)
+		}
+	}
 }
 
 func (fs *FightScreen) drawFade() {

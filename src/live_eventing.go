@@ -14,6 +14,8 @@ const (
 	liveCombatEventSchema   = "live-lancero/combat-event/v1"
 	liveCommandInboxSchema  = "live-lancero/command-inbox/v1"
 	liveCommandResultSchema = "live-lancero/command-result/v1"
+	liveMatchEventSchema    = "live-lancero/match-event/v1"
+	liveStatusSchema        = "live-lancero/live-status/v1"
 )
 
 type LiveCombatEvent struct {
@@ -65,18 +67,70 @@ type LiveCommandResult struct {
 	TimestampUTC   string `json:"timestampUtc"`
 }
 
+type LiveStatusSnapshot struct {
+	Schema       string               `json:"schema"`
+	Mode         string               `json:"mode"`
+	Match        int32                `json:"match,omitempty"`
+	Round        int32                `json:"round,omitempty"`
+	Stage        string               `json:"stage,omitempty"`
+	TimestampUTC string               `json:"timestampUtc"`
+	P1           *LiveStatusFighter   `json:"p1,omitempty"`
+	P2           *LiveStatusFighter   `json:"p2,omitempty"`
+}
+
+type LiveStatusFighter struct {
+	Key         string `json:"key"`
+	Name        string `json:"name,omitempty"`
+	DisplayName string `json:"displayName,omitempty"`
+	Wins        *int32 `json:"wins,omitempty"`
+	Losses      *int32 `json:"losses,omitempty"`
+	Tier        *int32 `json:"tier,omitempty"`
+}
+
+type LiveMatchEvent struct {
+	Schema       string `json:"schema"`
+	Line         int32  `json:"line"`
+	Match        int32  `json:"match"`
+	Round        int32  `json:"round"`
+	Event        string `json:"event"`
+	WinnerSide   int32  `json:"winnerSide,omitempty"`
+	WinnerKey    string `json:"winnerKey,omitempty"`
+	LoserKey     string `json:"loserKey,omitempty"`
+	TimestampUTC string `json:"timestampUtc"`
+}
+
 func (s *System) combatEventsPath() string {
 	if path := strings.TrimSpace(s.cmdFlags["-combateventsfile"]); path != "" {
 		return path
 	}
-	if livePath := strings.TrimSpace(s.cmdFlags["-livedatafile"]); livePath != "" {
-		return filepath.Join(filepath.Dir(livePath), "combat_events.jsonl")
+	if path := strings.TrimSpace(s.cmdFlags["-livedatafile"]); path != "" {
+		return filepath.Join(filepath.Dir(path), "combat_events.jsonl")
 	}
-	return ""
+	if path := strings.TrimSpace(s.cmdFlags["-livestatusfile"]); path != "" {
+		return filepath.Join(filepath.Dir(path), "combat_events.jsonl")
+	}
+	return filepath.Join(s.baseDir, "save", "combat_events.jsonl")
+}
+
+func (s *System) liveStatusPath() string {
+	if path := strings.TrimSpace(s.cmdFlags["-livestatusfile"]); path != "" {
+		return path
+	}
+	return filepath.Join(s.baseDir, "save", "live_status.json")
+}
+
+func (s *System) matchEventsPath() string {
+	if path := strings.TrimSpace(s.cmdFlags["-matcheventsfile"]); path != "" {
+		return path
+	}
+	return filepath.Join(s.baseDir, "save", "match_events.jsonl")
 }
 
 func (s *System) commandInboxPath() string {
-	return strings.TrimSpace(s.cmdFlags["-commandinboxfile"])
+	if path := strings.TrimSpace(s.cmdFlags["-commandinboxfile"]); path != "" {
+		return path
+	}
+	return filepath.Join(s.baseDir, "save", "command_inbox.json")
 }
 
 func (s *System) commandResultsPath() string {
@@ -86,7 +140,7 @@ func (s *System) commandResultsPath() string {
 	if inboxPath := s.commandInboxPath(); inboxPath != "" {
 		return filepath.Join(filepath.Dir(inboxPath), "command_results.jsonl")
 	}
-	return ""
+	return filepath.Join(s.baseDir, "save", "command_results.jsonl")
 }
 
 func appendJSONLine(path string, value any) error {
@@ -138,6 +192,125 @@ func normalizeLiveCommandKind(request LiveCommandRequest) string {
 
 func liveTimestampUTC() string {
 	return time.Now().UTC().Format(time.RFC3339Nano)
+}
+
+func (s *System) writeLiveStatus() {
+	path := s.liveStatusPath()
+	if path == "" || (!s.middleOfMatch() && !s.matchOver()) {
+		return
+	}
+
+	data, err := json.Marshal(s.buildLiveStatusSnapshot())
+	if err != nil {
+		LogMessage("live status marshal failed: %v", err)
+		return
+	}
+	if err := writeAtomicFile(path, data); err != nil {
+		LogMessage("live status write failed: %v", err)
+	}
+}
+
+func (s *System) buildLiveStatusSnapshot() LiveStatusSnapshot {
+	p1, p2 := s.liveStatusFighters()
+	return LiveStatusSnapshot{
+		Schema:       liveStatusSchema,
+		Mode:         "fight",
+		Match:        s.match,
+		Round:        s.round,
+		Stage:        s.liveStatusStageName(),
+		TimestampUTC: liveTimestampUTC(),
+		P1:           p1,
+		P2:           p2,
+	}
+}
+
+func (s *System) liveStatusFighters() (*LiveStatusFighter, *LiveStatusFighter) {
+	return s.liveStatusFighterForSide(0), s.liveStatusFighterForSide(1)
+}
+
+func (s *System) liveStatusFighterForSide(side int) *LiveStatusFighter {
+	if side < 0 || side >= len(s.chars) || len(s.chars[side]) == 0 || s.chars[side][0] == nil {
+		return nil
+	}
+
+	c := s.chars[side][0]
+	key := strings.TrimSpace(c.name)
+	if key == "" {
+		key = fmt.Sprintf("player-%d", side+1)
+	}
+	name := strings.TrimSpace(c.name)
+	if name == "" {
+		name = key
+	}
+	displayName := name
+
+	return &LiveStatusFighter{
+		Key:         strings.ToLower(key),
+		Name:        name,
+		DisplayName: displayName,
+	}
+}
+
+func (s *System) liveStatusStageName() string {
+	if s.stage == nil {
+		return ""
+	}
+	if name := strings.TrimSpace(s.stage.displayname); name != "" {
+		return name
+	}
+	if name := strings.TrimSpace(s.stage.name); name != "" {
+		return name
+	}
+	if def := strings.TrimSpace(s.stage.def); def != "" {
+		return def
+	}
+	return ""
+}
+
+func (s *System) appendMatchEvent(event string, winnerSide int32, winnerKey string, loserKey string) {
+	path := s.matchEventsPath()
+	if path == "" {
+		return
+	}
+
+	s.matchEventLine++
+	record := LiveMatchEvent{
+		Schema:       liveMatchEventSchema,
+		Line:         s.matchEventLine,
+		Match:        s.match,
+		Round:        s.round,
+		Event:        event,
+		WinnerSide:   winnerSide,
+		WinnerKey:    winnerKey,
+		LoserKey:     loserKey,
+		TimestampUTC: liveTimestampUTC(),
+	}
+
+	if err := appendJSONLine(path, record); err != nil {
+		LogMessage("live match event write failed: %v", err)
+	}
+}
+
+func (s *System) recordRoundStart() {
+	s.appendMatchEvent("round_start", 0, "", "")
+}
+
+func (s *System) recordRoundOutcome() {
+	if s.winTeam < 0 {
+		s.appendMatchEvent("round_draw", 0, "", "")
+		return
+	}
+
+	winnerSide := int32(s.winTeam + 1)
+	loserSide := 1 - s.winTeam
+	s.appendMatchEvent("round_win", winnerSide, s.liveRosterKeyForSide(s.winTeam), s.liveRosterKeyForSide(loserSide))
+}
+
+func (s *System) liveRosterKeyForSide(side int) string {
+	if side < 0 || side >= len(s.chars) || len(s.chars[side]) == 0 || s.chars[side][0] == nil {
+		return ""
+	}
+	return strings.ToLower(strings.TrimSpace(s.chars[side][0].name))
 }
 
 func liveSideFromChar(c *Char) int32 {

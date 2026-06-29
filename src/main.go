@@ -141,6 +141,21 @@ func realMain() {
 	if _, ok := sys.cmdFlags["-stats"]; !ok {
 		sys.cmdFlags["-stats"] = filepath.Join(sys.baseDir, "save/stats.json")
 	}
+	if _, ok := sys.cmdFlags["-livestatusfile"]; !ok {
+		sys.cmdFlags["-livestatusfile"] = filepath.Join(sys.baseDir, "save/live_status.json")
+	}
+	if _, ok := sys.cmdFlags["-matcheventsfile"]; !ok {
+		sys.cmdFlags["-matcheventsfile"] = filepath.Join(sys.baseDir, "save/match_events.jsonl")
+	}
+	if _, ok := sys.cmdFlags["-combateventsfile"]; !ok {
+		sys.cmdFlags["-combateventsfile"] = filepath.Join(sys.baseDir, "save/combat_events.jsonl")
+	}
+	if _, ok := sys.cmdFlags["-commandinboxfile"]; !ok {
+		sys.cmdFlags["-commandinboxfile"] = filepath.Join(sys.baseDir, "save/command_inbox.json")
+	}
+	if _, ok := sys.cmdFlags["-commandresultsfile"]; !ok {
+		sys.cmdFlags["-commandresultsfile"] = filepath.Join(sys.baseDir, "save/command_results.jsonl")
+	}
 
 	// Try reading stats
 	if _, err := os.ReadFile(sys.cmdFlags["-stats"]); err != nil {

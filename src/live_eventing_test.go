@@ -93,6 +93,125 @@ func TestRecordCombatDamage_WritesCombatAndThresholdEvents(t *testing.T) {
 	}
 }
 
+func TestWriteLiveStatus_WritesCurrentFightSnapshot(t *testing.T) {
+	tempDir := t.TempDir()
+	path := filepath.Join(tempDir, "live_status.json")
+	s := &System{
+		SystemStateVars: SystemStateVars{
+			match:     12,
+			round:     2,
+			matchTime: 180,
+		},
+		stage: &Stage{name: "training_ground", displayname: "Training Ground"},
+		cmdFlags: map[string]string{
+			"-livestatusfile": path,
+		},
+	}
+	s.chars[0] = []*Char{{name: "Ryu"}}
+	s.chars[1] = []*Char{{name: "Ken"}}
+
+	s.writeLiveStatus()
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("reading live status: %v", err)
+	}
+
+	var status LiveStatusSnapshot
+	if err := json.Unmarshal(raw, &status); err != nil {
+		t.Fatalf("unmarshal live status: %v", err)
+	}
+
+	if status.Schema != liveStatusSchema {
+		t.Fatalf("unexpected schema: %#v", status)
+	}
+	if status.Mode != "fight" || status.Match != 12 || status.Round != 2 {
+		t.Fatalf("unexpected status fields: %#v", status)
+	}
+	if status.Stage != "Training Ground" {
+		t.Fatalf("unexpected stage: %#v", status)
+	}
+	if status.P1 == nil || status.P1.Key != "ryu" || status.P2 == nil || status.P2.Key != "ken" {
+		t.Fatalf("unexpected fighters: %#v", status)
+	}
+}
+
+func TestRecordRoundOutcome_WritesMatchEvent(t *testing.T) {
+	tempDir := t.TempDir()
+	path := filepath.Join(tempDir, "match_events.jsonl")
+	s := &System{
+		SystemStateVars: SystemStateVars{
+			match: 12,
+			round: 2,
+		},
+		cmdFlags: map[string]string{
+			"-matcheventsfile": path,
+		},
+	}
+	s.chars[0] = []*Char{{name: "Ryu"}}
+	s.chars[1] = []*Char{{name: "Ken"}}
+	s.winTeam = 0
+
+	s.recordRoundOutcome()
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("reading match events: %v", err)
+	}
+
+	lines := splitNonEmptyLines(string(raw))
+	if len(lines) != 1 {
+		t.Fatalf("unexpected match event count: %d (%q)", len(lines), string(raw))
+	}
+
+	var event LiveMatchEvent
+	if err := json.Unmarshal([]byte(lines[0]), &event); err != nil {
+		t.Fatalf("unmarshal match event: %v", err)
+	}
+
+	if event.Schema != liveMatchEventSchema || event.Event != "round_win" || event.WinnerSide != 1 {
+		t.Fatalf("unexpected match event: %#v", event)
+	}
+	if event.WinnerKey != "ryu" || event.LoserKey != "ken" {
+		t.Fatalf("unexpected winner data: %#v", event)
+	}
+}
+
+func TestRecordRoundStart_WritesMatchEvent(t *testing.T) {
+	tempDir := t.TempDir()
+	path := filepath.Join(tempDir, "match_events.jsonl")
+	s := &System{
+		SystemStateVars: SystemStateVars{
+			match: 12,
+			round: 1,
+		},
+		cmdFlags: map[string]string{
+			"-matcheventsfile": path,
+		},
+	}
+
+	s.recordRoundStart()
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("reading match events: %v", err)
+	}
+
+	lines := splitNonEmptyLines(string(raw))
+	if len(lines) != 1 {
+		t.Fatalf("unexpected match event count: %d (%q)", len(lines), string(raw))
+	}
+
+	var event LiveMatchEvent
+	if err := json.Unmarshal([]byte(lines[0]), &event); err != nil {
+		t.Fatalf("unmarshal match event: %v", err)
+	}
+
+	if event.Event != "round_start" || event.Match != 12 || event.Round != 1 {
+		t.Fatalf("unexpected round start event: %#v", event)
+	}
+}
+
 func TestMaybeProcessLiveCommandInbox_AppliesPowerAdjustAndWritesResult(t *testing.T) {
 	origSys := sys
 	sys = System{}

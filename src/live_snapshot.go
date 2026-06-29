@@ -81,25 +81,32 @@ func (s *System) liveMatchFighters() [2][]StatsFighterState {
 }
 
 func (s *System) maybeWriteLiveSnapshot() {
+	s.maybeProcessLiveCommandInbox()
+
 	path, ok := s.cmdFlags["-livedatafile"]
 	if !ok || path == "" {
+		s.writeLiveStatus()
 		return
 	}
 	if !s.middleOfMatch() && !s.matchOver() {
+		s.writeLiveStatus()
 		return
 	}
 	if s.middleOfMatch() && s.frameCounter%2 != 0 {
+		s.writeLiveStatus()
 		return
 	}
 
 	data, err := json.Marshal(s.liveMatchSnapshot())
 	if err != nil {
 		LogMessage("live snapshot marshal failed: %v", err)
+		s.writeLiveStatus()
 		return
 	}
 	if err := writeAtomicFile(path, data); err != nil {
 		LogMessage("live snapshot write failed: %v", err)
 	}
+	s.writeLiveStatus()
 }
 
 func writeAtomicFile(path string, data []byte) error {

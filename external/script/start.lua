@@ -1369,6 +1369,133 @@ function start.f_getRecordText()
 	return text
 end
 
+local selectStatsOverlay = nil
+
+local function f_initSelectStatsOverlay()
+	if selectStatsOverlay ~= nil then
+		return selectStatsOverlay
+	end
+	local font = fontNew('font/default-3x5.def', -1)
+	local function makeText(x, y, align, r, g, b)
+		local t = textImgNew()
+		textImgSetFont(t, font)
+		textImgSetBank(t, 0)
+		textImgSetAlign(t, align)
+		textImgSetColor(t, r, g, b, 255)
+		textImgSetScale(t, 1, 1)
+		textImgSetPos(t, x, y)
+		return t
+	end
+	local function makeRect()
+		local r = rectNew()
+		rectSetColor(r, 0, 0, 0)
+		rectSetAlpha(r, 220, 0)
+		rectSetLayerno(r, 2)
+		return r
+	end
+	selectStatsOverlay = {
+		box = {makeRect(), makeRect()},
+		label = {makeText(8, 171, 1, 220, 220, 220), makeText(312, 171, -1, 220, 220, 220)},
+		value = {makeText(8, 181, 1, 255, 225, 120), makeText(312, 181, -1, 255, 225, 120)},
+	}
+	return selectStatsOverlay
+end
+
+local function f_selectStatsNormalizeKey(value)
+	if value == nil then
+		return nil
+	end
+	value = tostring(value):gsub('\\', '/'):gsub('^%s+', ''):gsub('%s+$', '')
+	if value == '' then
+		return nil
+	end
+	value = value:gsub('^.*[/]', ''):gsub('%.def$', '')
+	return value:lower()
+end
+
+local function f_selectStatsKeys(ref)
+	local keys = {}
+	local function add(value)
+		local key = f_selectStatsNormalizeKey(value)
+		if key ~= nil then
+			table.insert(keys, key)
+		end
+	end
+	if ref ~= nil then
+		local ok, data = pcall(start.f_getCharData, ref)
+		if ok and data ~= nil then
+			add(data.char)
+			add(data.def)
+			add(data.name)
+		end
+	end
+	return keys
+end
+
+local function f_selectStatsRead()
+	local ok, stats = pcall(jsonDecode, 'save/stats.json')
+	if not ok or type(stats) ~= 'table' then
+		return {}
+	end
+	return stats
+end
+
+local function f_selectStatsRecord(stats, ref)
+	local sources = {}
+	if type(stats.characters) == 'table' then
+		table.insert(sources, stats.characters)
+	end
+	table.insert(sources, stats)
+	for _, key in ipairs(f_selectStatsKeys(ref)) do
+		for _, source in ipairs(sources) do
+			local rec = source[key] or source[key:upper()] or source[key:lower()]
+			if type(rec) == 'table' then
+				return rec
+			end
+		end
+	end
+	return {}
+end
+
+local function f_selectStatsValue(rec, ...)
+	for _, key in ipairs({...}) do
+		if rec[key] ~= nil then
+			return rec[key]
+		end
+	end
+	return nil
+end
+
+local function f_selectStatsText(stats, ref)
+	local rec = f_selectStatsRecord(stats, ref)
+	local wins = tonumber(f_selectStatsValue(rec, 'wins', 'win', 'Wins', 'Win')) or 0
+	local losses = tonumber(f_selectStatsValue(rec, 'losses', 'loss', 'Losses', 'Loss')) or 0
+	local tier = f_selectStatsValue(rec, 'tier', 'Tier', 'rank', 'Rank') or 'U'
+	return tostring(wins) .. ' - ' .. tostring(losses) .. ' - ' .. tostring(tier)
+end
+
+function start.f_drawSelectStatsOverlay(counter)
+	local overlay = f_initSelectStatsOverlay()
+	local stats = f_selectStatsRead()
+	for side = 1, 2 do
+		local ref = nil
+		if #start.p[side].t_selTemp > 0 then
+			local idx = t_portraitPriority[side] or #start.p[side].t_selTemp
+			ref = start.p[side].t_selTemp[idx] and start.p[side].t_selTemp[idx].ref
+		end
+		local x1 = side == 1 and 0 or 160
+		local x2 = side == 1 and 160 or 320
+		rectSetWindow(overlay.box[side], x1, 168, x2, 192)
+		rectDraw(overlay.box[side], 2)
+		textImgReset(overlay.label[side], {'text'})
+		textImgSetText(overlay.label[side], 'stats')
+		textImgDraw(overlay.label[side], 2)
+		textImgReset(overlay.value[side], {'text'})
+		textImgSetText(overlay.value[side], f_selectStatsText(stats, ref))
+		textImgDraw(overlay.value[side], 2)
+	end
+end
+
 --cursor sound data, play cursor sound
 function start.f_playWave(ref, name, g, n, loops)
 	if g < 0 or n < 0 then return 0 end
@@ -2861,6 +2988,7 @@ function start.f_selectScreen()
 		hook.run("start.f_selectScreen")
 		--draw layerno = 1 backgrounds
 		bgDraw(motif.selectbgdef.BGDef, 1)
+		start.f_drawSelectStatsOverlay(counter)
 		--frame transition
 		if not fadeActive() and (fadeOutStarted or start.escFlag) then
 			selScreenEnd = true
