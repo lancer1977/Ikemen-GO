@@ -1,7 +1,6 @@
-# Ikemen GO Roadmaps
+# Ikemen-GO: Ikemen GO Roadmaps
 
-Phased planning for Ikemen GO lives here.
+This local planning file has been migrated. GitHub Issues are the canonical tracker.
 
-## Active Roadmaps
-
-- [Ikemen GO launch customization](./ikemen-go-launch-customization/README.md)
+Canonical GitHub issue: https://github.com/lancer1977/dev-forge/issues/576
+Original source kind: roadmap
