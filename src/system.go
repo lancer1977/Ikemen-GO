@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -218,8 +219,6 @@ type System struct {
 	debugDisplay              bool
 	debugRef                  [2]int // player number, helper index
 	debugLastID               int32
-	pauseProofStarted         bool
-	pauseProofCapturePhase    int
 	soundMixer                *beep.Mixer
 	bgm                       Bgm
 	pauseVolumeApplied        bool
@@ -296,26 +295,27 @@ type System struct {
 	credits                   int32
 	gameRunning               bool
 
-	msaa               int32
-	externalShaders    [][][]byte
-	windowMainIcon     []image.Image
-	frameCounter       int32
-	captureNum         int
-	timerRounds        []int32
-	matchEventLine     int32
-	pauseProofStarted  bool
-	pauseProofFrames   int32
-	scoreRounds        [][2]float32
-	statsLog           StatsLog
-	maxPowerMode       bool
-	debugClsnText      []DebugClsnText
-	consoleText        []string
-	luaLState          *lua.LState
-	statusLFunc        *lua.LFunction
-	listLFunc          []*lua.LFunction
-	reloadPreserveVars [MaxPlayerNo]bool
-	charVarsBackup     map[int]CharVarBackup
-	shaderRefCount     map[string]int
+	msaa                   int32
+	externalShaders        [][][]byte
+	windowMainIcon         []image.Image
+	frameCounter           int32
+	captureNum             int
+	timerRounds            []int32
+	matchEventLine         int32
+	pauseProofStarted      bool
+	pauseProofFrames       int32
+	pauseProofCapturePhase int
+	scoreRounds            [][2]float32
+	statsLog               StatsLog
+	maxPowerMode           bool
+	debugClsnText          []DebugClsnText
+	consoleText            []string
+	luaLState              *lua.LState
+	statusLFunc            *lua.LFunction
+	listLFunc              []*lua.LFunction
+	reloadPreserveVars     [MaxPlayerNo]bool
+	charVarsBackup         map[int]CharVarBackup
+	shaderRefCount         map[string]int
 
 	statePool       GameStatePool
 	commandLists    []*CommandList
@@ -3636,6 +3636,20 @@ func (s *System) drawTop() {
 }
 
 func (s *System) drawPauseProofOverlay() {
+	if pauseProofSeconds > 0 {
+		if !s.pauseProofStarted || s.pausetime <= 0 || !s.fightScreen.active || s.postMatchFlg {
+			return
+		}
+
+		logicSpeed := s.gameLogicSpeed()
+		remaining := int32(1)
+		if logicSpeed > 0 {
+			remaining = (s.pausetime + logicSpeed - 1) / logicSpeed
+		}
+		drawRenderProbeBlockMode("pause-proof", fmt.Sprintf("PAUSE %d", remaining), 96, 88, 128, 48, 255, 255, 64)
+		return
+	}
+
 	if _, ok := s.cmdFlags["-pauseproof"]; !ok || s.pausetime <= 0 || s.debugFont == nil || s.debugFont.fnt == nil {
 		return
 	}
@@ -3661,6 +3675,40 @@ func (s *System) drawPauseProofOverlay() {
 		&s.scrrect,
 		s.debugFont.palfx,
 		s.debugFont.frgba)
+}
+
+var pauseProofSeconds = parsePauseProofSeconds()
+
+func parsePauseProofSeconds() int32 {
+	v := strings.TrimSpace(os.Getenv("IKEMEN_PAUSE_PROOF_SECONDS"))
+	if v == "" {
+		return 0
+	}
+	seconds, err := strconv.Atoi(v)
+	if err != nil || seconds <= 0 {
+		return 0
+	}
+	if seconds > 30 {
+		seconds = 30
+	}
+	return int32(seconds)
+}
+
+func (s *System) maybeStartPauseProof() {
+	if pauseProofSeconds <= 0 || s.pauseProofStarted || s.postMatchFlg || !s.fightScreen.active {
+		return
+	}
+	if s.roundState() != 2 || s.matchTime < s.gameLogicSpeed() {
+		return
+	}
+
+	frames := pauseProofSeconds * s.gameLogicSpeed()
+	s.pauseProofStarted = true
+	s.pauseProofFrames = frames
+	s.pausebg = true
+	if s.pausetime < frames {
+		s.pausetime = frames
+	}
 }
 
 func (s *System) updatePauseProof() {
