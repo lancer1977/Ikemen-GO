@@ -247,19 +247,20 @@ func processCommandLine() {
 			args = append(args, a)
 		}
 		boolFlags := map[string]bool{
-			"-windowed":       true,
-			"-togglelifebars": true,
-			"-maxpowermode":   true,
-			"-debug":          true,
-			"-nojoy":          true,
-			"-nomusic":        true,
-			"-nosound":        true,
-			"-jsonstdout":     true,
-			"-nojsonlog":      true,
-			"-nojsonstdout":   true,
-			"-debugstartup":   true,
-			"-noerrordialog":  true,
-			"-pauseproof":     true,
+			"-windowed":         true,
+			"-togglelifebars":   true,
+			"-maxpowermode":     true,
+			"-debug":            true,
+			"-nojoy":            true,
+			"-nomusic":          true,
+			"-nosound":          true,
+			"-jsonstdout":       true,
+			"-nojsonlog":        true,
+			"-nojsonstdout":     true,
+			"-debugstartup":     true,
+			"-noerrordialog":    true,
+			"-pauseproof":       true,
+			"-richfightcapture": true,
 		}
 		key := ""
 		player := 1
@@ -290,6 +291,8 @@ func processCommandLine() {
 -jsonstdout             Writes match data JSON to stdout (default for Quick VS)
 -livedatafile <jsonfile> Writes live match snapshots to <jsonfile> during the fight
 -combateventsfile <jsonlfile> Writes combat telemetry events to <jsonlfile>
+-richfightcapture     Writes terminal rich fight telemetry when a match ends
+-richfightfile <jsonlfile> Writes terminal rich fight telemetry to <jsonlfile>
 -commandinboxfile <jsonfile> Reads LiveLancero gameplay commands from <jsonfile>
 -commandresultsfile <jsonlfile> Writes gameplay command results to <jsonlfile>
 -nojsonlog              Disables default JSON file output

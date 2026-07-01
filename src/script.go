@@ -2348,8 +2348,10 @@ func systemScriptInit(l *lua.LState) {
 		function commandAdd([commandList,] name, command, time, bufferTime, bufferHitpause, bufferPauseend, stepTime) end*/
 		argi := 1
 		dcl := (*CommandList)(nil)
+		explicitList := false
 		if cl, ok := commandListArg(l, 1); ok {
 			dcl = cl
+			explicitList = true
 			argi = 2
 		}
 		name := strArg(l, argi)
@@ -2392,6 +2394,12 @@ func systemScriptInit(l *lua.LState) {
 			BufferHitpause: bufferHitpause,
 			BufferPauseend: bufferPauseend,
 			StepTime:       steptime,
+		}
+		if explicitList {
+			if err := dcl.AddCommand(name, spec); err != nil {
+				l.RaiseError(err.Error())
+			}
+			return 0
 		}
 		if err := sys.uiRegisterCommand(name, spec); err != nil {
 			l.RaiseError(err.Error())
@@ -6858,6 +6866,9 @@ func systemScriptInit(l *lua.LState) {
 		if tn < 1 || tn > 2 {
 			l.RaiseError("\nInvalid team side: %v\n", tn)
 		}
+		if len(sys.fightScreen.winCounts) < tn || sys.fightScreen.winCounts[tn-1] == nil {
+			return 0
+		}
 		sys.fightScreen.winCounts[tn-1].wins = int32(numArg(l, 2))
 		return 0
 	})
@@ -8893,6 +8904,104 @@ func triggerFunctions(l *lua.LState) {
 		}
 		l.RaiseError("\nInvalid argument: %v\n", strArg(l, 1))
 		return 0
+	})
+	luaRegister(l, "numberToRune", func(l *lua.LState) int {
+		/*Convert a Unicode codepoint to a one-rune Lua string.
+		@function numberToRune
+		@tparam number codepoint Unicode codepoint.
+		@treturn string One-rune string.
+		function numberToRune(codepoint) end*/
+		l.Push(lua.LString(string(rune(int(numArg(l, 1))))))
+		return 1
+	})
+	luaRegister(l, "fillRect", func(l *lua.LState) int {
+		/*Draw a filled rectangle from Lua screenpack code.
+		@function fillRect
+		function fillRect(x, y, w, h, r, g, b, src, dst) end*/
+		x := int32(numArg(l, 1))
+		y := int32(numArg(l, 2))
+		w := int32(numArg(l, 3))
+		h := int32(numArg(l, 4))
+		r := uint32(Clamp(int32(numArg(l, 5)), 0, 255))
+		g := uint32(Clamp(int32(numArg(l, 6)), 0, 255))
+		b := uint32(Clamp(int32(numArg(l, 7)), 0, 255))
+		src := int32(numArg(l, 8))
+		dst := int32(numArg(l, 9))
+		FillRect([4]int32{x, y, w, h}, (r<<16)|(g<<8)|b, [2]int32{src, dst}, nil)
+		return 0
+	})
+	luaRegister(l, "usePalette", func(l *lua.LState) int {
+		/*Enable/disable selectable ACT palette loading for motif assets.
+		@function usePalette
+		@tparam bool enabled Whether palette-aware motif animations are needed.
+		function usePalette(enabled) end*/
+		sys.usePalette = boolArg(l, 1)
+		return 0
+	})
+	luaRegister(l, "motifDef", func(*lua.LState) int {
+		/*Return the resolved active screenpack system.def path.
+		@function motifDef
+		@treturn string Resolved motif definition path.
+		function motifDef() end*/
+		def := sys.motif.Def
+		if def == "" {
+			def = SearchFile("system.def", []string{"data/", "data/mugen1/", ""})
+		}
+		l.Push(lua.LString(def))
+		return 1
+	})
+	luaRegister(l, "motifLocalcoord", func(l *lua.LState) int {
+		/*Return active motif localcoord width/height by index.
+		@function motifLocalcoord
+		@tparam number index 0 for width, 1 for height
+		@treturn number Localcoord component.
+		function motifLocalcoord(index) end*/
+		lc := sys.motif.Info.Localcoord
+		if lc[0] <= 0 {
+			lc[0] = 320
+		}
+		if lc[1] <= 0 {
+			lc[1] = 240
+		}
+		if int(numArg(l, 1)) == 1 {
+			l.Push(lua.LNumber(lc[1]))
+		} else {
+			l.Push(lua.LNumber(lc[0]))
+		}
+		return 1
+	})
+	luaRegister(l, "motifViewport43", func(l *lua.LState) int {
+		/*Return a 4:3-safe motif viewport component used by Lua screenpack layout.
+		@function motifViewport43
+		@tparam number index 0/2 for width, 1/3 for height
+		@treturn number Viewport component.
+		function motifViewport43(index) end*/
+		lc := sys.motif.Info.Localcoord
+		if lc[0] <= 0 {
+			lc[0] = 320
+		}
+		if lc[1] <= 0 {
+			lc[1] = 240
+		}
+		switch int(numArg(l, 1)) {
+		case 1, 3:
+			l.Push(lua.LNumber(lc[1]))
+		default:
+			l.Push(lua.LNumber(lc[0]))
+		}
+		return 1
+	})
+	luaRegister(l, "lifebarDef", func(*lua.LState) int {
+		/*Return the resolved active lifebar/fight.def path.
+		@function lifebarDef
+		@treturn string Resolved fight definition path.
+		function lifebarDef() end*/
+		def := sys.motif.Files.Fight
+		if def == "" {
+			def = SearchFile("fight.def", []string{sys.motif.Def, "", "data/"})
+		}
+		l.Push(lua.LString(def))
+		return 1
 	})
 	luaRegister(l, "gameTime", func(*lua.LState) int {
 		l.Push(lua.LNumber(sys.gameTime()))

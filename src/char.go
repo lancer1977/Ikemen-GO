@@ -5222,7 +5222,7 @@ func (c *Char) canRecover() bool {
 }
 
 func (c *Char) comboCount() int32 {
-	if c.teamside == -1 {
+	if c.teamside == -1 || c.teamside >= int(len(sys.fightScreen.combos)) || sys.fightScreen.combos[c.teamside] == nil {
 		return 0
 	}
 	return sys.fightScreen.combos[c.teamside].trueHits
@@ -8717,14 +8717,14 @@ func (c *Char) redLifeSet(set int32) {
 }
 
 func (c *Char) score() float32 {
-	if c.teamside == -1 {
+	if c.teamside == -1 || c.teamside >= int(len(sys.fightScreen.scores)) || sys.fightScreen.scores[c.teamside] == nil {
 		return 0
 	}
 	return sys.fightScreen.scores[c.teamside].scorePoints
 }
 
 func (c *Char) scoreAdd(val float32) {
-	if val == 0 || c.teamside == -1 || c.asf(ASF_noscore) {
+	if val == 0 || c.teamside == -1 || c.teamside >= int(len(sys.fightScreen.scores)) || sys.fightScreen.scores[c.teamside] == nil || c.asf(ASF_noscore) {
 		return
 	}
 	sys.fightScreen.scores[c.teamside].scorePoints += val
@@ -11517,6 +11517,9 @@ func (c *Char) actionPrepare() {
 		} else if sys.pausetime > 0 && c.pauseMovetime == 0 {
 			c.pauseBool = true
 		}
+	}
+	if sys.timeOverFreeze() {
+		c.pauseBool = true
 	}
 	c.acttmp = -int8(Btoi(c.pauseBool)) * 2
 	// Due to the nature of how pauses are processed, these are needed to fix an "off by 1" error in the PauseTime trigger

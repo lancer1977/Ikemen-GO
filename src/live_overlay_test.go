@@ -1,6 +1,7 @@
 package main
 
 import (
+	"path/filepath"
 	"testing"
 )
 
@@ -58,5 +59,23 @@ func TestEffectDurationFrames_DefaultsToSixtyFps(t *testing.T) {
 	}
 	if got := effectDurationFrames(0); got != 72 {
 		t.Fatalf("expected default duration of 72 frames, got %d", got)
+	}
+}
+
+func TestLiveOverlayPath_UsesConfiguredFileOrDefault(t *testing.T) {
+	s := &System{
+		cmdFlags: map[string]string{},
+	}
+
+	if got := s.liveOverlayPath(); got != defaultLiveOverlayPath {
+		t.Fatalf("expected default overlay path %q, got %q", defaultLiveOverlayPath, got)
+	}
+
+	tempDir := t.TempDir()
+	customPath := filepath.Join(tempDir, "overlays.json")
+	s.cmdFlags["-overlayfile"] = customPath
+
+	if got := s.liveOverlayPath(); got != customPath {
+		t.Fatalf("expected configured overlay path %q, got %q", customPath, got)
 	}
 }

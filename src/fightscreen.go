@@ -280,6 +280,9 @@ func (txt *FSText) step() {
 }
 
 func (txt *FSText) resetTxtPfx() {
+	if txt == nil || txt.palfx == nil {
+		return
+	}
 	txt.palfx.time = txt.pfxinit
 }
 
@@ -2130,6 +2133,9 @@ func readFightScreenWinIcon(pre string, is IniSection, sff *Sff, at AnimationTab
 }
 
 func (wi *FightScreenWinIcon) add(wt WinType) {
+	if wi == nil {
+		return
+	}
 	wi.wins = append(wi.wins, wt)
 	if wt >= WT_PNormal && wt < WT_CNormal {
 		wi.addedP = &Animation{}
@@ -2839,9 +2845,13 @@ type FSMsg struct {
 }
 
 func newFSMsg(side int) *FSMsg {
+	counterX := float32(0)
+	if side >= 0 && side < len(sys.fightScreen.actions) && sys.fightScreen.actions[side] != nil {
+		counterX = sys.fightScreen.actions[side].start_x * 2
+	}
 	return &FSMsg{
 		resttime:  -1,
-		counterX:  sys.fightScreen.actions[side].start_x * 2,
+		counterX:  counterX,
 		fontNo:    -1,
 		fontBank:  -1,
 		fontAlign: IErr, // Default to the font's
@@ -4660,7 +4670,7 @@ func loadFightScreen(def string) (*FightScreen, error) {
 		scale:         1,
 		portraitScale: 1,
 		sff:           &Sff{},
-		snd:           &Snd{},
+		snd:           newSnd(),
 		lifeBars: [...][]*LifeBar{make([]*LifeBar, 2), make([]*LifeBar, 8),
 			make([]*LifeBar, 2), make([]*LifeBar, 8), make([]*LifeBar, 6),
 			make([]*LifeBar, 8), make([]*LifeBar, 6), make([]*LifeBar, 8)},
@@ -5343,6 +5353,9 @@ func loadFightScreen(def string) (*FightScreen, error) {
 			}
 		}
 	}
+	if fs.round == nil {
+		fs.round = newFightScreenRound(fs.snd)
+	}
 	fs.def = def
 
 	/*
@@ -5419,10 +5432,14 @@ func (fs *FightScreen) step() {
 	}
 	// WinIcon
 	for i := range fs.winIcons {
-		fs.winIcons[i].step(sys.wins[i])
+		if fs.winIcons[i] != nil {
+			fs.winIcons[i].step(sys.wins[i])
+		}
 	}
 	// Time
-	fs.time.step()
+	if fs.time != nil {
+		fs.time.step()
+	}
 	cb, cd, cp := [2]int32{}, [2]int32{}, [2]float32{}
 	targets := [2]int32{}
 	// Combo
@@ -5445,27 +5462,41 @@ func (fs *FightScreen) step() {
 		}
 	}
 	for i := range fs.combos {
-		fs.combos[i].step(cb[i], cd[i], cp[i]) // Combo hits, combo damage, combo damage percentage
+		if fs.combos[i] != nil {
+			fs.combos[i].step(cb[i], cd[i], cp[i]) // Combo hits, combo damage, combo damage percentage
+		}
 	}
 	// Action
 	for i := range fs.actions {
-		fs.actions[i].step(fs.teamOrder[i][0])
+		if fs.actions[i] != nil {
+			fs.actions[i].step(fs.teamOrder[i][0])
+		}
 	}
 	// Timer
-	fs.timer.step()
+	if fs.timer != nil {
+		fs.timer.step()
+	}
 	// Score
 	for i := range fs.scores {
-		fs.scores[i].step()
+		if fs.scores[i] != nil {
+			fs.scores[i].step()
+		}
 	}
 	// Match
-	fs.match.step()
+	if fs.match != nil {
+		fs.match.step()
+	}
 	// AiLevel
 	for i := range fs.aiLevels {
-		fs.aiLevels[i].step()
+		if fs.aiLevels[i] != nil {
+			fs.aiLevels[i].step()
+		}
 	}
 	// WinCount
 	for i := range fs.winCounts {
-		fs.winCounts[i].step()
+		if fs.winCounts[i] != nil {
+			fs.winCounts[i].step()
+		}
 	}
 	// Mode
 	if _, ok := fs.modes[sys.gameMode]; ok {
@@ -5475,7 +5506,7 @@ func (fs *FightScreen) step() {
 
 // Resets fight screen as well as prepares team mode configuration for each player
 func (fs *FightScreen) reset() {
-	//var num [2]int
+	var num [2]int
 
 	// Update team mode layout for each player
 	for ti, tm := range sys.tmode {
@@ -5502,22 +5533,17 @@ func (fs *FightScreen) reset() {
 			fs.curLayout[ti] = 0 // Single (2)
 		}
 
-		// Determine number of players in each team
-		//if tm == TM_Simul || tm == TM_Tag {
-		//	num[ti] = int(math.Min(8, float64(sys.numSimul[ti])*2))
-		//} else {
-		//	num[ti] = len(fs.lifeBars[fs.curLayout[ti]]) // TODO: Why did it check this for single/turns but not simul/tag?
-		//}
-		// Build team order by ascending player number
-		//fs.teamOrder[ti] = []int{}
-		//for i := ti; i < num[ti]; i += 2 {
-		//	fs.teamOrder[ti] = append(fs.teamOrder[ti], i)
-		//}
-	}
+		// Set maximum number of lifebars
+		if tm == TM_Simul || tm == TM_Tag {
+			num[ti] = int(math.Min(8, float64(sys.numSimul[ti])*2))
+		} else {
+			num[ti] = len(fs.lifeBars[fs.curLayout[ti]])
+		}
 
-	// Rebuild order of teams
-	for side := range fs.teamOrder {
-		fs.syncTeamOrder(side)
+		fs.teamOrder[ti] = []int{}
+		for i := ti; i < num[ti]; i += 2 {
+			fs.teamOrder[ti] = append(fs.teamOrder[ti], i)
+		}
 	}
 
 	// Reset fight screen elements
@@ -5552,26 +5578,46 @@ func (fs *FightScreen) reset() {
 		}
 	}
 	for i := range fs.winIcons {
-		fs.winIcons[i].reset()
+		if fs.winIcons[i] != nil {
+			fs.winIcons[i].reset()
+		}
 	}
-	fs.time.reset()
+	if fs.time != nil {
+		fs.time.reset()
+	}
 	for i := range fs.combos {
-		fs.combos[i].reset()
+		if fs.combos[i] != nil {
+			fs.combos[i].reset()
+		}
 	}
 	for i := range fs.actions {
-		fs.actions[i].reset(fs.teamOrder[i][0])
+		if fs.actions[i] != nil {
+			fs.actions[i].reset(fs.teamOrder[i][0])
+		}
 	}
-	fs.round.reset()
-	fs.timer.reset()
+	if fs.round != nil {
+		fs.round.reset()
+	}
+	if fs.timer != nil {
+		fs.timer.reset()
+	}
 	for i := range fs.scores {
-		fs.scores[i].reset()
+		if fs.scores[i] != nil {
+			fs.scores[i].reset()
+		}
 	}
-	fs.match.reset()
+	if fs.match != nil {
+		fs.match.reset()
+	}
 	for i := range fs.aiLevels {
-		fs.aiLevels[i].reset()
+		if fs.aiLevels[i] != nil {
+			fs.aiLevels[i].reset()
+		}
 	}
 	for i := range fs.winCounts {
-		fs.winCounts[i].reset()
+		if fs.winCounts[i] != nil {
+			fs.winCounts[i].reset()
+		}
 	}
 	if _, ok := fs.modes[sys.gameMode]; ok {
 		fs.modes[sys.gameMode].reset()
@@ -5740,56 +5786,66 @@ func (fs *FightScreen) draw(layerno int16) {
 			}
 
 			// Time
-			if !sys.gsf(GSF_notimedisplay) {
+			if fs.time != nil && !sys.gsf(GSF_notimedisplay) {
 				fs.time.bgDraw(layerno)
 				fs.time.draw(layerno, fs.fnt)
 			}
 
 			// WinIcon
 			for i := 0; i < len(fs.winIcons); i++ {
-				if !sys.chars[i][0].asf(ASF_nowinicondisplay) {
+				if fs.winIcons[i] != nil && !sys.chars[i][0].asf(ASF_nowinicondisplay) {
 					fs.winIcons[i].draw(layerno, fs.fnt, i)
 				}
 			}
 
 			// Timer
-			fs.timer.bgDraw(layerno)
-			fs.timer.draw(layerno, fs.fnt)
+			if fs.timer != nil {
+				fs.timer.bgDraw(layerno)
+				fs.timer.draw(layerno, fs.fnt)
+			}
 
 			// Score
 			for i := 0; i < len(fs.scores); i++ {
-				fs.scores[i].bgDraw(layerno)
-				fs.scores[i].draw(layerno, fs.fnt, i)
+				if fs.scores[i] != nil {
+					fs.scores[i].bgDraw(layerno)
+					fs.scores[i].draw(layerno, fs.fnt, i)
+				}
 			}
 
 			// Match
-			fs.match.bgDraw(layerno)
-			fs.match.draw(layerno, fs.fnt)
+			if fs.match != nil {
+				fs.match.bgDraw(layerno)
+				fs.match.draw(layerno, fs.fnt)
+			}
 
 			// AiLevel
 			for i := 0; i < len(fs.aiLevels); i++ {
-				fs.aiLevels[i].bgDraw(layerno)
-				fs.aiLevels[i].draw(layerno, fs.fnt, sys.aiLevel[sys.chars[i][0].playerNo])
+				if fs.aiLevels[i] != nil {
+					fs.aiLevels[i].bgDraw(layerno)
+					fs.aiLevels[i].draw(layerno, fs.fnt, sys.aiLevel[sys.chars[i][0].playerNo])
+				}
 			}
 
 			// WinCount
 			for i := 0; i < len(fs.winCounts); i++ {
-				fs.winCounts[i].bgDraw(layerno)
-				fs.winCounts[i].draw(layerno, fs.fnt, i)
+				if fs.winCounts[i] != nil {
+					fs.winCounts[i].bgDraw(layerno)
+					fs.winCounts[i].draw(layerno, fs.fnt, i)
+				}
 			}
 		}
 
 		// Combo
 		drawRenderProbeMode("fight", fmt.Sprintf("F%d combo/action", layerno), 168, 140+float32(layerno)*16, 160, 255, 255)
 		for i := 0; i < len(fs.combos); i++ {
-			if !sys.chars[i][0].asf(ASF_nocombodisplay) {
+			if fs.combos[i] != nil && !sys.chars[i][0].asf(ASF_nocombodisplay) {
 				fs.combos[i].draw(layerno, fs.fnt, i)
 			}
 		}
 
 		// Action
 		for i := 0; i < len(fs.actions); i++ {
-			if !sys.chars[i][0].asf(ASF_nolifebaraction) {
+			if fs.actions[i] != nil && !sys.chars[i][0].asf(ASF_nolifebaraction) {
 				fs.actions[i].draw(layerno, fs.fnt, i)
 			}
 		}
@@ -5801,7 +5857,7 @@ func (fs *FightScreen) draw(layerno int16) {
 		}
 	}
 
-	if fs.active && !sys.postMatchFlg {
+	if fs.active && fs.round != nil {
 		// Round
 		fs.round.draw(layerno, fs.fnt)
 		drawRenderProbeMode("fight", fmt.Sprintf("F%d round", layerno), 168, 236+float32(layerno)*12, 220, 255, 255)
@@ -5925,6 +5981,9 @@ func (fs *FightScreen) appendAction(c *Char, msg *FSMsg, refresh int32) {
 	}
 
 	// Select side of screen
+	if c.teamside >= int(len(fs.actions)) || fs.actions[c.teamside] == nil {
+		return
+	}
 	teammsg := fs.actions[c.teamside]
 
 	// Duplicate detection
@@ -6037,16 +6096,15 @@ func (fs *FightScreen) appendAction(c *Char, msg *FSMsg, refresh int32) {
 // Only some games do this so we don't strictly need to do it. But it is also harmless. Maybe make it an option
 // TODO: Combo damage should probably also stack like this, either way
 func (fs *FightScreen) addComboHits(side int, n int32) {
-	if side < 0 || side >= len(fs.combos) {
+	if side < 0 || side >= len(fs.combos) || fs.combos[side] == nil {
 		return
 	}
 	fs.combos[side].trueHits += n
 }
 
-// Update team order based on the actual character member numbers
+// Update team order based on the actual character member numbers.
 func (fs *FightScreen) syncTeamOrder(side int) {
 	order := make([]int, 0, MaxSimul)
-	// Collect all the members of this team
 	for pn := side; pn < MaxSimul*2; pn += 2 {
 		if len(sys.chars[pn]) == 0 || sys.chars[pn][0] == nil {
 			continue
@@ -6056,10 +6114,8 @@ func (fs *FightScreen) syncTeamOrder(side int) {
 		}
 		order = append(order, pn)
 	}
-	// Sort them by memberNo
 	sort.Slice(order, func(i, j int) bool {
 		return sys.chars[order[i]][0].memberNo < sys.chars[order[j]][0].memberNo
 	})
-	// Save result
 	fs.teamOrder[side] = order
 }

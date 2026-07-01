@@ -762,11 +762,11 @@ func HasExtension(file, ext string) bool {
 
 func sliceContains(s []string, str string, lower bool) bool {
 	if lower {
-		strings.ToLower(str)
+		str = strings.ToLower(str)
 	}
 	for _, v := range s {
 		if lower {
-			strings.ToLower(v)
+			v = strings.ToLower(v)
 		}
 		if v == str {
 			return true

@@ -22,9 +22,12 @@ type GameLiveSnapshot struct {
 
 func (s *System) liveMatchSnapshot() GameLiveSnapshot {
 	fighters := s.liveMatchFighters()
-	score := [2]int32{
-		int32(s.fightScreen.scores[0].scorePoints),
-		int32(s.fightScreen.scores[1].scorePoints),
+	score := [2]int32{}
+	if s.fightScreen.scores[0] != nil {
+		score[0] = int32(s.fightScreen.scores[0].scorePoints)
+	}
+	if s.fightScreen.scores[1] != nil {
+		score[1] = int32(s.fightScreen.scores[1].scorePoints)
 	}
 
 	return GameLiveSnapshot{
@@ -82,6 +85,7 @@ func (s *System) liveMatchFighters() [2][]StatsFighterState {
 
 func (s *System) maybeWriteLiveSnapshot() {
 	s.maybeProcessLiveCommandInbox()
+	s.maybeWriteTerminalLiveArtifacts()
 
 	path, ok := s.cmdFlags["-livedatafile"]
 	if !ok || path == "" {

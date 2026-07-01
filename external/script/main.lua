@@ -85,7 +85,7 @@ function main.f_restoreInput()
 	end
 	resetRemapInput()
 	-- Restore to the base mapping captured at the mode start.
-	for i = 1, gameOption('Config.Players') do
+	for i = 1, main.f_safeGameOption('Config.Players', 4) do
 		local v = main.t_baseRemapInput[i] or i
 		if i ~= v then
 			remapInput(i, v)
@@ -96,7 +96,7 @@ end
 -- capture current remap state as the "base" mapping restored after each match
 function main.f_saveBaseRemapInput()
 	main.t_baseRemapInput = {}
-	for i = 1, gameOption('Config.Players') do
+	for i = 1, main.f_safeGameOption('Config.Players', 4) do
 		main.t_baseRemapInput[i] = getRemapInput(i)
 	end
 end
@@ -185,6 +185,17 @@ function main.f_arg(arg, default)
 	end
 	return default
 end
+
+local function safeGameOption(path, fallback)
+	local ok, value = pcall(function()
+		return gameOption(path)
+	end)
+	if ok and value ~= nil then
+		return value
+	end
+	return fallback
+end
+main.f_safeGameOption = safeGameOption
 
 --command line global flags
 if getCommandLineValue("-ailevel") ~= nil then

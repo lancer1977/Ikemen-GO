@@ -23,6 +23,28 @@ The current shape is intentionally split:
   text, emoji, and PNG-backed image sprites during a fight without rewriting
   the main result snapshot.
 
+## Engine Seams
+
+The engine exposes a small set of named Lua hooks that are stable attachment
+points for launch-adjacent behavior:
+
+- `game.challenger_init` / `game.challenger`
+- `game.continue_init` / `game.continue`
+- `game.hiscore_init` / `game.hiscore`
+- `game.victory_init` / `game.victory`
+- `game.result_init` / `game.result`
+
+These hooks are the places to attach menu, transition, and post-match behavior
+without coupling new behavior to the battle loop itself.
+
+The file-backed seams are the other stable attachment points:
+
+- `-combateventsfile` for combat telemetry
+- `-matcheventsfile` for round/match timeline events
+- `-commandinboxfile` and `-commandresultsfile` for gameplay command relay
+- `-livedatafile` and `-resultfile` for active/live and terminal snapshots
+- `-overlayfile` for runtime-published player-visible overlays
+
 ## Current State
 
 - [x] Document the existing CLI launch surface

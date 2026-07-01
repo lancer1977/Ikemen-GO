@@ -295,27 +295,30 @@ type System struct {
 	credits                   int32
 	gameRunning               bool
 
-	msaa                   int32
-	externalShaders        [][][]byte
-	windowMainIcon         []image.Image
-	frameCounter           int32
-	captureNum             int
-	timerRounds            []int32
-	matchEventLine         int32
-	pauseProofStarted      bool
-	pauseProofFrames       int32
-	pauseProofCapturePhase int
-	scoreRounds            [][2]float32
-	statsLog               StatsLog
-	maxPowerMode           bool
-	debugClsnText          []DebugClsnText
-	consoleText            []string
-	luaLState              *lua.LState
-	statusLFunc            *lua.LFunction
-	listLFunc              []*lua.LFunction
-	reloadPreserveVars     [MaxPlayerNo]bool
-	charVarsBackup         map[int]CharVarBackup
-	shaderRefCount         map[string]int
+	msaa                      int32
+	externalShaders           [][][]byte
+	windowMainIcon            []image.Image
+	frameCounter              int32
+	captureNum                int
+	timerRounds               []int32
+	matchEventLine            int32
+	lastMatchCompleteEventKey string
+	lastLiveTerminalResultKey string
+	lastRichFightCaptureKey   string
+	pauseProofStarted         bool
+	pauseProofFrames          int32
+	pauseProofCapturePhase    int
+	scoreRounds               [][2]float32
+	statsLog                  StatsLog
+	maxPowerMode              bool
+	debugClsnText             []DebugClsnText
+	consoleText               []string
+	luaLState                 *lua.LState
+	statusLFunc               *lua.LFunction
+	listLFunc                 []*lua.LFunction
+	reloadPreserveVars        [MaxPlayerNo]bool
+	charVarsBackup            map[int]CharVarBackup
+	shaderRefCount            map[string]int
 
 	statePool       GameStatePool
 	commandLists    []*CommandList
@@ -1666,9 +1669,17 @@ func (s *System) roundEnded() bool {
 	return s.intro < -s.fightScreen.round.over_hittime
 }
 
-// Characters cannot hurt each other between fight screen timers over.hittime and over.waittime
+// Characters should freeze immediately after a time-over decision, until win/lose poses start.
+func (s *System) timeOverFreeze() bool {
+	return s.curRoundTime == 0 && (s.finishType == FT_TO || s.finishType == FT_TODraw) && s.winposetime > 0
+}
+
+// Characters cannot hurt each other between fight screen timers over.hittime and over.waittime.
+// In this build, time-over rounds also become no-damage immediately so late hitboxes cannot
+// change the result after the clock has already decided the winner.
 func (s *System) roundNoDamage() bool {
-	return sys.intro < 0 && sys.intro <= -sys.fightScreen.round.over_hittime && sys.intro >= -sys.fightScreen.round.over_waittime
+	return s.timeOverFreeze() ||
+		sys.intro < 0 && sys.intro <= -sys.fightScreen.round.over_hittime && sys.intro >= -sys.fightScreen.round.over_waittime
 }
 
 // Gametime is the sum of the match time and the screenpack time
@@ -2345,6 +2356,9 @@ func (s *System) resetRound() {
 	s.winTrigger = [...]WinType{WT_Normal, WT_Normal}
 	s.effectiveLoss = [2]bool{false, false}
 	s.lastHitter = [2]int{-1, -1}
+	if s.fightScreen.round == nil {
+		s.fightScreen.round = newFightScreenRound(s.fightScreen.snd)
+	}
 	s.slowtime = s.fightScreen.round.slow_time
 	s.winposetime = s.fightScreen.round.over_wintime
 	s.winwaittime = s.fightScreen.round.over_waittime + s.fightScreen.round.over_forcewintime
@@ -3235,10 +3249,14 @@ func (s *System) stepRoundState() {
 						if s.matchOver() {
 							// In a draw game both players go back to 0 wins
 							if winner[0] == winner[1] {
-								s.fightScreen.winCounts[0].wins = 0
-								s.fightScreen.winCounts[1].wins = 0
+								if s.fightScreen.winCounts[0] != nil {
+									s.fightScreen.winCounts[0].wins = 0
+								}
+								if s.fightScreen.winCounts[1] != nil {
+									s.fightScreen.winCounts[1].wins = 0
+								}
 							} else {
-								if s.wins[i] >= s.matchWins[i] {
+								if s.fightScreen.winCounts[i] != nil && s.wins[i] >= s.matchWins[i] {
 									s.fightScreen.winCounts[i].wins++
 								}
 							}
@@ -4195,7 +4213,14 @@ func (s *System) runNextRound() bool {
 		}
 		s.clearAllSound()
 		s.statsLog.nextRound()
-		s.scoreRounds = append(s.scoreRounds, [2]float32{s.fightScreen.scores[0].scorePoints, s.fightScreen.scores[1].scorePoints})
+		scoreRound := [2]float32{}
+		if s.fightScreen.scores[0] != nil {
+			scoreRound[0] = s.fightScreen.scores[0].scorePoints
+		}
+		if s.fightScreen.scores[1] != nil {
+			scoreRound[1] = s.fightScreen.scores[1].scorePoints
+		}
+		s.scoreRounds = append(s.scoreRounds, scoreRound)
 
 		if !s.matchOver() &&
 			!(s.tmode[0] == TM_Turns && s.effectiveLoss[0]) &&

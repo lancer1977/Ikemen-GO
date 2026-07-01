@@ -886,6 +886,9 @@ func LoadSndFiltered(filename string, keepItem func([2]int32) bool, max uint32) 
 }
 
 func (s *Snd) Get(gn [2]int32) *Sound {
+	if s == nil || s.table == nil {
+		return nil
+	}
 	return s.table[gn]
 }
 

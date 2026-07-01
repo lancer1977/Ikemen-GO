@@ -12097,7 +12097,11 @@ func (sc lifebarAction) Run(c *Char, _ []int32) bool {
 	})
 
 	if msg.resttime < 0 {
-		msg.resttime = sys.fightScreen.actions[crun.teamside].displaytime
+		if crun.teamside >= 0 && crun.teamside < int(len(sys.fightScreen.actions)) && sys.fightScreen.actions[crun.teamside] != nil {
+			msg.resttime = sys.fightScreen.actions[crun.teamside].displaytime
+		} else {
+			msg.resttime = 0
+		}
 	}
 	msg.resttime = int32(float32(msg.resttime) * timemul)
 

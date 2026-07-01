@@ -99,6 +99,28 @@ type Config struct {
 				Bonus float32 `ini:"Bonus" sync:"host"`
 			} `ini:"Recovery"`
 		} `ini:"Turns"`
+		Ratio struct {
+			Recovery struct {
+				Base  float32 `ini:"Base" sync:"host"`
+				Bonus float32 `ini:"Bonus" sync:"host"`
+			} `ini:"Recovery"`
+			Level1 struct {
+				Attack float32 `ini:"Attack" sync:"host"`
+				Life   float32 `ini:"Life" sync:"host"`
+			} `ini:"Level1"`
+			Level2 struct {
+				Attack float32 `ini:"Attack" sync:"host"`
+				Life   float32 `ini:"Life" sync:"host"`
+			} `ini:"Level2"`
+			Level3 struct {
+				Attack float32 `ini:"Attack" sync:"host"`
+				Life   float32 `ini:"Life" sync:"host"`
+			} `ini:"Level3"`
+			Level4 struct {
+				Attack float32 `ini:"Attack" sync:"host"`
+				Life   float32 `ini:"Life" sync:"host"`
+			} `ini:"Level4"`
+		} `ini:"Ratio"`
 	} `ini:"Options"`
 	Config struct {
 		Motif             string   `ini:"Motif" sync:"strict"`

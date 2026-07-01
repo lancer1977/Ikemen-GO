@@ -8,9 +8,11 @@ vendor/*
 !scripts/smoke/ikemen-workflow-matrix.cmd
 *.bat
 /*.sh
+!/test.sh
 !build/**/*.sh
 *.png
 save/*
+src/save/*
 Ikemen_GO.exe
 Ikemen_GO_Linux
 Ikemen_GO_MacOS

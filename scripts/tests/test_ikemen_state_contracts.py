@@ -28,7 +28,32 @@ class IkemenStateContractTests(unittest.TestCase):
         main_text = (Path(__file__).resolve().parents[2] / "src" / "main.go").read_text(encoding="utf-8")
         self.assertIn("-resultfile <jsonfile>  Writes the final match JSON to <jsonfile> (canonical bridge contract)", main_text)
         self.assertIn("-livedatafile <jsonfile> Writes live match snapshots to <jsonfile> during the fight", main_text)
+        self.assertIn("-combateventsfile <jsonlfile> Writes combat telemetry events to <jsonlfile>", main_text)
+        self.assertIn("-commandinboxfile <jsonfile> Reads LiveLancero gameplay commands from <jsonfile>", main_text)
+        self.assertIn("-commandresultsfile <jsonlfile> Writes gameplay command results to <jsonlfile>", main_text)
         self.assertIn("-noerrordialog          Logs errors without showing a blocking desktop dialog", main_text)
+
+    def test_live_overlay_path_uses_configured_file_or_default(self) -> None:
+        overlay_text = (Path(__file__).resolve().parents[2] / "src" / "live_overlay.go").read_text(encoding="utf-8")
+        self.assertIn('if path := strings.TrimSpace(s.cmdFlags["-overlayfile"]); path != "" {', overlay_text)
+        self.assertIn('return defaultLiveOverlayPath', overlay_text)
+
+    def test_motif_hooks_expose_stable_engine_seams(self) -> None:
+        motif_text = (Path(__file__).resolve().parents[2] / "src" / "motif.go").read_text(encoding="utf-8")
+        for hook_name in [
+            "game.challenger_init",
+            "game.challenger",
+            "game.continue_init",
+            "game.continue",
+            "game.hiscore_init",
+            "game.hiscore",
+            "game.victory_init",
+            "game.victory",
+            "game.result_init",
+            "game.result",
+        ]:
+            with self.subTest(hook_name=hook_name):
+                self.assertIn(hook_name, motif_text)
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ const (
 	liveCombatEventSchema   = "live-lancero/combat-event/v1"
 	liveCommandInboxSchema  = "live-lancero/command-inbox/v1"
 	liveCommandResultSchema = "live-lancero/command-result/v1"
+	liveRichFightSchema     = "live-lancero/rich-fight/v1"
 	liveMatchEventSchema    = "live-lancero/match-event/v1"
 	liveStatusSchema        = "live-lancero/live-status/v1"
 )
@@ -68,14 +69,14 @@ type LiveCommandResult struct {
 }
 
 type LiveStatusSnapshot struct {
-	Schema       string               `json:"schema"`
-	Mode         string               `json:"mode"`
-	Match        int32                `json:"match,omitempty"`
-	Round        int32                `json:"round,omitempty"`
-	Stage        string               `json:"stage,omitempty"`
-	TimestampUTC string               `json:"timestampUtc"`
-	P1           *LiveStatusFighter   `json:"p1,omitempty"`
-	P2           *LiveStatusFighter   `json:"p2,omitempty"`
+	Schema       string             `json:"schema"`
+	Mode         string             `json:"mode"`
+	Match        int32              `json:"match,omitempty"`
+	Round        int32              `json:"round,omitempty"`
+	Stage        string             `json:"stage,omitempty"`
+	TimestampUTC string             `json:"timestampUtc"`
+	P1           *LiveStatusFighter `json:"p1,omitempty"`
+	P2           *LiveStatusFighter `json:"p2,omitempty"`
 }
 
 type LiveStatusFighter struct {
@@ -97,6 +98,62 @@ type LiveMatchEvent struct {
 	WinnerKey    string `json:"winnerKey,omitempty"`
 	LoserKey     string `json:"loserKey,omitempty"`
 	TimestampUTC string `json:"timestampUtc"`
+}
+
+type LiveRichFightRecord struct {
+	Schema       string           `json:"schema"`
+	EventID      string           `json:"eventId"`
+	Mode         string           `json:"mode"`
+	Match        int32            `json:"match"`
+	Round        int32            `json:"round"`
+	Stage        string           `json:"stage,omitempty"`
+	Context      LiveFightContext `json:"context"`
+	WinnerSide   int32            `json:"winnerSide,omitempty"`
+	WinnerKey    string           `json:"winnerKey,omitempty"`
+	LoserKey     string           `json:"loserKey,omitempty"`
+	TimestampUTC string           `json:"timestampUtc"`
+	Snapshot     GameLiveSnapshot `json:"snapshot"`
+}
+
+type LiveFightContext struct {
+	RandSeed      int32                    `json:"randSeed"`
+	GameWidth     float32                  `json:"gameWidth"`
+	GameHeight    float32                  `json:"gameHeight"`
+	RenderWidth   int32                    `json:"renderWidth"`
+	RenderHeight  int32                    `json:"renderHeight"`
+	FightAspect   float32                  `json:"fightAspect"`
+	Stage         LiveFightStageContext    `json:"stage"`
+	SelectedTeams [2][]LiveSelectedFighter `json:"selectedTeams"`
+}
+
+type LiveFightStageContext struct {
+	SelectedStageNo  int        `json:"selectedStageNo"`
+	Def              string     `json:"def,omitempty"`
+	Name             string     `json:"name,omitempty"`
+	DisplayName      string     `json:"displayName,omitempty"`
+	LocalCoord       [2]int32   `json:"localCoord"`
+	Scale            [2]float32 `json:"scale"`
+	CameraLocalCoord [2]int32   `json:"cameraLocalCoord"`
+}
+
+type LiveSelectedFighter struct {
+	Side        int32                `json:"side"`
+	MemberNo    int                  `json:"memberNo"`
+	SelectNo    int                  `json:"selectNo"`
+	PaletteNo   int                  `json:"paletteNo"`
+	Def         string               `json:"def,omitempty"`
+	Name        string               `json:"name,omitempty"`
+	DisplayName string               `json:"displayName,omitempty"`
+	Author      string               `json:"author,omitempty"`
+	LocalCoord  [2]int32             `json:"localCoord"`
+	CnsScale    [2]float32           `json:"cnsScale"`
+	Tier        *int32               `json:"tier,omitempty"`
+	Health      *LiveCharacterHealth `json:"health,omitempty"`
+}
+
+type LiveCharacterHealth struct {
+	Status string `json:"status"`
+	Reason string `json:"reason,omitempty"`
 }
 
 func (s *System) combatEventsPath() string {
@@ -124,6 +181,31 @@ func (s *System) matchEventsPath() string {
 		return path
 	}
 	return filepath.Join(s.baseDir, "save", "match_events.jsonl")
+}
+
+func (s *System) resultFilePath() string {
+	return strings.TrimSpace(s.cmdFlags["-resultfile"])
+}
+
+func (s *System) richFightCaptureEnabled() bool {
+	if strings.TrimSpace(s.cmdFlags["-richfightfile"]) != "" {
+		return true
+	}
+	_, ok := s.cmdFlags["-richfightcapture"]
+	return ok
+}
+
+func (s *System) richFightPath() string {
+	if path := strings.TrimSpace(s.cmdFlags["-richfightfile"]); path != "" {
+		return path
+	}
+	if path := strings.TrimSpace(s.cmdFlags["-livedatafile"]); path != "" {
+		return filepath.Join(filepath.Dir(path), "fight_history.jsonl")
+	}
+	if path := strings.TrimSpace(s.cmdFlags["-resultfile"]); path != "" {
+		return filepath.Join(filepath.Dir(path), "fight_history.jsonl")
+	}
+	return filepath.Join(s.baseDir, "save", "fight_history.jsonl")
 }
 
 func (s *System) commandInboxPath() string {
@@ -212,9 +294,13 @@ func (s *System) writeLiveStatus() {
 
 func (s *System) buildLiveStatusSnapshot() LiveStatusSnapshot {
 	p1, p2 := s.liveStatusFighters()
+	mode := "fight"
+	if s.matchOver() {
+		mode = "result"
+	}
 	return LiveStatusSnapshot{
 		Schema:       liveStatusSchema,
-		Mode:         "fight",
+		Mode:         mode,
 		Match:        s.match,
 		Round:        s.round,
 		Stage:        s.liveStatusStageName(),
@@ -267,6 +353,101 @@ func (s *System) liveStatusStageName() string {
 	return ""
 }
 
+func (s *System) buildLiveFightContext() LiveFightContext {
+	context := LiveFightContext{
+		RandSeed:      s.randseed,
+		GameWidth:     s.gameWidth,
+		GameHeight:    s.gameHeight,
+		RenderWidth:   s.scrrect[2],
+		RenderHeight:  s.scrrect[3],
+		FightAspect:   s.getFightAspect(),
+		Stage:         s.liveFightStageContext(),
+		SelectedTeams: s.liveSelectedTeams(),
+	}
+	return context
+}
+
+func (s *System) liveFightStageContext() LiveFightStageContext {
+	stage := LiveFightStageContext{SelectedStageNo: s.sel.selectedStageNo}
+	if s.stage != nil {
+		stage.Def = strings.TrimSpace(s.stage.def)
+		stage.Name = strings.TrimSpace(s.stage.name)
+		stage.DisplayName = strings.TrimSpace(s.stage.displayname)
+		stage.LocalCoord = s.stage.stageCamera.localcoord
+		stage.Scale = s.stage.scale
+		stage.CameraLocalCoord = s.stage.stageCamera.localcoord
+	}
+	if s.sel.selectedStageNo > 0 && s.sel.selectedStageNo <= len(s.sel.stagelist) {
+		selected := s.sel.stagelist[s.sel.selectedStageNo-1]
+		if stage.Def == "" {
+			stage.Def = strings.TrimSpace(selected.def)
+		}
+		if stage.Name == "" {
+			stage.Name = strings.TrimSpace(selected.name)
+		}
+		if stage.LocalCoord == [2]int32{} {
+			stage.LocalCoord = selected.localcoord
+		}
+	}
+	return stage
+}
+
+func (s *System) liveSelectedTeams() [2][]LiveSelectedFighter {
+	var teams [2][]LiveSelectedFighter
+	for side := range teams {
+		for memberNo, selected := range s.sel.selected[side] {
+			selectNo, paletteNo := selected[0], selected[1]
+			fighter := LiveSelectedFighter{
+				Side:      int32(side + 1),
+				MemberNo:  memberNo,
+				SelectNo:  selectNo,
+				PaletteNo: paletteNo,
+			}
+			if selectNo >= 0 && selectNo < len(s.sel.charlist) {
+				ch := s.sel.charlist[selectNo]
+				fighter.Def = strings.TrimSpace(ch.def)
+				fighter.Name = strings.TrimSpace(ch.name)
+				fighter.DisplayName = strings.TrimSpace(ch.lifebarname)
+				fighter.Author = strings.TrimSpace(ch.author)
+				fighter.LocalCoord = ch.localcoord
+				fighter.CnsScale = ch.cns_scale
+			}
+			if live := s.liveCharacterForSelection(side, memberNo, selectNo); live != nil {
+				fighter.Name = firstNonEmpty(live.name, fighter.Name)
+				fighter.DisplayName = firstNonEmpty(live.gi().displayname, fighter.DisplayName, fighter.Name)
+				fighter.PaletteNo = int(live.gi().palno)
+				if live.lifeMax > 0 {
+					fighter.Health = &LiveCharacterHealth{Status: "loaded", Reason: "character active in match"}
+				}
+			}
+			teams[side] = append(teams[side], fighter)
+		}
+	}
+	return teams
+}
+
+func (s *System) liveCharacterForSelection(side int, memberNo int, selectNo int) *Char {
+	for _, chars := range s.chars {
+		if len(chars) == 0 || chars[0] == nil {
+			continue
+		}
+		c := chars[0]
+		if int(c.teamside) == side && int(c.memberNo) == memberNo && int(c.selectNo) == selectNo {
+			return c
+		}
+	}
+	return nil
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
+}
+
 func (s *System) appendMatchEvent(event string, winnerSide int32, winnerKey string, loserKey string) {
 	path := s.matchEventsPath()
 	if path == "" {
@@ -289,6 +470,77 @@ func (s *System) appendMatchEvent(event string, winnerSide int32, winnerKey stri
 	if err := appendJSONLine(path, record); err != nil {
 		LogMessage("live match event write failed: %v", err)
 	}
+}
+
+func (s *System) terminalArtifactKey() string {
+	return fmt.Sprintf(
+		"%d:%d:%d:%d:%d:%d",
+		len(s.statsLog.Matches),
+		s.match,
+		s.round,
+		s.winTeam,
+		s.wins[0],
+		s.wins[1],
+	)
+}
+
+func (s *System) terminalWinnerData() (int32, string, string) {
+	if s.winTeam < 0 {
+		return 0, "", ""
+	}
+	loserSide := 1 - s.winTeam
+	return int32(s.winTeam + 1), s.liveRosterKeyForSide(s.winTeam), s.liveRosterKeyForSide(loserSide)
+}
+
+func (s *System) maybeWriteTerminalLiveArtifacts() {
+	if !s.matchOver() {
+		return
+	}
+
+	key := s.terminalArtifactKey()
+	winnerSide, winnerKey, loserKey := s.terminalWinnerData()
+
+	if s.lastMatchCompleteEventKey != key {
+		s.appendMatchEvent("match_complete", winnerSide, winnerKey, loserKey)
+		s.lastMatchCompleteEventKey = key
+	}
+
+	snapshot := s.liveMatchSnapshot()
+	if path := s.resultFilePath(); path != "" && s.lastLiveTerminalResultKey != key {
+		data, err := json.Marshal(snapshot)
+		if err != nil {
+			LogMessage("live result marshal failed: %v", err)
+		} else if err := writeAtomicFile(path, data); err != nil {
+			LogMessage("live result write failed: %v", err)
+		} else {
+			s.lastLiveTerminalResultKey = key
+		}
+	}
+
+	if !s.richFightCaptureEnabled() || s.lastRichFightCaptureKey == key {
+		return
+	}
+
+	timestampUTC := liveTimestampUTC()
+	record := LiveRichFightRecord{
+		Schema:       liveRichFightSchema,
+		EventID:      fmt.Sprintf("rich-fight-%d-%d-%d-%d", s.match, s.round, s.frameCounter, time.Now().UTC().UnixNano()),
+		Mode:         "result",
+		Match:        s.match,
+		Round:        s.round,
+		Stage:        s.liveStatusStageName(),
+		Context:      s.buildLiveFightContext(),
+		WinnerSide:   winnerSide,
+		WinnerKey:    winnerKey,
+		LoserKey:     loserKey,
+		TimestampUTC: timestampUTC,
+		Snapshot:     snapshot,
+	}
+	if err := appendJSONLine(s.richFightPath(), record); err != nil {
+		LogMessage("rich fight telemetry write failed: %v", err)
+		return
+	}
+	s.lastRichFightCaptureKey = key
 }
 
 func (s *System) recordRoundStart() {
