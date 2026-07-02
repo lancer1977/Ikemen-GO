@@ -535,8 +535,166 @@ func TestMaybeProcessLiveCommandInbox_AppliesPowerAdjustAndWritesResult(t *testi
 	if result.CommandID != "cmd-power-1" || result.CommandKind != "power-adjust" || result.Status != "applied" {
 		t.Fatalf("unexpected command result: %#v", result)
 	}
+	if result.Side != 1 {
+		t.Fatalf("unexpected command result side: %#v", result)
+	}
 	if result.Schema != liveCommandResultSchema {
 		t.Fatalf("unexpected command result schema: %q", result.Schema)
+	}
+}
+
+func TestMaybeProcessLiveCommandInbox_AppliesSkipRoundAndWritesResult(t *testing.T) {
+	origSys := sys
+	sys = System{}
+	t.Cleanup(func() {
+		sys = origSys
+	})
+
+	tempDir := t.TempDir()
+	inboxPath := filepath.Join(tempDir, "command_inbox.json")
+	resultPath := filepath.Join(tempDir, "command_results.jsonl")
+	if err := os.WriteFile(inboxPath, []byte(`{
+		"schema": "live-lancero/command-inbox/v1",
+		"commands": [
+			{
+				"id": "cmd-skip-1",
+				"command": "skip-round",
+				"safeTimingPolicy": "immediate",
+				"side": 1
+			}
+		]
+	}`), 0o644); err != nil {
+		t.Fatalf("write inbox: %v", err)
+	}
+
+	p1 := &Char{playerNo: 0, teamside: 0, helperIndex: 0, life: 900, lifeMax: 1000, redLife: 900}
+	p2 := &Char{playerNo: 1, teamside: 1, helperIndex: 0, life: 850, lifeMax: 1000, redLife: 850}
+	sys.chars[0] = []*Char{p1}
+	sys.chars[1] = []*Char{p2}
+
+	s := &System{
+		SystemStateVars: SystemStateVars{
+			match:        12,
+			round:        1,
+			matchTime:    1,
+			winTeam:      -1,
+			postMatchFlg: false,
+			fightLoopEnd: false,
+		},
+		cmdFlags: map[string]string{
+			"-commandinboxfile":   inboxPath,
+			"-commandresultsfile": resultPath,
+		},
+	}
+	s.chars[0] = []*Char{p1}
+	s.chars[1] = []*Char{p2}
+	s.frameCounter = 6
+
+	s.maybeProcessLiveCommandInbox()
+
+	if p2.life != 0 || p2.redLife != 0 || p2.alive() {
+		t.Fatalf("skip-round should KO P2 from inbox, got life=%d redLife=%d alive=%v", p2.life, p2.redLife, p2.alive())
+	}
+	if s.finishType != FT_KO || s.winTeam != 0 {
+		t.Fatalf("skip-round should resolve P1 as winner, finishType=%v winTeam=%d", s.finishType, s.winTeam)
+	}
+
+	raw, err := os.ReadFile(resultPath)
+	if err != nil {
+		t.Fatalf("reading command results: %v", err)
+	}
+	lines := splitNonEmptyLines(string(raw))
+	if len(lines) != 1 {
+		t.Fatalf("unexpected result count: %d (%q)", len(lines), string(raw))
+	}
+
+	var result LiveCommandResult
+	if err := json.Unmarshal([]byte(lines[0]), &result); err != nil {
+		t.Fatalf("unmarshal result: %v", err)
+	}
+	if result.CommandID != "cmd-skip-1" || result.CommandKind != "skip-round" || result.Status != "applied" {
+		t.Fatalf("unexpected command result: %#v", result)
+	}
+	if result.Side != 1 {
+		t.Fatalf("unexpected command result side: %#v", result)
+	}
+	if result.AppliedRound != 1 || result.AppliedFrame != 6 {
+		t.Fatalf("unexpected application coordinates: %#v", result)
+	}
+}
+
+func TestApplyLiveCommand_AutoKillSetsTargetLifeToZero(t *testing.T) {
+	origSys := sys
+	sys = System{}
+	t.Cleanup(func() {
+		sys = origSys
+	})
+
+	root := &Char{
+		playerNo:    0,
+		teamside:    0,
+		helperIndex: 0,
+		life:        750,
+		lifeMax:     1000,
+		redLife:     750,
+	}
+	sys.chars[0] = []*Char{root}
+
+	s := &System{
+		SystemStateVars: SystemStateVars{
+			match:     12,
+			round:     1,
+			matchTime: 1,
+		},
+	}
+	s.chars[0] = []*Char{root}
+	s.frameCounter = 6
+
+	result := s.applyLiveCommand(LiveCommandRequest{ID: "cmd-kill-p1", CommandKind: "auto-kill", Side: 1})
+	if result.Status != "applied" || result.CommandKind != "auto-kill" {
+		t.Fatalf("unexpected auto-kill result: %#v", result)
+	}
+	if root.life != 0 || root.redLife != 0 {
+		t.Fatalf("auto-kill should zero target life, got life=%d redLife=%d", root.life, root.redLife)
+	}
+}
+
+func TestApplyLiveCommand_SkipRoundKOsOpposingSideAndResolvesWinner(t *testing.T) {
+	origSys := sys
+	sys = System{}
+	t.Cleanup(func() {
+		sys = origSys
+	})
+
+	p1 := &Char{playerNo: 0, teamside: 0, helperIndex: 0, life: 750, lifeMax: 1000, redLife: 750}
+	p2 := &Char{playerNo: 1, teamside: 1, helperIndex: 0, life: 800, lifeMax: 1000, redLife: 800}
+	sys.chars[0] = []*Char{p1}
+	sys.chars[1] = []*Char{p2}
+
+	s := &System{
+		SystemStateVars: SystemStateVars{
+			match:     12,
+			round:     2,
+			matchTime: 1,
+			winTeam:   -1,
+		},
+	}
+	s.chars[0] = []*Char{p1}
+	s.chars[1] = []*Char{p2}
+	s.frameCounter = 12
+
+	result := s.applyLiveCommand(LiveCommandRequest{ID: "cmd-skip-p1", CommandKind: "skip-round", Side: 1})
+	if result.Status != "applied" || result.CommandKind != "skip-round" {
+		t.Fatalf("unexpected skip-round result: %#v", result)
+	}
+	if p2.life != 0 || p2.redLife != 0 || p2.alive() {
+		t.Fatalf("skip-round should KO opposing side, got life=%d redLife=%d alive=%v", p2.life, p2.redLife, p2.alive())
+	}
+	if p1.life == 0 || !p1.alive() {
+		t.Fatalf("skip-round should not KO winning side, got life=%d alive=%v", p1.life, p1.alive())
+	}
+	if s.finishType != FT_KO || s.winTeam != 0 {
+		t.Fatalf("skip-round should resolve as P1 KO win, finishType=%v winTeam=%d", s.finishType, s.winTeam)
 	}
 }
 
@@ -566,11 +724,17 @@ func TestApplyLiveCommand_ReportsValidationFailures(t *testing.T) {
 }
 
 func TestApplyLiveCommand_HandlesFightPhaseAndSuccessCases(t *testing.T) {
+	origSys := sys
+	sys = System{}
+	t.Cleanup(func() {
+		sys = origSys
+	})
+
 	s := &System{
 		SystemStateVars: SystemStateVars{
 			match:     12,
 			round:     1,
-			matchTime: 1,
+			matchTime: 0,
 		},
 	}
 
@@ -581,6 +745,8 @@ func TestApplyLiveCommand_HandlesFightPhaseAndSuccessCases(t *testing.T) {
 
 	root := &Char{playerNo: 0, teamside: 0, name: "Ryu", power: 100, powerMax: 1000}
 	s.chars[0] = []*Char{root}
+	sys.chars[0] = []*Char{root}
+	s.matchTime = 1
 	s.intro = 0
 	s.maxPowerMode = false
 

@@ -62,6 +62,7 @@ type LiveCommandResult struct {
 	CommandKind    string `json:"commandKind"`
 	Status         string `json:"status"`
 	Reason         string `json:"reason,omitempty"`
+	Side           int32  `json:"side,omitempty"`
 	AppliedMatchID string `json:"appliedMatchId,omitempty"`
 	AppliedRound   int32  `json:"appliedRound,omitempty"`
 	AppliedFrame   int32  `json:"appliedFrame,omitempty"`
@@ -702,6 +703,7 @@ func (s *System) applyLiveCommand(command LiveCommandRequest) LiveCommandResult 
 		CommandID:      command.ID,
 		CommandKind:    kind,
 		Status:         "failed",
+		Side:           command.Side,
 		AppliedMatchID: fmt.Sprintf("match-%d", s.match),
 		AppliedRound:   s.round,
 		AppliedFrame:   s.frameCounter,
@@ -729,6 +731,43 @@ func (s *System) applyLiveCommand(command LiveCommandRequest) LiveCommandResult 
 		root.powerAdd(command.Amount)
 		result.Status = "applied"
 		return result
+	case "auto-kill":
+		if command.Side != 1 && command.Side != 2 {
+			result.Reason = "invalid-side"
+			return result
+		}
+		if !s.middleOfMatch() {
+			result.Reason = "not-in-fight-phase"
+			return result
+		}
+		root := s.teamRoot(command.Side - 1)
+		if root == nil {
+			result.Reason = "missing-team-root"
+			return result
+		}
+		root.lifeSet(0)
+		result.Status = "applied"
+		return result
+	case "skip-round":
+		if command.Side != 1 && command.Side != 2 {
+			result.Reason = "invalid-side"
+			return result
+		}
+		if !s.middleOfMatch() {
+			result.Reason = "not-in-fight-phase"
+			return result
+		}
+		loserSide := int32(2)
+		if command.Side == 2 {
+			loserSide = 1
+		}
+		if !s.forceTeamKO(loserSide - 1) {
+			result.Reason = "missing-team-root"
+			return result
+		}
+		s.resolveForcedRoundWin(command.Side - 1)
+		result.Status = "applied"
+		return result
 	case "players-swap":
 		result.Status = "queued"
 		result.Reason = "next-match-hook-pending"
@@ -737,6 +776,36 @@ func (s *System) applyLiveCommand(command LiveCommandRequest) LiveCommandResult 
 		result.CommandKind = "unknown"
 		result.Reason = "unsupported-command"
 		return result
+	}
+}
+
+func (s *System) forceTeamKO(teamSide int32) bool {
+	found := false
+	for slot := teamSide; slot < MaxSimul*2; slot += 2 {
+		if slot < 0 || int(slot) >= len(s.chars) || len(s.chars[slot]) == 0 {
+			continue
+		}
+		root := s.chars[slot][0]
+		if root == nil || root.teamside == -1 {
+			continue
+		}
+		found = true
+		root.lifeSet(0)
+		root.setSCF(SCF_ko)
+		root.unsetSCF(SCF_ctrl)
+		root.redLife = 0
+	}
+	return found
+}
+
+func (s *System) resolveForcedRoundWin(winnerSide int32) {
+	if winnerSide < 0 || winnerSide > 1 {
+		return
+	}
+	s.finishType = FT_KO
+	s.winTeam = int(winnerSide)
+	for i := range s.effectiveLoss {
+		s.effectiveLoss[i] = int32(i) != winnerSide
 	}
 }
 

@@ -16,6 +16,7 @@ sudo apt-get install -y \
   make \
   nasm \
   yasm \
+  xvfb \
   libxmp-dev \
   libsdl2-dev \
   libgl-dev \

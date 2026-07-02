@@ -4,6 +4,8 @@ go 1.20
 
 replace github.com/gopxl/beep/v2 => github.com/gopxl/beep/v2 v2.1.1-0.20240921133731-defe79638e99
 
+replace github.com/ikemen-engine/reisen => ./third_party/reisen
+
 require (
 	github.com/Eiton/vulkan v0.0.0-20251125114215-6585a2a8590b
 	github.com/faiface/beep v1.0.2

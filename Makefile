@@ -89,6 +89,14 @@ deploy-local-linux:
 deploy-local-windows:
 	OUTPUT_ROOT="$${OUTPUT_ROOT:-/mnt/syn1/games/Ikemen}" ./scripts/deploy-local-windows.sh
 
+.PHONY: ikemen-dev
+ikemen-dev:
+	./scripts/deploy-ikemen-dev.sh
+
+.PHONY: ikemen-dev-check
+ikemen-dev-check:
+	./scripts/deploy-ikemen-dev.sh --check-deps
+
 .PHONY: smoke-workflows
 smoke-workflows:
 	IKEMEN_BIN="$${IKEMEN_BIN:-$(CURDIR)/Ikemen_GO_Linux}" ./scripts/smoke/ikemen-workflow-matrix.sh
