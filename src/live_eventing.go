@@ -11,12 +11,13 @@ import (
 )
 
 const (
-	liveCombatEventSchema   = "live-lancero/combat-event/v1"
-	liveCommandInboxSchema  = "live-lancero/command-inbox/v1"
-	liveCommandResultSchema = "live-lancero/command-result/v1"
-	liveRichFightSchema     = "live-lancero/rich-fight/v1"
-	liveMatchEventSchema    = "live-lancero/match-event/v1"
-	liveStatusSchema        = "live-lancero/live-status/v1"
+	liveCombatEventSchema    = "live-lancero/combat-event/v1"
+	liveCommandInboxSchema   = "live-lancero/command-inbox/v1"
+	liveCommandResultSchema  = "live-lancero/command-result/v1"
+	liveRichFightSchema      = "live-lancero/rich-fight/v1"
+	liveMatchEventSchema     = "live-lancero/match-event/v1"
+	livePostMatchTraceSchema = "live-lancero/post-match-trace/v1"
+	liveStatusSchema         = "live-lancero/live-status/v1"
 )
 
 type LiveCombatEvent struct {
@@ -116,6 +117,69 @@ type LiveRichFightRecord struct {
 	Snapshot     GameLiveSnapshot `json:"snapshot"`
 }
 
+type LivePostMatchTraceRecord struct {
+	Schema                  string                   `json:"schema"`
+	EventID                 string                   `json:"eventId"`
+	Match                   int32                    `json:"match"`
+	Round                   int32                    `json:"round"`
+	Frame                   int32                    `json:"frame"`
+	MatchTime               int32                    `json:"matchTime"`
+	Event                   string                   `json:"event"`
+	TimestampUTC            string                   `json:"timestampUtc"`
+	RoundState              int32                    `json:"roundState"`
+	OutroState              int32                    `json:"outroState"`
+	Intro                   int32                    `json:"intro"`
+	CurRoundTime            int32                    `json:"curRoundTime"`
+	WinPoseTime             int32                    `json:"winPoseTime"`
+	WinWaitTime             int32                    `json:"winWaitTime"`
+	FinishType              string                   `json:"finishType"`
+	WinTeam                 int                      `json:"winTeam"`
+	MatchOver               bool                     `json:"matchOver"`
+	RoundOver               bool                     `json:"roundOver"`
+	RoundEnded              bool                     `json:"roundEnded"`
+	RoundEndDecision        bool                     `json:"roundEndDecision"`
+	MatchEndDialoguePending bool                     `json:"matchEndDialoguePending"`
+	PauseTime               int32                    `json:"pauseTime"`
+	SuperTime               int32                    `json:"superTime"`
+	SlowTime                int32                    `json:"slowTime"`
+	GlobalFlags             LivePostMatchGlobalFlags `json:"globalFlags"`
+	Fighters                []LivePostMatchFighter   `json:"fighters"`
+}
+
+type LivePostMatchGlobalFlags struct {
+	RoundNotOver bool `json:"roundNotOver"`
+	RoundNotSkip bool `json:"roundNotSkip"`
+	RoundFreeze  bool `json:"roundFreeze"`
+	TimerFreeze  bool `json:"timerFreeze"`
+}
+
+type LivePostMatchFighter struct {
+	Side             int32  `json:"side"`
+	PlayerNo         int    `json:"playerNo"`
+	HelperIndex      int    `json:"helperIndex"`
+	ID               int32  `json:"id"`
+	Name             string `json:"name,omitempty"`
+	Life             int32  `json:"life"`
+	LifeMax          int32  `json:"lifeMax"`
+	StateNo          int32  `json:"stateNo"`
+	StateTime        int32  `json:"stateTime"`
+	StateType        string `json:"stateType"`
+	MoveType         string `json:"moveType"`
+	Physics          string `json:"physics"`
+	AnimNo           int32  `json:"animNo"`
+	AnimTime         int32  `json:"animTime,omitempty"`
+	Ctrl             bool   `json:"ctrl"`
+	Alive            bool   `json:"alive"`
+	ActivelyFighting bool   `json:"activelyFighting"`
+	OverAlive        bool   `json:"overAlive"`
+	OverKO           bool   `json:"overKO"`
+	Standby          bool   `json:"standby"`
+	Disabled         bool   `json:"disabled"`
+	HitPauseTime     int32  `json:"hitPauseTime"`
+	PauseMoveTime    int32  `json:"pauseMoveTime"`
+	SuperMoveTime    int32  `json:"superMoveTime"`
+}
+
 type LiveFightContext struct {
 	RandSeed      int32                    `json:"randSeed"`
 	GameWidth     float32                  `json:"gameWidth"`
@@ -207,6 +271,22 @@ func (s *System) richFightPath() string {
 		return filepath.Join(filepath.Dir(path), "fight_history.jsonl")
 	}
 	return filepath.Join(s.baseDir, "save", "fight_history.jsonl")
+}
+
+func (s *System) postMatchTracePath() string {
+	if path := strings.TrimSpace(s.cmdFlags["-postmatchtracefile"]); path != "" {
+		return path
+	}
+	if _, ok := s.cmdFlags["-postmatchtrace"]; ok {
+		if path := strings.TrimSpace(s.cmdFlags["-livedatafile"]); path != "" {
+			return filepath.Join(filepath.Dir(path), "post_match_trace.jsonl")
+		}
+		if path := strings.TrimSpace(s.cmdFlags["-resultfile"]); path != "" {
+			return filepath.Join(filepath.Dir(path), "post_match_trace.jsonl")
+		}
+		return filepath.Join(s.baseDir, "save", "post_match_trace.jsonl")
+	}
+	return ""
 }
 
 func (s *System) commandInboxPath() string {
@@ -518,6 +598,8 @@ func (s *System) maybeWriteTerminalLiveArtifacts() {
 		}
 	}
 
+	s.writePostMatchTrace("post_match")
+
 	if !s.richFightCaptureEnabled() || s.lastRichFightCaptureKey == key {
 		return
 	}
@@ -542,6 +624,141 @@ func (s *System) maybeWriteTerminalLiveArtifacts() {
 		return
 	}
 	s.lastRichFightCaptureKey = key
+}
+
+func finishTypeName(ft FinishType) string {
+	switch ft {
+	case FT_NotYet:
+		return "not_yet"
+	case FT_KO:
+		return "ko"
+	case FT_DKO:
+		return "double_ko"
+	case FT_TO:
+		return "time_over"
+	case FT_TODraw:
+		return "time_over_draw"
+	default:
+		return fmt.Sprintf("unknown_%d", ft)
+	}
+}
+
+func stateTypeName(st StateType) string {
+	switch st {
+	case ST_S:
+		return "stand"
+	case ST_C:
+		return "crouch"
+	case ST_A:
+		return "air"
+	case ST_L:
+		return "lie"
+	case ST_N:
+		return "none"
+	case ST_U:
+		return "unchanged"
+	default:
+		return fmt.Sprintf("unknown_%d", st)
+	}
+}
+
+func moveTypeName(mt MoveType) string {
+	switch mt {
+	case MT_I:
+		return "idle"
+	case MT_H:
+		return "hit"
+	case MT_A:
+		return "attack"
+	case MT_U:
+		return "unchanged"
+	default:
+		return fmt.Sprintf("unknown_%d", mt)
+	}
+}
+
+func (s *System) buildPostMatchTraceFighters() []LivePostMatchFighter {
+	fighters := make([]LivePostMatchFighter, 0, 2)
+	for side := 0; side < len(s.chars); side++ {
+		if len(s.chars[side]) == 0 || s.chars[side][0] == nil {
+			continue
+		}
+		c := s.chars[side][0]
+		animTime := int32(0)
+		if c.anim != nil {
+			animTime = c.anim.totaltime
+		}
+		fighters = append(fighters, LivePostMatchFighter{
+			Side:             int32(c.teamside + 1),
+			PlayerNo:         c.playerNo,
+			HelperIndex:      c.helperIndex,
+			ID:               c.id,
+			Name:             c.name,
+			Life:             c.life,
+			LifeMax:          c.lifeMax,
+			StateNo:          c.ss.no,
+			StateTime:        c.ss.time,
+			StateType:        stateTypeName(c.ss.stateType),
+			MoveType:         moveTypeName(c.ss.moveType),
+			Physics:          stateTypeName(c.ss.physics),
+			AnimNo:           c.animNo,
+			AnimTime:         animTime,
+			Ctrl:             c.scf(SCF_ctrl),
+			Alive:            c.alive(),
+			ActivelyFighting: c.activelyFighting(),
+			OverAlive:        c.scf(SCF_over_alive),
+			OverKO:           c.scf(SCF_over_ko),
+			Standby:          c.scf(SCF_standby),
+			Disabled:         c.scf(SCF_disabled),
+			HitPauseTime:     c.hitPauseTime,
+			PauseMoveTime:    c.pauseMovetime,
+			SuperMoveTime:    c.superMovetime,
+		})
+	}
+	return fighters
+}
+
+func (s *System) writePostMatchTrace(event string) {
+	path := s.postMatchTracePath()
+	if path == "" {
+		return
+	}
+	record := LivePostMatchTraceRecord{
+		Schema:                  livePostMatchTraceSchema,
+		EventID:                 fmt.Sprintf("post-match-%d-%d-%d", s.match, s.round, s.frameCounter),
+		Match:                   s.match,
+		Round:                   s.round,
+		Frame:                   s.frameCounter,
+		MatchTime:               s.matchTime,
+		Event:                   event,
+		TimestampUTC:            liveTimestampUTC(),
+		RoundState:              s.roundState(),
+		OutroState:              s.outroState(),
+		Intro:                   s.intro,
+		CurRoundTime:            s.curRoundTime,
+		WinPoseTime:             s.winposetime,
+		WinWaitTime:             s.winwaittime,
+		FinishType:              finishTypeName(s.finishType),
+		WinTeam:                 s.winTeam,
+		MatchOver:               s.matchOver(),
+		RoundOver:               s.roundOver(),
+		RoundEnded:              s.roundEnded(),
+		RoundEndDecision:        s.roundEndDecision(),
+		MatchEndDialoguePending: s.matchEndDialoguePending(),
+		PauseTime:               s.pausetime,
+		SuperTime:               s.supertime,
+		SlowTime:                s.slowtime,
+		GlobalFlags: LivePostMatchGlobalFlags{
+			RoundNotOver: s.gsf(GSF_roundnotover),
+			RoundNotSkip: s.gsf(GSF_roundnotskip),
+			RoundFreeze:  s.gsf(GSF_roundfreeze),
+			TimerFreeze:  s.gsf(GSF_timerfreeze),
+		},
+		Fighters: s.buildPostMatchTraceFighters(),
+	}
+	if err := appendJSONLine(path, record); err != nil {
+		LogMessage("post-match trace write failed: %v", err)
+	}
 }
 
 func (s *System) recordRoundStart() {

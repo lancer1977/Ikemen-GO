@@ -261,6 +261,7 @@ func processCommandLine() {
 			"-noerrordialog":    true,
 			"-pauseproof":       true,
 			"-richfightcapture": true,
+			"-postmatchtrace":   true,
 		}
 		key := ""
 		player := 1
@@ -295,6 +296,8 @@ func processCommandLine() {
 -richfightfile <jsonlfile> Writes terminal rich fight telemetry to <jsonlfile>
 -commandinboxfile <jsonfile> Reads LiveLancero gameplay commands from <jsonfile>
 -commandresultsfile <jsonlfile> Writes gameplay command results to <jsonlfile>
+-postmatchtrace          Writes post-match outro trace JSONL beside live/result files
+-postmatchtracefile <jsonlfile> Writes post-match outro trace JSONL to <jsonlfile>
 -nojsonlog              Disables default JSON file output
 -nojsonstdout           Disables default JSON stdout output
 -noerrordialog          Logs errors without showing a blocking desktop dialog
