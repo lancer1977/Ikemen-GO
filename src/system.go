@@ -2690,8 +2690,12 @@ func (s *System) action() {
 			s.specialFlag = (s.specialFlag&GSF_nokoslow | s.specialFlag&GSF_timerfreeze)
 		}
 
-		// Run the main character logic
-		s.charList.action()
+		// Run the main character logic. During the SaltyBet betting window,
+		// keep fighters in their loaded idle state; the real fight starts
+		// after the one-shot F4-style reset.
+		if !saltyBetCountdownActive() {
+			s.charList.action()
+		}
 
 		// The following must be placed after char action or they will lag behind 1 frame
 		s.allPalFX.step()
@@ -3137,7 +3141,7 @@ func (s *System) stepRoundState() {
 
 	// Ongoing round
 	// Handle remaining time limit
-	if s.intro == 0 && !s.gsf(GSF_timerfreeze) && s.supertime <= 0 && s.pausetime <= 0 {
+	if s.intro == 0 && !s.gsf(GSF_timerfreeze) && !saltyBetCountdownActive() && s.supertime <= 0 && s.pausetime <= 0 {
 		if s.maxRoundTime > 0 && s.curRoundTime > 0 {
 			s.curRoundTime--
 		}

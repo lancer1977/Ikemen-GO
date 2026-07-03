@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
+	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -2033,10 +2035,279 @@ func (nm *FightScreenName) bgDraw(layerno int16) {
 	nm.bg.Draw(float32(nm.pos[0])+sys.fightScreen.offsetX, float32(nm.pos[1]), layerno, sys.fightScreen.scale)
 }
 
+type fightStatsTierCache struct {
+	path    string
+	modTime int64
+	tiers   map[string]string
+}
+
+var fightTierCache fightStatsTierCache
+var saltyBetCountdownStart int32 = -1
+var saltyBetCountdownMatchKey string
+var saltyBetCountdownDoneKey string
+
+func normalizeFightTierKey(s string) string {
+	key := strings.ToLower(strings.TrimSpace(strings.ReplaceAll(s, "\\", "/")))
+	key = strings.TrimPrefix(key, "./")
+	key = strings.TrimPrefix(key, "chars/")
+	key = strings.TrimPrefix(key, "/")
+	key = strings.TrimSuffix(key, ".def")
+	return key
+}
+
+func addFightTierKey(dst map[string]string, key string, tier string) {
+	key = normalizeFightTierKey(key)
+	if key == "" || tier == "" {
+		return
+	}
+	dst[key] = tier
+	if base := filepath.Base(key); base != "." && base != "/" && base != "" {
+		dst[base] = tier
+	}
+	if dir := filepath.Base(filepath.Dir(key)); dir != "." && dir != "/" && dir != "" {
+		dst[dir] = tier
+	}
+}
+
+func loadFightStatsTiers() map[string]string {
+	path := sys.cmdFlags["-stats"]
+	if path == "" {
+		path = filepath.Join(sys.baseDir, "save", "stats.json")
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		fightTierCache = fightStatsTierCache{path: path, modTime: 0, tiers: map[string]string{}}
+		return fightTierCache.tiers
+	}
+	modTime := info.ModTime().UnixNano()
+	if fightTierCache.path == path && fightTierCache.modTime == modTime && fightTierCache.tiers != nil {
+		return fightTierCache.tiers
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		fightTierCache = fightStatsTierCache{path: path, modTime: modTime, tiers: map[string]string{}}
+		return fightTierCache.tiers
+	}
+	var parsed struct {
+		Characters map[string]struct {
+			Tier string `json:"tier"`
+			Rank string `json:"rank"`
+		} `json:"characters"`
+	}
+	tiers := map[string]string{}
+	if err := json.Unmarshal(raw, &parsed); err == nil {
+		for key, rec := range parsed.Characters {
+			tier := strings.TrimSpace(rec.Tier)
+			if tier == "" {
+				tier = strings.TrimSpace(rec.Rank)
+			}
+			addFightTierKey(tiers, key, tier)
+		}
+	}
+	fightTierCache = fightStatsTierCache{path: path, modTime: modTime, tiers: tiers}
+	return tiers
+}
+
+func fightStatsTierForChar(charpn int) string {
+	if charpn < 0 || charpn >= len(sys.cgi) {
+		return ""
+	}
+	gi := sys.cgi[charpn]
+	keys := []string{
+		gi.def,
+		strings.TrimSuffix(filepath.Base(gi.def), filepath.Ext(gi.def)),
+		filepath.Base(filepath.Dir(gi.def)),
+		gi.name,
+		gi.displayname,
+		gi.lifebarname,
+	}
+	tiers := loadFightStatsTiers()
+	for _, key := range keys {
+		if tier := tiers[normalizeFightTierKey(key)]; tier != "" {
+			return tier
+		}
+	}
+	return "U"
+}
+
+func fightTierColor(tier string) (int32, int32, int32) {
+	r, g, b := int32(160), int32(160), int32(160)
+	base := strings.ToUpper(strings.TrimSpace(tier))
+	if base == "" {
+		return r, g, b
+	}
+	switch base[0:1] {
+	case "U":
+		r, g, b = 128, 224, 255
+	case "Z":
+		r, g, b = 255, 215, 0
+	case "S":
+		r, g, b = 255, 96, 96
+	case "A":
+		r, g, b = 255, 160, 0
+	case "B":
+		r, g, b = 224, 208, 0
+	case "C":
+		r, g, b = 84, 188, 255
+	case "D":
+		r, g, b = 180, 120, 255
+	case "F":
+		r, g, b = 160, 160, 160
+	}
+	return r, g, b
+}
+
+func fightTierFrgba(tier string, fallback [4]float32) [4]float32 {
+	rgba := fallback
+	r, g, b := fightTierColor(tier)
+	rgba[0], rgba[1], rgba[2] = float32(r)/255.0, float32(g)/255.0, float32(b)/255.0
+	return rgba
+}
+
+func drawColoredFightTierText(x, y float32, layerno int16, tier string, fallback *FSText, font *Fnt) {
+	r, g, b := fightTierColor(tier)
+	rectX := x
+	if fallback.font[2] == 0 {
+		rectX -= 32
+	} else if fallback.font[2] < 0 {
+		rectX -= 64
+	}
+	FillRect([4]int32{int32(rectX), int32(y + 22), 64, 5}, uint32((r<<16)|(g<<8)|b), [2]int32{230, 0}, nil)
+	shadowPfx := newPalFX()
+	shadowPfx.setColor(0, 0, 0)
+	tierPfx := newPalFX()
+	tierPfx.setColor(r, g, b)
+	tierFrgba := fightTierFrgba(tier, fallback.frgba)
+	fallback.lay.DrawText(x+2, y+2, sys.fightScreen.scale, layerno, tier, font, fallback.font[1], fallback.font[2], shadowPfx, [4]float32{0, 0, 0, fallback.frgba[3]})
+	fallback.lay.DrawText(x, y, sys.fightScreen.scale, layerno, tier, font, fallback.font[1], fallback.font[2], tierPfx, tierFrgba)
+	if sys.debugFont != nil && sys.debugFont.fnt != nil {
+		scaleX := sys.debugFont.xscl / sys.widthScale * 1.25
+		scaleY := sys.debugFont.yscl / sys.heightScale * 1.25
+		sys.debugFont.SetColor(0, 0, 0, 255)
+		sys.debugFont.fnt.Print(tier, x+2, y+2, scaleX, scaleY, 0, Rotation{0, 0, 0}, 0, 0, 0, fallback.font[2], &sys.scrrect, sys.debugFont.palfx, sys.debugFont.frgba)
+		sys.debugFont.SetColor(r, g, b, 255)
+		sys.debugFont.fnt.Print(tier, x, y, scaleX, scaleY, 0, Rotation{0, 0, 0}, 0, 0, 0, fallback.font[2], &sys.scrrect, sys.debugFont.palfx, sys.debugFont.frgba)
+		sys.debugFont.SetColor(255, 255, 255, 255)
+		return
+	}
+}
+
+func saltyBetCurrentMatchKey() string {
+	keys := make([]string, 0, 2)
+	for side := 0; side < len(sys.tmode); side++ {
+		if len(sys.chars[side]) == 0 || len(sys.cgi) <= side {
+			continue
+		}
+		keys = append(keys, normalizeFightTierKey(sys.cgi[side].def))
+	}
+	return strings.Join(keys, "::")
+}
+
+func saltyBetCountdownRemaining() (int32, bool) {
+	matchKey := saltyBetCurrentMatchKey()
+	if matchKey != "" && matchKey != saltyBetCountdownMatchKey {
+		saltyBetCountdownStart = -1
+		saltyBetCountdownMatchKey = matchKey
+		saltyBetCountdownDoneKey = ""
+	}
+	if matchKey != "" && matchKey == saltyBetCountdownDoneKey {
+		return 0, false
+	}
+	if sys.roundState() < 1 || sys.roundState() > 2 {
+		return 0, false
+	}
+	if saltyBetCountdownStart < 0 {
+		saltyBetCountdownStart = int32(sys.tickCount)
+	}
+	remaining := int32(30) - (int32(sys.tickCount)-saltyBetCountdownStart)/60
+	if remaining <= 0 {
+		if matchKey != "" {
+			saltyBetCountdownDoneKey = matchKey
+		}
+		if sys.roundState() == 2 && !sys.roundResetFlg && !sys.postMatchFlg {
+			sys.roundResetFlg = true
+			sys.roundResetMatchStart = true
+		}
+		return 0, false
+	}
+	return remaining, true
+}
+
+func saltyBetCountdownActive() bool {
+	_, ok := saltyBetCountdownRemaining()
+	return ok
+}
+
+func saltyBetWagerFrgba(i int) [4]float32 {
+	t := float32(i) / 9.0
+	return [4]float32{1 - t*0.45, 0.15 + t*0.25, 0.25 + t*0.75, 1}
+}
+
+func drawSaltyBetText(x, y float32, text string, r, g, b int32, align int32, scale float32, fallback *FSText, font *Fnt, layerno int16) {
+	shadowPfx := newPalFX()
+	shadowPfx.setColor(0, 0, 0)
+	colorPfx := newPalFX()
+	colorPfx.setColor(r, g, b)
+	rgba := [4]float32{float32(r) / 255.0, float32(g) / 255.0, float32(b) / 255.0, 1}
+	layout := newLayout(layerno)
+	layout.DrawText(x+2, y+2, sys.fightScreen.scale, layerno, text, font, fallback.font[1], align, shadowPfx, [4]float32{0, 0, 0, 1})
+	layout.DrawText(x, y, sys.fightScreen.scale, layerno, text, font, fallback.font[1], align, colorPfx, rgba)
+}
+
+func drawSaltyBetCountdown(layerno int16, fs *FightScreen) {
+	remaining, ok := saltyBetCountdownRemaining()
+	if !ok {
+		return
+	}
+	layout := newLayout(layerno)
+	fontNo, bank := int32(3), int32(0)
+	palfx := &PalFX{}
+	frgba := [4]float32{1, 1, 1, 1}
+	for _, names := range fs.names {
+		for _, nm := range names {
+			if nm != nil && nm.name.font[0] >= 0 && getFont(fs.fnt, nm.name.font[0]) != nil {
+				fontNo = nm.name.font[0]
+				bank = nm.name.font[1]
+				palfx = nm.name.palfx
+				frgba = nm.name.frgba
+				goto draw
+			}
+		}
+	}
+draw:
+	font := getFont(fs.fnt, fontNo)
+	if font == nil {
+		return
+	}
+	drawCentered := func(x, y, scale float32, text string) {
+		layout.DrawText((x+sys.fightScreen.offsetX)/scale, y/scale, scale, layerno, text, font, bank, 0, palfx, frgba)
+	}
+	drawCentered(640, 300, sys.fightScreen.scale*1.35, "MATCH STARTS IN")
+	drawCentered(640, 350, sys.fightScreen.scale*3.0, fmt.Sprintf("%d", remaining))
+}
+
 func (nm *FightScreenName) draw(layerno int16, charpn int, f map[int]*Fnt, side int) {
 	if nm.name.font[0] >= 0 && getFont(f, nm.name.font[0]) != nil {
 		nm.name.lay.DrawText((float32(nm.pos[0]) + sys.fightScreen.offsetX), float32(nm.pos[1]), sys.fightScreen.scale, layerno,
 			sys.cgi[charpn].lifebarname, getFont(f, nm.name.font[0]), nm.name.font[1], nm.name.font[2], nm.name.palfx, nm.name.frgba)
+		if tier := fightStatsTierForChar(charpn); tier != "" {
+			drawColoredFightTierText(float32(nm.pos[0])+sys.fightScreen.offsetX, float32(nm.pos[1]+24), layerno, tier, &nm.name, getFont(f, nm.name.font[0]))
+		}
+		if side == 0 {
+			if remaining, ok := saltyBetCountdownRemaining(); ok {
+				font := getFont(f, nm.name.font[0])
+				elapsed := int32(30-remaining) * 60
+				if saltyBetCountdownStart >= 0 {
+					elapsed = int32(sys.tickCount) - saltyBetCountdownStart
+				}
+				sweep := float32(elapsed%240) / 240.0
+				betX := -170 + sweep*1620
+				rgba := saltyBetWagerFrgba(int(sweep * 9))
+				drawSaltyBetText(betX+sys.fightScreen.offsetX, 205, "PLACE YOUR BETS", int32(rgba[0]*255), int32(rgba[1]*255), int32(rgba[2]*255), 0, 1, &nm.name, font, layerno)
+				drawSaltyBetText(640+sys.fightScreen.offsetX, 145, "MATCH STARTS IN", 255, 255, 255, 0, 1, &nm.name, font, layerno)
+				drawSaltyBetText(640+sys.fightScreen.offsetX, 170, fmt.Sprintf("%d", remaining), 255, 255, 255, 0, 1, &nm.name, font, layerno)
+			}
+		}
 	}
 
 	nm.top.Draw(float32(nm.pos[0])+sys.fightScreen.offsetX, float32(nm.pos[1]), layerno, sys.fightScreen.scale)
@@ -5784,7 +6055,6 @@ func (fs *FightScreen) draw(layerno int16) {
 				}
 				drawRenderProbeMode("fight-name", fmt.Sprintf("NAME%d L%d post", side+1, layerno), 196+float32(side)*136, 228+float32(layerno)*12, 255, 120, 220)
 			}
-
 			// Time
 			if fs.time != nil && !sys.gsf(GSF_notimedisplay) {
 				fs.time.bgDraw(layerno)
