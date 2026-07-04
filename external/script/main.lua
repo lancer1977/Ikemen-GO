@@ -2599,6 +2599,23 @@ main.t_itemname = {
 		hook.run("main.t_itemname", t, item)
 		return start.f_selectMode
 	end,
+	['endlessrandom'] = function(t, item)
+		main.cpuSide[1] = true
+		main.cpuSide[2] = true
+		main.endlessRandomActive = true
+		main.motif.vsscreen = true
+		main.motif.victoryscreen = false
+		main.selectMenu[1] = false
+		main.selectMenu[2] = false
+		main.stageMenu = true
+		main.teamMenu[1].single = true
+		main.teamMenu[2].single = true
+		textImgSetText(motif.select_info.title.TextSpriteData, motif.select_info.title.text.endlessrandom or 'ENDLESS RANDOM')
+		setGameMode('endlessrandom')
+		setHomeTeam(1)
+		hook.run("main.t_itemname", t, item)
+		return main.f_endlessRandom
+	end,
 	['onevsall'] = function(t, item)
 		main.cpuSide[2] = true
 		main.motif.vsscreen = true
@@ -3592,6 +3609,254 @@ function main.f_demoStart()
 	fadeInInit(motif[main.group].fadein.FadeData)
 end
 
+function main.f_endlessRandom()
+	main.f_saveBaseRemapInput()
+	start.f_selectReset(true)
+	setMatchNo(1)
+	main.cpuSide[1] = true
+	main.cpuSide[2] = true
+	main.endlessRandomActive = true
+	main.endlessRandomTournamentLoading = false
+	main.endlessRandomTournamentActive = false
+	main.currentTournamentName = nil
+	main.currentTournamentFightersRemaining = nil
+	main.currentTournamentWinnerName = nil
+	local smokeMode = getCommandLineValue("-endlessrandomsmoke") ~= nil
+	local tournamentBracketSize = smokeMode and 2 or 16
+	local smokePostTournamentMatchSeen = false
+	local function numberOr(value, fallback)
+		if value == nil then
+			return fallback
+		end
+		local numberValue = tonumber(value)
+		if numberValue == nil then
+			return fallback
+		end
+		return numberValue
+	end
+	local countdownOverride = numberOr(getCommandLineValue("-endlessrandomcountdown"), nil)
+	main.endlessRandomFightsUntilTournament = countdownOverride or numberOr(main.endlessRandomFightsUntilTournament, 100)
+
+	local function countdownText()
+		if main.endlessRandomTournamentLoading then
+			return 'LOADING RANDOM TOURNAMENT'
+		end
+		if main.endlessRandomTournamentActive then
+			if main.currentTournamentWinnerName ~= nil and tostring(main.currentTournamentWinnerName) ~= '' then
+				return 'Winner: ' .. tostring(main.currentTournamentWinnerName)
+			end
+			if main.currentTournamentFightersRemaining ~= nil then
+				local fightersRemaining = math.max(1, numberOr(main.currentTournamentFightersRemaining, 1))
+				if fightersRemaining == 1 then
+					return '1 fighter remains'
+				end
+				return string.format('%d fighters remain', fightersRemaining)
+			end
+			return 'TOURNAMENT'
+		end
+		if main.currentTournamentName ~= nil and tostring(main.currentTournamentName) ~= '' then
+			return 'TOURNAMENT: ' .. tostring(main.currentTournamentName)
+		end
+		local fightsLeft = math.max(0, numberOr(main.endlessRandomFightsUntilTournament, 100))
+		if fightsLeft == 0 then
+			return 'Tournament is Approaching!'
+		end
+		return string.format('%d fights until next tournament', fightsLeft)
+	end
+
+	local function obsTickerText()
+		local textValue = countdownText()
+		if textValue:match('^%d+ fights until next tournament$') then
+			local fightsLeft = math.max(0, numberOr(main.endlessRandomFightsUntilTournament, 100))
+			return string.format('%d   FIGHTS   UNTIL   NEXT   TOURNAMENT', fightsLeft)
+		elseif textValue == 'Tournament is Approaching!' then
+			return 'TOURNAMENT   IS   APPROACHING!'
+		elseif textValue == 'LOADING RANDOM TOURNAMENT' then
+			return 'LOADING   RANDOM   TOURNAMENT'
+		end
+		return textValue:gsub(' ', '   ')
+	end
+
+	local function writeObsCountdown()
+		local textValue = obsTickerText()
+		local jsonTextValue = tostring(textValue):gsub('\\', '\\\\'):gsub('"', '\\"')
+		local jsonTournamentName = main.currentTournamentName == nil and 'null' or ('"' .. tostring(main.currentTournamentName):gsub('\\', '\\\\'):gsub('"', '\\"') .. '"')
+		local jsonWinnerName = main.currentTournamentWinnerName == nil and 'null' or ('"' .. tostring(main.currentTournamentWinnerName):gsub('\\', '\\\\'):gsub('"', '\\"') .. '"')
+		local tournamentStatusVisible = main.endlessRandomTournamentActive == true
+		local tournamentStatusColor = tournamentStatusVisible and '#ff1a1a' or '#ffffff'
+		main.f_fileWrite('save/obs_tournament_countdown.txt', textValue .. '\n', 'w+')
+		main.f_fileWrite(
+			'save/obs_tournament_countdown.json',
+			string.format(
+				'{"text":"%s","fightsUntilTournament":%d,"tournamentLoading":%s,"tournamentActive":%s,"currentTournamentName":%s,"fightersRemaining":%d,"winnerName":%s,"tournamentStatusVisible":%s,"tournamentStatusColor":"%s","updatedAt":"%s"}\n',
+				jsonTextValue,
+				math.max(0, numberOr(main.endlessRandomFightsUntilTournament, 0)),
+				main.endlessRandomTournamentLoading == true and 'true' or 'false',
+				main.endlessRandomTournamentActive == true and 'true' or 'false',
+				jsonTournamentName,
+				math.max(0, numberOr(main.currentTournamentFightersRemaining, 0)),
+				jsonWinnerName,
+				tournamentStatusVisible and 'true' or 'false',
+				tournamentStatusColor,
+				os.date('!%Y-%m-%dT%H:%M:%SZ')
+			),
+			'w+'
+		)
+	end
+	main.f_writeEndlessRandomObsCountdown = writeObsCountdown
+	writeObsCountdown()
+
+	local function restoreMenu()
+		main.endlessRandomActive = false
+		main.endlessRandomTournamentLoading = false
+		main.endlessRandomTournamentActive = false
+		main.currentTournamentName = nil
+		main.currentTournamentFightersRemaining = nil
+		main.currentTournamentWinnerName = nil
+		main.f_writeEndlessRandomObsCountdown = nil
+		main.endlessRandomFightsUntilTournament = nil
+		bgReset(motif[main.background].BGDef)
+		playBgm({source = "motif.title", interrupt = true})
+		fadeInInit(motif[main.group].fadein.FadeData)
+	end
+
+	local function pickPair()
+		local p1ref = nil
+		local p2ref = nil
+		for _ = 1, 80 do
+			p1ref = start.f_randomChar(1)
+			p2ref = start.f_randomChar(2)
+			if p1ref ~= nil and p2ref ~= nil and p1ref ~= p2ref and start.f_getCharData(p1ref) ~= nil and start.f_getCharData(p2ref) ~= nil then
+				return p1ref, p2ref
+			end
+		end
+		return p1ref, p2ref
+	end
+
+	local function pickTierTournament()
+		local modes = {}
+		local randomTierAllowed = {F = true, D = true, C = true, B = true, A = true, S = true}
+		for mode, cfg in pairs(main.t_tierTournamentModes or {}) do
+			if cfg and cfg.tier and randomTierAllowed[tostring(cfg.tier):upper()] then
+				local _, available = main.f_tournamentPool(cfg.tier)
+				if (tonumber(available) or 0) >= tournamentBracketSize then
+					table.insert(modes, {mode = mode, tier = cfg.tier, title = cfg.title or mode, available = available})
+				end
+			end
+		end
+		if #modes == 0 then
+			for mode, cfg in pairs(main.t_tierTournamentModes or {}) do
+				if cfg and cfg.tier and randomTierAllowed[tostring(cfg.tier):upper()] then
+					local _, available = main.f_tournamentPool(cfg.tier)
+					if (tonumber(available) or 0) >= 2 then
+						table.insert(modes, {mode = mode, tier = cfg.tier, title = cfg.title or mode, available = available})
+					end
+				end
+			end
+		end
+		if #modes == 0 then
+			return nil
+		end
+		return modes[math.random(#modes)]
+	end
+
+	local function runRandomTierTournament()
+		local tournament = pickTierTournament()
+		if tournament == nil then
+			printConsole('endlessrandom: no tier tournaments configured')
+			main.endlessRandomFightsUntilTournament = 100
+			writeObsCountdown()
+			if smokeMode then
+				smokePostTournamentMatchSeen = true
+			end
+			return
+		end
+		main.endlessRandomTournamentLoading = true
+		main.currentTournamentName = tournament.title
+		writeObsCountdown()
+		refresh()
+		main.endlessRandomTournamentLoading = false
+		main.endlessRandomTournamentActive = true
+		writeObsCountdown()
+		main.f_tierTournament(tournament.tier, tournament.mode)
+		main.endlessRandomTournamentActive = false
+		main.currentTournamentName = nil
+		main.currentTournamentFightersRemaining = nil
+		main.currentTournamentWinnerName = nil
+		main.endlessRandomFightsUntilTournament = 100
+		writeObsCountdown()
+		if smokeMode then
+			smokePostTournamentMatchSeen = true
+		end
+	end
+
+	while not esc() do
+		if smokeMode and smokePostTournamentMatchSeen then
+			break
+		end
+		clearSelected()
+		resetGameParams()
+		setMatchNo(math.max(1, matchNo()))
+		start.p[1].teamMode = 0
+		start.p[2].teamMode = 0
+		start.p[1].numChars = 1
+		start.p[2].numChars = 1
+		start.p[1].t_selected = {}
+		start.p[1].t_selTemp = {}
+		start.p[2].t_selected = {}
+		start.p[2].t_selTemp = {}
+		start.p[1].teamEnd = true
+		start.p[1].selEnd = true
+		start.p[2].teamEnd = true
+		start.p[2].selEnd = true
+		main.t_availableChars = main.f_tableCopy(main.t_orderChars.default or start.f_getOrderChars())
+
+		local p1ref, p2ref = pickPair()
+		local p1data = p1ref and start.f_getCharData(p1ref)
+		local p2data = p2ref and start.f_getCharData(p2ref)
+		if p1data == nil or p2data == nil then
+			printConsole('endlessrandom: no random character pair available')
+			break
+		end
+
+		local ok = launchFight{
+			p1char = {p1data.char},
+			p2char = {p2data.char},
+			p1teammode = 'single',
+			p2teammode = 'single',
+			p1numchars = 1,
+			p2numchars = 1,
+			p1pal = start.f_selectPal(p1ref),
+			p2pal = start.f_selectPal(p2ref),
+			ai = 8,
+			vsscreen = main.motif.vsscreen,
+			victoryscreen = false,
+			winscreen = false,
+			continue = false,
+		}
+		if ok == false or getWinnerTeam() == -1 then
+			printConsole('endlessrandom: match aborted')
+			break
+		end
+		main.endlessRandomFightsUntilTournament = math.max(0, numberOr(main.endlessRandomFightsUntilTournament, 100) - 1)
+		writeObsCountdown()
+		clearColor(0, 0, 0)
+		refresh()
+		if main.endlessRandomFightsUntilTournament <= 0 then
+			runRandomTierTournament()
+			if esc() then
+				break
+			end
+			if smokeMode and smokePostTournamentMatchSeen then
+				restoreMenu()
+				return
+			end
+		end
+	end
+
+	restoreMenu()
+end
+
 function main.f_oneVsAll()
 	main.f_saveBaseRemapInput()
 	start.f_selectReset(true)
@@ -3777,8 +4042,31 @@ function main.f_tournamentPool(tierLetter)
 		chars[i], chars[j] = chars[j], chars[i]
 	end
 	local pool = {}
-	for i = 1, math.min(16, #chars) do
+	local poolLimit = getCommandLineValue("-endlessrandomsmoke") ~= nil and 2 or 16
+	if #chars < poolLimit then
+		for _, order in pairs(orders) do
+			if type(order) == 'table' then
+				for _, ref in ipairs(order) do
+					local data = start.f_getCharData(ref)
+					if data ~= nil and data.char ~= 'randomselect' and data.hidden == 0 and not seen[ref] then
+						table.insert(chars, ref)
+						seen[ref] = true
+						if #chars >= poolLimit then
+							break
+						end
+					end
+				end
+				if #chars >= poolLimit then
+					break
+				end
+			end
+		end
+	end
+	for i = 1, math.min(poolLimit, #chars) do
 		table.insert(pool, chars[i])
+	end
+	if #pool > 1 and #pool % 2 == 1 then
+		table.remove(pool)
 	end
 	return pool, #chars
 end
@@ -3790,10 +4078,20 @@ function main.f_tierTournament(tierLetter, mode)
 	main.cpuSide[1] = true
 	main.cpuSide[2] = true
 	local bracket, available = main.f_tournamentPool(tierLetter)
-	if #bracket < 16 then
-		printConsole(mode .. ': not enough ' .. tierLetter .. '-tier fighters for a 16 fighter tournament (' .. available .. ' found)')
+	local bracketSize = getCommandLineValue("-endlessrandomsmoke") ~= nil and 2 or 16
+	if #bracket < 2 then
+		printConsole(mode .. ': not enough ' .. tierLetter .. '-tier fighters for a tournament (' .. available .. ' found)')
+		return
+	end
+	if #bracket < bracketSize then
+		printConsole(mode .. ': not enough ' .. tierLetter .. '-tier fighters for a ' .. bracketSize .. ' fighter tournament (' .. available .. ' found)')
 	else
 		printConsole(mode .. ': locked ' .. #bracket .. ' ' .. tierLetter .. '-tier fighters')
+	end
+	main.currentTournamentFightersRemaining = #bracket
+	main.currentTournamentWinnerName = nil
+	if main.f_writeEndlessRandomObsCountdown ~= nil then
+		main.f_writeEndlessRandomObsCountdown()
 	end
 	while #bracket > 1 and not esc() do
 		local nextRound = {}
@@ -3854,13 +4152,36 @@ function main.f_tierTournament(tierLetter, mode)
 			end
 			if winnerRef ~= nil then
 				table.insert(nextRound, winnerRef)
+				local fightersRemaining = main.currentTournamentFightersRemaining == nil and #bracket or tonumber(main.currentTournamentFightersRemaining)
+				if fightersRemaining == nil then
+					fightersRemaining = #bracket
+				end
+				main.currentTournamentFightersRemaining = math.max(1, fightersRemaining - 1)
+				if main.f_writeEndlessRandomObsCountdown ~= nil then
+					main.f_writeEndlessRandomObsCountdown()
+				end
 			end
 		end
 		bracket = nextRound
 	end
 	if #bracket == 1 then
 		local champion = start.f_getCharData(bracket[1])
-		printConsole(mode .. ': winner ' .. (champion and champion.name or tostring(bracket[1])))
+		local championName = champion and (champion.displayname or champion.name) or tostring(bracket[1])
+		if championName == nil or tostring(championName) == '' then
+			championName = tostring(bracket[1])
+		end
+		main.currentTournamentFightersRemaining = 1
+		main.currentTournamentWinnerName = championName
+		printConsole(mode .. ': winner ' .. championName)
+		if main.f_writeEndlessRandomObsCountdown ~= nil then
+			main.f_writeEndlessRandomObsCountdown()
+		end
+		for _ = 1, 180 do
+			if esc() then
+				break
+			end
+			refresh()
+		end
 	end
 	bgReset(motif[main.background].BGDef)
 	playBgm({source = "motif.title", interrupt = true})
@@ -4383,6 +4704,15 @@ if getCommandLineValue("-p1") ~= nil and getCommandLineValue("-p2") ~= nil then
 end
 
 main.f_loadingRefresh()
+
+if getCommandLineValue("-endlessrandom") ~= nil then
+	main.f_default()
+	main.menu.f = main.t_itemname.endlessrandom()
+	if main.menu.f ~= nil then
+		main.menu.f()
+	end
+	os.exit()
+end
 
 for mode, _ in pairs(main.t_tierTournamentModes or {}) do
 	if getCommandLineValue("-" .. mode) ~= nil then
