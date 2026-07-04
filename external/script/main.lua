@@ -4043,25 +4043,6 @@ function main.f_tournamentPool(tierLetter)
 	end
 	local pool = {}
 	local poolLimit = getCommandLineValue("-endlessrandomsmoke") ~= nil and 2 or 16
-	if #chars < poolLimit then
-		for _, order in pairs(orders) do
-			if type(order) == 'table' then
-				for _, ref in ipairs(order) do
-					local data = start.f_getCharData(ref)
-					if data ~= nil and data.char ~= 'randomselect' and data.hidden == 0 and not seen[ref] then
-						table.insert(chars, ref)
-						seen[ref] = true
-						if #chars >= poolLimit then
-							break
-						end
-					end
-				end
-				if #chars >= poolLimit then
-					break
-				end
-			end
-		end
-	end
 	for i = 1, math.min(poolLimit, #chars) do
 		table.insert(pool, chars[i])
 	end
