@@ -10271,6 +10271,16 @@ func triggerFunctions(l *lua.LState) {
 		l.Push(lua.LNumber(sys.debugWC.pos[2]))
 		return 1
 	})
+	luaRegister(l, "setPos", func(l *lua.LState) int {
+		if sys.debugWC != nil {
+			sys.debugWC.setPosX(float32(numArg(l, 1))+sys.cam.Pos[0], true)
+			sys.debugWC.setPosY(float32(numArg(l, 2)), true)
+			if !nilArg(l, 3) {
+				sys.debugWC.setPosZ(float32(numArg(l, 3)), true)
+			}
+		}
+		return 0
+	})
 	luaRegister(l, "power", func(*lua.LState) int {
 		l.Push(lua.LNumber(sys.debugWC.getPower()))
 		return 1
@@ -11092,6 +11102,16 @@ func triggerFunctions(l *lua.LState) {
 	luaRegister(l, "velZ", func(*lua.LState) int {
 		l.Push(lua.LNumber(sys.debugWC.vel[2]))
 		return 1
+	})
+	luaRegister(l, "setVel", func(l *lua.LState) int {
+		if sys.debugWC != nil {
+			sys.debugWC.vel[0] = float32(numArg(l, 1))
+			sys.debugWC.vel[1] = float32(numArg(l, 2))
+			if !nilArg(l, 3) {
+				sys.debugWC.vel[2] = float32(numArg(l, 3))
+			}
+		}
+		return 0
 	})
 	luaRegister(l, "win", func(*lua.LState) int {
 		l.Push(lua.LBool(sys.debugWC.win()))

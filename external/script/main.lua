@@ -699,12 +699,16 @@ function main.f_syncCharPaletteData(ref)
 	local changed = false
 	for row, ch in ipairs(main.t_selChars) do
 		if ch.playable and ch.char_ref == ref then
-			local oldPalCount = ch.pal and #ch.pal or 0
-			local oldDefaultCount = ch.pal_defaults and #ch.pal_defaults or 0
-			ch.pal = t_info.pal
-			ch.pal_defaults = t_info.pal_defaults
+			local oldPal = type(ch.pal) == 'table' and ch.pal or {}
+			local oldDefaults = type(ch.pal_defaults) == 'table' and ch.pal_defaults or {}
+			local newPal = type(t_info.pal) == 'table' and t_info.pal or oldPal
+			local newDefaults = type(t_info.pal_defaults) == 'table' and t_info.pal_defaults or oldDefaults
+			local oldPalCount = #oldPal
+			local oldDefaultCount = #oldDefaults
+			ch.pal = newPal
+			ch.pal_defaults = newDefaults
 			ch.pal_keymap = t_info.pal_keymap
-			if oldPalCount ~= #ch.pal or oldDefaultCount ~= #ch.pal_defaults then
+			if oldPalCount ~= #newPal or oldDefaultCount ~= #newDefaults then
 				changed = true
 			end
 		end
@@ -1702,6 +1706,53 @@ for i = 1, #main.t_selChars do
 	end
 end
 
+function main.f_disambiguateDuplicateCharacterNames()
+	local groups = {}
+	local order = {}
+	local function normalize(value)
+		return tostring(value or ''):gsub('^%s+', ''):gsub('%s+$', ''):lower()
+	end
+	local function labelFor(ch)
+		local label = tostring(ch.displayname or ch.name or ch.char or ''):gsub('^%s+', ''):gsub('%s+$', '')
+		if label == '' then
+			return nil
+		end
+		return label
+	end
+	for i = 1, #main.t_selChars do
+		local ch = main.t_selChars[i]
+		if ch ~= nil and ch.playable and ch.name ~= nil then
+			local label = labelFor(ch)
+			local key = normalize(label)
+			if key ~= '' then
+				if groups[key] == nil then
+					groups[key] = {label = label, chars = {}}
+					table.insert(order, key)
+				end
+				table.insert(groups[key].chars, ch)
+			end
+		end
+	end
+	for _, key in ipairs(order) do
+		local group = groups[key]
+		if #group.chars > 1 then
+			for idx, ch in ipairs(group.chars) do
+				if ch.originalName == nil then
+					ch.originalName = ch.name
+				end
+				if ch.originalDisplayName == nil then
+					ch.originalDisplayName = ch.displayname
+				end
+				local numbered = group.label .. ' ' .. tostring(idx)
+				ch.name = numbered
+				ch.displayname = numbered
+			end
+		end
+	end
+end
+
+main.f_disambiguateDuplicateCharacterNames()
+
 -- (Re)build list of characters allowed to be randomly selected. Must be called after any unlock/hidden state changes.
 main.t_randomChars = {}
 function main.f_updateRandomChars()
@@ -2548,10 +2599,58 @@ main.t_itemname = {
 		hook.run("main.t_itemname", t, item)
 		return start.f_selectMode
 	end,
+	['onevsall'] = function(t, item)
+		main.cpuSide[2] = true
+		main.motif.vsscreen = true
+		main.motif.victoryscreen = false
+		main.selectMenu[1] = true
+		main.selectMenu[2] = false
+		main.stageMenu = true
+		main.teamMenu[1].single = true
+		main.teamMenu[2].single = true
+		textImgSetText(motif.select_info.title.TextSpriteData, motif.select_info.title.text.onevsall or 'ONE VS ALL')
+		remapInput(1, getLastInputController())
+		remapInput(getLastInputController(), 1)
+		setGameMode('onevsall')
+		setHomeTeam(1)
+		hook.run("main.t_itemname", t, item)
+		return main.f_oneVsAll
+	end,
 }
-main.t_itemname.teamarcade = main.t_itemname.arcade
-main.t_itemname.teamversus = main.t_itemname.versus
-if gameOption('Debug.DumpLuaTables') then main.f_printTable(main.t_itemname, 'debug/t_mainItemname.txt') end
+	main.t_itemname.teamarcade = main.t_itemname.arcade
+	main.t_itemname.teamversus = main.t_itemname.versus
+	main.t_tierTournamentModes = {
+		ftiertournament = {tier = 'F', title = 'F-TIER TOURNAMENT'},
+		dtiertournament = {tier = 'D', title = 'D-TIER TOURNAMENT'},
+		ctiertournament = {tier = 'C', title = 'C-TIER TOURNAMENT'},
+		btiertournament = {tier = 'B', title = 'B-TIER TOURNAMENT'},
+		atiertournament = {tier = 'A', title = 'A-TIER TOURNAMENT'},
+		stiertournament = {tier = 'S', title = 'S-TIER TOURNAMENT'},
+		xtiertournament = {tier = 'X', title = 'X-TIER TOURNAMENT'},
+		ztiertournament = {tier = 'Z', title = 'Z-TIER TOURNAMENT'},
+		utiertournament = {tier = 'U', title = 'U-TIER TOURNAMENT'},
+	}
+	for mode, cfg in pairs(main.t_tierTournamentModes) do
+		local modeName = mode
+		local modeConfig = cfg
+		main.t_itemname[mode] = function(t, item)
+			main.cpuSide[1] = true
+			main.cpuSide[2] = true
+			main.motif.vsscreen = true
+			main.motif.victoryscreen = false
+			main.selectMenu[1] = false
+			main.selectMenu[2] = false
+			main.stageMenu = true
+			main.teamMenu[1].single = true
+			main.teamMenu[2].single = true
+			textImgSetText(motif.select_info.title.TextSpriteData, motif.select_info.title.text[modeName] or modeConfig.title)
+			setGameMode(modeName)
+			setHomeTeam(1)
+			hook.run("main.t_itemname", t, item)
+			return function() main.f_tierTournament(modeConfig.tier, modeName) end
+		end
+	end
+	if gameOption('Debug.DumpLuaTables') then main.f_printTable(main.t_itemname, 'debug/t_mainItemname.txt') end
 
 function main.f_deleteIP(item, t)
 	if t[item].itemname:match('^ip_') then
@@ -3493,6 +3592,281 @@ function main.f_demoStart()
 	fadeInInit(motif[main.group].fadein.FadeData)
 end
 
+function main.f_oneVsAll()
+	main.f_saveBaseRemapInput()
+	start.f_selectReset(true)
+	setMatchNo(1)
+	main.t_availableChars = main.f_tableCopy(main.t_orderChars.default or start.f_getOrderChars())
+	if not start.f_selectScreen() then
+		bgReset(motif[main.background].BGDef)
+		playBgm({source = "motif.title", interrupt = true})
+		fadeInInit(motif[main.group].fadein.FadeData)
+		return
+	end
+
+	local selected = start.p[1].t_selected[1]
+	local p1ref = selected and selected.ref
+	local p1data = p1ref and start.f_getCharData(p1ref)
+	if p1data == nil then
+		printConsole('onevsall: no valid P1 character selected')
+		return
+	end
+
+	local p1pal = selected.pal
+	local selectedStageListNo = stageListNo
+	main.cpuSide[1] = true
+	main.cpuSide[2] = true
+	local function pickOpponent()
+		for _ = 1, 80 do
+			local ref = start.f_randomChar(2)
+			if ref ~= nil and ref ~= p1ref and start.f_getCharData(ref) ~= nil then
+				return ref
+			end
+		end
+		return nil
+	end
+
+	while not esc() do
+		clearSelected()
+		resetGameParams()
+		stageListNo = selectedStageListNo
+		setMatchNo(math.max(1, matchNo()))
+		start.p[1].teamMode = 0
+		start.p[2].teamMode = 0
+		start.p[1].numChars = 1
+		start.p[2].numChars = 1
+		start.p[1].t_selected = {}
+		start.p[1].t_selTemp = {}
+		start.p[2].t_selected = {}
+		start.p[2].t_selTemp = {}
+		start.p[1].teamEnd = true
+		start.p[1].selEnd = true
+		start.p[2].teamEnd = true
+		start.p[2].selEnd = true
+		main.t_availableChars = main.f_tableCopy(main.t_orderChars.default or start.f_getOrderChars())
+
+		local p2ref = pickOpponent()
+		local p2data = p2ref and start.f_getCharData(p2ref)
+		if p2data == nil then
+			printConsole('onevsall: no random P2 characters available')
+			break
+		end
+
+		local ok = launchFight{
+			p1char = {p1data.char},
+			p2char = {p2data.char},
+			p1teammode = 'single',
+			p2teammode = 'single',
+			p1numchars = 1,
+			p2numchars = 1,
+			p1pal = p1pal,
+			p2pal = start.f_selectPal(p2ref),
+			ai = 8,
+			vsscreen = main.motif.vsscreen,
+			victoryscreen = false,
+			winscreen = false,
+			continue = false,
+		}
+		if ok == false then
+			printConsole('onevsall: recovered from aborted matchup')
+		end
+		clearColor(0, 0, 0)
+		refresh()
+	end
+
+	bgReset(motif[main.background].BGDef)
+	playBgm({source = "motif.title", interrupt = true})
+	fadeInInit(motif[main.group].fadein.FadeData)
+end
+
+function main.f_normalizeTournamentKey(value)
+	if value == nil then
+		return ''
+	end
+	local s = tostring(value):lower()
+	s = s:gsub('\\', '/')
+	s = s:gsub('^chars/', '')
+	s = s:gsub('%.def$', '')
+	s = s:gsub('^%s+', ''):gsub('%s+$', '')
+	return s
+end
+
+function main.f_tournamentTierIndex()
+	local out = {}
+	local function add(key, tier)
+		key = main.f_normalizeTournamentKey(key)
+		if key ~= '' and tier ~= nil and tostring(tier) ~= '' then
+			out[key] = tostring(tier)
+			local leaf = key:match('([^/]+)$')
+			if leaf ~= nil and leaf ~= '' then
+				out[leaf] = tostring(tier)
+			end
+		end
+	end
+	local function load(path)
+		local ok, data = pcall(jsonDecode, path)
+		if not ok or type(data) ~= 'table' then
+			return
+		end
+		if type(data.characters) == 'table' then
+			for key, info in pairs(data.characters) do
+				if type(info) == 'table' then
+					add(key, info.tier)
+				end
+			end
+		end
+		local roster = data.roster or data.characters
+		if type(roster) == 'table' then
+			for _, info in pairs(roster) do
+				if type(info) == 'table' then
+					for _, key in ipairs({info.key, info.token, info.name, info.displayName, info.originalName}) do
+						add(key, info.tier)
+					end
+					if type(info.aliases) == 'table' then
+						for _, key in ipairs(info.aliases) do
+							add(key, info.tier)
+						end
+					end
+				end
+			end
+		end
+	end
+	load('save/stats.json')
+	load('save/roster-data.json')
+	load('web/roster-data.json')
+	load('/home/lancero7777/code/LanceroMugen.com/src/Web/data/roster-data.json')
+	load('/home/lancero7777/code/LanceroMugen.com/LiveLancero/data/roster-data.json')
+	return out
+end
+
+function main.f_tournamentCharTier(ref, tierIndex)
+	local data = start.f_getCharData(ref)
+	if data == nil then
+		return nil
+	end
+	for _, key in ipairs({data.recordKey, data.char, data.def, data.name, data.displayname}) do
+		local tier = tierIndex[main.f_normalizeTournamentKey(key)]
+		if tier ~= nil then
+			return tier
+		end
+	end
+	return nil
+end
+
+function main.f_tournamentPool(tierLetter)
+	local tierIndex = main.f_tournamentTierIndex()
+	local chars = {}
+	local seen = {}
+	local orders = main.t_orderChars.default or start.f_getOrderChars()
+	for _, order in pairs(orders) do
+		if type(order) == 'table' then
+			for _, ref in ipairs(order) do
+				local data = start.f_getCharData(ref)
+				if data ~= nil and data.char ~= 'randomselect' and data.hidden == 0 and not seen[ref] then
+					local tier = main.f_tournamentCharTier(ref, tierIndex)
+					if tier ~= nil and tier:sub(1, 1):upper() == tierLetter:upper() then
+						table.insert(chars, ref)
+						seen[ref] = true
+					end
+				end
+			end
+		end
+	end
+	for i = #chars, 2, -1 do
+		local j = math.random(i)
+		chars[i], chars[j] = chars[j], chars[i]
+	end
+	local pool = {}
+	for i = 1, math.min(16, #chars) do
+		table.insert(pool, chars[i])
+	end
+	return pool, #chars
+end
+
+function main.f_tierTournament(tierLetter, mode)
+	main.f_saveBaseRemapInput()
+	start.f_selectReset(true)
+	setMatchNo(1)
+	main.cpuSide[1] = true
+	main.cpuSide[2] = true
+	local bracket, available = main.f_tournamentPool(tierLetter)
+	if #bracket < 16 then
+		printConsole(mode .. ': not enough ' .. tierLetter .. '-tier fighters for a 16 fighter tournament (' .. available .. ' found)')
+	else
+		printConsole(mode .. ': locked ' .. #bracket .. ' ' .. tierLetter .. '-tier fighters')
+	end
+	while #bracket > 1 and not esc() do
+		local nextRound = {}
+		for i = 1, #bracket, 2 do
+			local p1ref = bracket[i]
+			local p2ref = bracket[i + 1]
+			local p1data = start.f_getCharData(p1ref)
+			local p2data = start.f_getCharData(p2ref)
+			if p1data == nil or p2data == nil then
+				printConsole(mode .. ': skipped unresolved tournament fighter')
+				return
+			end
+			local winnerRef = nil
+			while winnerRef == nil and not esc() do
+				clearSelected()
+				resetGameParams()
+				start.p[1].teamMode = 0
+				start.p[2].teamMode = 0
+				start.p[1].numChars = 1
+				start.p[2].numChars = 1
+				start.p[1].t_selected = {}
+				start.p[1].t_selTemp = {}
+				start.p[2].t_selected = {}
+				start.p[2].t_selTemp = {}
+				start.p[1].teamEnd = true
+				start.p[1].selEnd = true
+				start.p[2].teamEnd = true
+				start.p[2].selEnd = true
+				main.t_availableChars = main.f_tableCopy(main.t_orderChars.default or start.f_getOrderChars())
+				local ok = launchFight{
+					p1char = {p1data.char},
+					p2char = {p2data.char},
+					p1teammode = 'single',
+					p2teammode = 'single',
+					p1numchars = 1,
+					p2numchars = 1,
+					p1pal = start.f_selectPal(p1ref),
+					p2pal = start.f_selectPal(p2ref),
+					ai = 8,
+					vsscreen = main.motif.vsscreen,
+					victoryscreen = false,
+					winscreen = false,
+					continue = false,
+				}
+				local winnerSide = getWinnerTeam()
+				if ok == false or winnerSide == -1 then
+					printConsole(mode .. ': tournament match aborted')
+					return
+				elseif winnerSide == 1 then
+					winnerRef = p1ref
+				elseif winnerSide == 2 then
+					winnerRef = p2ref
+				else
+					printConsole(mode .. ': draw, replaying tournament match')
+				end
+				clearColor(0, 0, 0)
+				refresh()
+			end
+			if winnerRef ~= nil then
+				table.insert(nextRound, winnerRef)
+			end
+		end
+		bracket = nextRound
+	end
+	if #bracket == 1 then
+		local champion = start.f_getCharData(bracket[1])
+		printConsole(mode .. ': winner ' .. (champion and champion.name or tostring(bracket[1])))
+	end
+	bgReset(motif[main.background].BGDef)
+	playBgm({source = "motif.title", interrupt = true})
+	fadeInInit(motif[main.group].fadein.FadeData)
+end
+
 --randomtest
 function main.f_randomtest()
 	while true do
@@ -4009,6 +4383,17 @@ if getCommandLineValue("-p1") ~= nil and getCommandLineValue("-p2") ~= nil then
 end
 
 main.f_loadingRefresh()
+
+for mode, _ in pairs(main.t_tierTournamentModes or {}) do
+	if getCommandLineValue("-" .. mode) ~= nil then
+		main.f_default()
+		main.menu.f = main.t_itemname[mode]()
+		if main.menu.f ~= nil then
+			main.menu.f()
+		end
+		os.exit()
+	end
+end
 
 if motif.attract_mode.enabled then
 	main.f_attractMode()

@@ -158,11 +158,11 @@ local function afkWatchdogClock()
 		if type(fn) == 'function' then
 			local ok, ret = pcall(fn)
 			if ok and type(ret) == 'number' then
-				return ret, afkStuckRoundResetSeconds * fps
+				return ret, afkStuckRoundResetSeconds * fps, fps
 			end
 		end
 	end
-	return os.time(), afkStuckRoundResetSeconds
+	return os.time(), afkStuckRoundResetSeconds, 1
 end
 
 local function afkQuantize(value, scale)
@@ -225,6 +225,52 @@ local function afkOutOfBounds(snap)
 		or snap.posY > 720
 end
 
+local function afkSetPlayerPosition(x, y, z)
+	if type(setPos) == 'function' then
+		setPos(x, y, z or 0)
+		return true
+	end
+	return false
+end
+
+local function afkSetPlayerVelocity(x, y, z)
+	if type(setVel) == 'function' then
+		setVel(x, y, z or 0)
+		return true
+	end
+	return false
+end
+
+local function afkRescueOutOfBoundsPlayer(p, data, now, fps)
+	if data.rescueCooldownUntil ~= nil and now < data.rescueCooldownUntil then
+		return false
+	end
+	local oldid = id()
+	local rescued = false
+	playerid(p)
+	if player(p) then
+		local x = -80
+		if p % 2 == 0 then
+			x = 80
+		end
+		rescued = afkSetPlayerPosition(x, 0, 0)
+		if rescued then
+			afkSetPlayerVelocity(0, 0, 0)
+			selfState(0)
+			if type(animExist) == 'function' and animExist(0) then
+				changeAnim(0)
+			end
+			data.rescueCooldownUntil = now + math.max(30, math.floor((fps or 60) / 2))
+			data.outOfBoundsSince = nil
+			data.signature = nil
+			data.stillSince = now
+			printConsole('antistuck: moved player ' .. tostring(p) .. ' back into stage')
+		end
+	end
+	playerid(oldid)
+	return rescued
+end
+
 local function afkRoundLifeSignature()
 	local ret = {}
 	for p = 1, 8 do
@@ -262,7 +308,7 @@ hook.add("loop", "afkStuckRoundReset", function()
 		return
 	end
 	local oldid = id()
-	local now, resetLimit = afkWatchdogClock()
+	local now, resetLimit, fps = afkWatchdogClock()
 	local roundLifeSignature = afkRoundLifeSignature()
 	local roundMovementSignature = afkRoundMovementSignature()
 	if afkNoDamageSince == nil then
@@ -293,10 +339,12 @@ hook.add("loop", "afkStuckRoundReset", function()
 				data.stunnedSince = nil
 			end
 			if afkOutOfBounds(snap) then
-				data.outOfBoundsSince = data.outOfBoundsSince or now
-				if now - data.outOfBoundsSince >= resetLimit then
-					afkResetRound(oldid)
-					return
+				if not afkRescueOutOfBoundsPlayer(p, data, now, fps) then
+					data.outOfBoundsSince = data.outOfBoundsSince or now
+					if now - data.outOfBoundsSince >= resetLimit then
+						afkResetRound(oldid)
+						return
+					end
 				end
 			else
 				data.outOfBoundsSince = nil
