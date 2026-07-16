@@ -36,8 +36,8 @@
 
 ## Follow-up
 
-- [ ] Prove the restored Android artifact lane on GitHub Actions
-- [ ] Prove at least one desktop artifact lane in the same diagnostic run
+- [x] Prove the restored Android artifact lane on GitHub Actions
+- [x] Prove Linux and macOS desktop artifact lanes in the same diagnostic run
 
 - [x] Decide whether `make installers` should become the primary entry point
 - [x] Decide whether the script should fail hard on missing screenpack assets or keep producing a partial package
