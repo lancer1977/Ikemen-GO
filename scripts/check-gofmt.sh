@@ -8,7 +8,15 @@ if ((${#go_files[@]} == 0)); then
   exit 0
 fi
 
-mapfile -t unformatted < <(gofmt -l "${go_files[@]}")
+gofmt_output="$(mktemp)"
+trap 'rm -f "${gofmt_output}"' EXIT
+
+if ! gofmt -l "${go_files[@]}" >"${gofmt_output}"; then
+  echo "gofmt could not parse or inspect the tracked Go files." >&2
+  exit 1
+fi
+
+mapfile -t unformatted <"${gofmt_output}"
 
 if ((${#unformatted[@]} > 0)); then
   echo "The following tracked Go files are not formatted with gofmt:" >&2

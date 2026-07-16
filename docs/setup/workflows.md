@@ -13,7 +13,8 @@ The workflow smoke matrix exists in two forms:
 - Windows lane: `self-hosted`, `windows`, `ikemen-windows`
 - Formatting validation lane: `self-hosted`, `linux`, `x64`, `pr-validation`,
   `ikemen-go`. This repository-scoped runner is for trusted same-repository
-  validation only; fork pull requests are not routed to it.
+  validation only. Fork pull requests run the same non-mutating check on
+  `ubuntu-latest` and are not routed to the private runner.
 
 ## Formatting validation
 
