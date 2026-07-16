@@ -33,6 +33,11 @@ on:
         type: boolean
         required: false
         default: true
+      publishRelease:
+        description: 'Publish the prepared artifacts as a GitHub Release.'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   checks: write
@@ -116,6 +121,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     needs: tag
     strategy:
+      fail-fast: false
       matrix:
         cfg:
           - runner_os: windows
@@ -199,16 +205,11 @@ jobs:
               build-essential pkg-config git yasm nasm curl ca-certificates libxmp-dev libsdl2-dev
           fi
           if [ "$RUNNER_OS" = "macOS" ]; then
-            # Avoid update, disable analytics, prefer taps over API, and retry.
+            # Use Homebrew's API-backed install path. Forcing tap mode can fail
+            # when hosted-runner tap trust metadata changes.
             export HOMEBREW_NO_ANALYTICS=1
             export HOMEBREW_NO_AUTO_UPDATE=1
-            export HOMEBREW_NO_INSTALL_FROM_API=1
-            brew update-reset || true
-            ( brew install --quiet pkg-config git nasm libxmp sdl2 molten-vk ) || (
-              echo "First attempt failed; retrying with API mode..." >&2
-              unset HOMEBREW_NO_INSTALL_FROM_API
-              brew install --quiet pkg-config git nasm libxmp sdl2 molten-vk
-            )
+            brew install --quiet pkg-config git nasm libxmp sdl2 molten-vk
           fi
 
       - name: Generate LICENSES.txt
@@ -486,7 +487,7 @@ jobs:
 
   release:
     name: publish release
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' && (github.event_name != 'workflow_dispatch' || github.event.inputs.publishRelease == 'true') }}
     needs: [tag, build]
     runs-on: ubuntu-latest
     steps:
