@@ -105,7 +105,7 @@ jobs:
           echo "buildTime=$(date '+%Y.%m.%d')" >> "$GITHUB_OUTPUT"
 
       - name: Move nightly tag to this commit
-        if: ${{ steps.meta.outputs.releaseKind == 'nightly' }}
+        if: ${{ steps.meta.outputs.releaseKind == 'nightly' && (github.event_name != 'workflow_dispatch' || github.event.inputs.publishRelease == 'true') }}
         shell: bash
         run: |
           set -euo pipefail
