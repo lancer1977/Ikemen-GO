@@ -88,7 +88,10 @@ jobs:
                [ "$ref_name" != "develop" ] && \
                [ "$ref_name" != "ci-test" ]; then
             version="$ref_name"
-            release_tag="$ref_name"
+            # Git branch names commonly contain '/'. Keep that out of archive
+            # names and diagnostic release tags so zip does not interpret the
+            # branch name as an output directory.
+            release_tag="${ref_name//\//-}"
             release_kind="branch"
           else
             version="nightly"

@@ -22,6 +22,7 @@
 - [x] Disable matrix fail-fast so Android failures do not cancel desktop evidence
 - [x] Remove Homebrew tap-forcing environment overrides
 - [x] Gate manual publication behind an explicit `publishRelease` input
+- [x] Sanitize branch names before using them in archive paths
 
 ## Validation
 
