@@ -154,6 +154,18 @@ ensure_go_env() {
 check_deps() {
 	local missing=()
 	need() { command -v "$1" >/dev/null 2>&1 || missing+=("$1"); }
+	local wants_local_ffmpeg=1
+
+	case "${BUILD_FFMPEG:-auto}" in
+		no)
+			wants_local_ffmpeg=0
+		;;
+		auto)
+			if have_ffmpeg_pc; then
+				wants_local_ffmpeg=0
+			fi
+		;;
+	esac
 
 	case "$OSTYPE" in
 		msys|cygwin)
@@ -202,13 +214,20 @@ check_deps() {
 			need gcc
 			need g++
 			need make
-			need nasm
-			need yasm
 			need go
+			if (( wants_local_ffmpeg )); then
+				need nasm
+				need yasm
+			fi
 			if ((${#missing[@]})); then
 				echo "ERROR: Missing tools: ${missing[*]}" >&2
-				echo "Install (Debian/Ubuntu):" >&2
-				echo "  sudo apt update && sudo apt install -y golang-go git pkg-config make nasm yasm build-essential libxmp-dev libsdl2-dev" >&2
+				if (( wants_local_ffmpeg )); then
+					echo "Install (Debian/Ubuntu):" >&2
+					echo "  sudo apt update && sudo apt install -y golang-go git pkg-config make nasm yasm build-essential libxmp-dev libsdl2-dev" >&2
+				else
+					echo "Install (Debian/Ubuntu):" >&2
+					echo "  sudo apt update && sudo apt install -y golang-go git pkg-config make build-essential libxmp-dev libsdl2-dev" >&2
+				fi
 				exit 1
 			fi
 		;;
