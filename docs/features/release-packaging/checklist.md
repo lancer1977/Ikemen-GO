@@ -18,6 +18,11 @@
 - [x] Add explicit `make deploy-local-linux` and `make deploy-local-windows` targets
 - [x] Align local staging with the release workflow runtime tree
 - [x] Add GitHub Actions workflow for self-hosted deploy
+- [x] Restore the tracked desktop and Android build toolchain deleted by `0c649765`
+- [x] Disable matrix fail-fast so Android failures do not cancel desktop evidence
+- [x] Remove Homebrew tap-forcing environment overrides
+- [x] Gate manual publication behind an explicit `publishRelease` input
+- [x] Sanitize branch names before using them in archive paths
 
 ## Validation
 
@@ -30,6 +35,9 @@
 - [x] Validate the stream-box test deploy root at `C:\\mugen`
 
 ## Follow-up
+
+- [x] Prove the restored Android artifact lane on GitHub Actions
+- [x] Prove Linux and macOS desktop artifact lanes in the same diagnostic run
 
 - [x] Decide whether `make installers` should become the primary entry point
 - [x] Decide whether the script should fail hard on missing screenpack assets or keep producing a partial package
