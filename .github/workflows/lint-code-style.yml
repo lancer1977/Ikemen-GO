@@ -1,33 +1,37 @@
+name: lint-code-style
+
 on:
   workflow_dispatch:
   push:
-    branches: [ develop, release ]
-  #pull_request_target:
-  #  branches: [ develop, release ]
+    branches: [main, develop, release]
+  pull_request:
+    branches: [main, develop, release]
 
-permissions: write-all
+permissions:
+  contents: read
 
-name: lint-code-style
 jobs:
   lint-code-style:
-    name: style linters
+    name: gofmt validation
     if: ${{ github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v7
 
-      - name: Setup Golang with cache
-        uses: magnetikonline/action-golang-cache@v5
+      - name: Set up Go
+        uses: actions/setup-go@v6
         with:
-          go-version: ~1.20
+          go-version-file: go.mod
+          cache: true
 
-      - name: Run linters
-        uses: wearerequired/lint-action@v2
-        with:
-          github_token: "${{ secrets.IKEMEN_TOKEN }}"
-          gofmt: true
-          continue_on_error: false
-          auto_fix: true
-          commit_message: "style: fix code style issues with ${linter}"
-          neutral_check_on_warning: true
+      - name: Verify tracked Go formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          unformatted="$(git ls-files -z '*.go' | xargs -0 -r gofmt -l)"
+          if [[ -n "$unformatted" ]]; then
+            echo "The following tracked Go files need gofmt:" >&2
+            printf '%s\n' "$unformatted" >&2
+            exit 1
+          fi
