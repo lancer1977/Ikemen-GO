@@ -1,33 +1,30 @@
+name: lint-code-style
+
 on:
   workflow_dispatch:
   push:
-    branches: [ develop, release ]
-  #pull_request_target:
-  #  branches: [ develop, release ]
+    branches: [develop, release]
+  pull_request:
+    branches: [develop, release]
 
-permissions: write-all
+permissions:
+  contents: read
 
-name: lint-code-style
 jobs:
   lint-code-style:
-    name: style linters
-    if: ${{ github.actor != 'dependabot[bot]' }}
-    runs-on: ubuntu-latest
+    name: Verify Go formatting
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-latest' || fromJSON('["self-hosted","linux","x64","pr-validation","ikemen-go"]') }}
     steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v7
-
-      - name: Setup Golang with cache
-        uses: magnetikonline/action-golang-cache@v5
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
-          go-version: ~1.20
+          persist-credentials: false
 
-      - name: Run linters
-        uses: wearerequired/lint-action@v2
+      - name: Set up Go from go.mod
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
-          github_token: "${{ secrets.IKEMEN_TOKEN }}"
-          gofmt: true
-          continue_on_error: false
-          auto_fix: true
-          commit_message: "style: fix code style issues with ${linter}"
-          neutral_check_on_warning: true
+          go-version-file: go.mod
+          cache: false
+
+      - name: Verify tracked Go files are formatted
+        run: ./scripts/check-gofmt.sh

@@ -11,6 +11,22 @@ The workflow smoke matrix exists in two forms:
 
 - Linux lane: `self-hosted`, `linux`, `ikemen-linux`
 - Windows lane: `self-hosted`, `windows`, `ikemen-windows`
+- Formatting validation lane: `self-hosted`, `linux`, `x64`, `pr-validation`,
+  `ikemen-go`. This repository-scoped runner is for trusted same-repository
+  validation only. Fork pull requests run the same non-mutating check on
+  `ubuntu-latest` and are not routed to the private runner.
+
+## Formatting validation
+
+Run the same non-mutating check used by `lint-code-style` locally:
+
+```bash
+./scripts/check-gofmt.sh
+```
+
+If it reports files, format those files with `gofmt -w` and rerun the check.
+The workflow has read-only repository permissions and does not commit or push
+changes.
 
 ## Local usage
 
