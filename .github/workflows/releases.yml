@@ -33,10 +33,14 @@ on:
         type: boolean
         required: false
         default: true
+      publishRelease:
+        description: 'Publish the prepared artifacts as a GitHub Release.'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
-  checks: write
-  contents: write
+  contents: read
 
 name: releases
 
@@ -49,6 +53,8 @@ jobs:
     name: prepare tag
     if: ${{ github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       version: ${{ steps.meta.outputs.version }}
       releaseTag: ${{ steps.meta.outputs.releaseTag }}
@@ -56,10 +62,11 @@ jobs:
       buildTime: ${{ steps.meta.outputs.buildTime }}
       #previousTag: ${{ steps.previousTag.outputs.tag }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       #- name: Get previous tag
       #  id: previousTag
@@ -70,20 +77,33 @@ jobs:
       - name: Set version
         id: meta
         shell: bash
+        env:
+          DISPATCH_TAG: ${{ github.event.inputs.tag }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
 
-          ref_name="${GITHUB_REF_NAME}"
+          ref_name="$REF_NAME"
+          dispatch_tag="${DISPATCH_TAG:-}"
 
-          if [ "${{ github.event.inputs.tag }}" != "" ]; then
-            version="${{ github.event.inputs.tag }}"
-            release_tag="${{ github.event.inputs.tag }}"
+          if [ -n "$dispatch_tag" ]; then
+            if [[ ! "$dispatch_tag" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([.-][A-Za-z0-9.-]+)?$ ]]; then
+              echo "Tag must be a semantic version containing only letters, digits, dots, and hyphens." >&2
+              exit 1
+            fi
+            version="$dispatch_tag"
+            release_tag="$dispatch_tag"
             release_kind="tagged"
-          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && \
+          elif [ "$EVENT_NAME" = "workflow_dispatch" ] && \
                [ "$ref_name" != "develop" ] && \
                [ "$ref_name" != "ci-test" ]; then
-            version="$ref_name"
-            release_tag="$ref_name"
+            release_tag="$(printf '%s' "$ref_name" | sed -E 's/[^A-Za-z0-9._-]+/-/g; s/^-+//; s/-+$//')"
+            if [ -z "$release_tag" ]; then
+              echo "Branch name does not produce a safe release artifact slug." >&2
+              exit 1
+            fi
+            version="$release_tag"
             release_kind="branch"
           else
             version="nightly"
@@ -96,16 +116,30 @@ jobs:
           echo "releaseKind=$release_kind" >> "$GITHUB_OUTPUT"
           echo "buildTime=$(date '+%Y.%m.%d')" >> "$GITHUB_OUTPUT"
 
+  move-tag:
+    name: move nightly tag
+    if: ${{ needs.tag.outputs.releaseKind == 'nightly' && (github.event_name != 'workflow_dispatch' || github.event.inputs.publishRelease == 'true') }}
+    needs: tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
       - name: Move nightly tag to this commit
-        if: ${{ steps.meta.outputs.releaseKind == 'nightly' }}
         shell: bash
+        env:
+          RELEASE_TAG: ${{ needs.tag.outputs.releaseTag }}
         run: |
           set -euo pipefail
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          tag="${{ steps.meta.outputs.releaseTag }}"
+          tag="$RELEASE_TAG"
 
           git fetch --force --tags origin
           git tag -fa "$tag" "$GITHUB_SHA" -m "$tag: $GITHUB_SHA"
@@ -115,7 +149,10 @@ jobs:
     name: prepare release
     if: ${{ github.actor != 'dependabot[bot]' }}
     needs: tag
+    permissions:
+      contents: read
     strategy:
+      fail-fast: false
       matrix:
         cfg:
           - runner_os: windows
@@ -152,12 +189,13 @@ jobs:
             build_target: Android
     runs-on: ${{ fromJSON(matrix.cfg.runs_on) }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           ref: ${{ github.sha }}
+          persist-credentials: false
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: '1.20.x'
           cache: true
@@ -167,7 +205,7 @@ jobs:
 
       - name: Setup MSYS2 (Windows)
         if: ${{ matrix.cfg.runner_os == 'windows' }}
-        uses: msys2/setup-msys2@v2
+        uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2
         with:
           msystem: MINGW64
           update: true
@@ -185,7 +223,7 @@ jobs:
             mingw-w64-x86_64-yasm
             mingw-w64-x86_64-libxmp
       - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.1
+        uses: humbletim/setup-vulkan-sdk@c25f41106918cde0bf347e6f201277392b3a9e9d # v1.2.1
         with:
           vulkan-query-version: 1.4.304.1
           vulkan-components: Vulkan-Headers, Vulkan-Loader
@@ -199,16 +237,11 @@ jobs:
               build-essential pkg-config git yasm nasm curl ca-certificates libxmp-dev libsdl2-dev
           fi
           if [ "$RUNNER_OS" = "macOS" ]; then
-            # Avoid update, disable analytics, prefer taps over API, and retry.
+            # Use Homebrew's API-backed install path. Forcing tap mode can fail
+            # when hosted-runner tap trust metadata changes.
             export HOMEBREW_NO_ANALYTICS=1
             export HOMEBREW_NO_AUTO_UPDATE=1
-            export HOMEBREW_NO_INSTALL_FROM_API=1
-            brew update-reset || true
-            ( brew install --quiet pkg-config git nasm libxmp sdl2 molten-vk ) || (
-              echo "First attempt failed; retrying with API mode..." >&2
-              unset HOMEBREW_NO_INSTALL_FROM_API
-              brew install --quiet pkg-config git nasm libxmp sdl2 molten-vk
-            )
+            brew install --quiet pkg-config git nasm libxmp sdl2 molten-vk
           fi
 
       - name: Generate LICENSES.txt
@@ -358,6 +391,9 @@ jobs:
         if: ${{ matrix.cfg.runner_os != 'android' || (github.event_name != 'workflow_dispatch' || github.event.inputs.buildAndroidApk != 'false') }}
         id: artifacts
         shell: bash
+        env:
+          RELEASE_KIND: ${{ needs.tag.outputs.releaseKind }}
+          RELEASE_TAG: ${{ needs.tag.outputs.releaseTag }}
         run: |
           echo "Preparing files for deployment"
           mkdir -p deploy
@@ -373,11 +409,11 @@ jobs:
             cp -av LICENSES.txt deploy/ 2>/dev/null || true
 
             cd deploy
-            if [ "${{ needs.tag.outputs.releaseKind }}" = "nightly" ]; then
+            if [ "$RELEASE_KIND" = "nightly" ]; then
               ARTIFACT_NAME=Ikemen_GO-dev-android.zip
               echo "artifact=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
             else
-              ARTIFACT_NAME=Ikemen_GO-${{ needs.tag.outputs.releaseTag }}-android.zip
+              ARTIFACT_NAME="Ikemen_GO-${RELEASE_TAG}-android.zip"
               echo "artifact=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
             fi
             zip -r ../$ARTIFACT_NAME *
@@ -447,11 +483,11 @@ jobs:
           EOF
           fi
 
-          if [ "${{ needs.tag.outputs.releaseKind }}" = "nightly" ]; then
+          if [ "$RELEASE_KIND" = "nightly" ]; then
             ARTIFACT_NAME=Ikemen_GO-dev-${{ matrix.cfg.runner_os }}.zip
             echo "artifact=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
           else
-            ARTIFACT_NAME=Ikemen_GO-${{ needs.tag.outputs.releaseTag }}-${{ matrix.cfg.runner_os }}.zip
+            ARTIFACT_NAME="Ikemen_GO-${RELEASE_TAG}-${{ matrix.cfg.runner_os }}.zip"
             echo "artifact=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
           fi
           if [ "$RUNNER_OS" = "Windows" ]; then
@@ -478,7 +514,7 @@ jobs:
 
       - name: Upload release artifacts
         if: ${{ steps.artifacts.outputs.artifact != '' }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: release-${{ matrix.cfg.runner_os }}
           path: release-files/*
@@ -486,12 +522,14 @@ jobs:
 
   release:
     name: publish release
-    if: ${{ github.actor != 'dependabot[bot]' }}
-    needs: [tag, build]
+    if: ${{ always() && github.actor != 'dependabot[bot]' && (github.event_name != 'workflow_dispatch' || github.event.inputs.publishRelease == 'true') && needs.tag.result == 'success' && needs.build.result == 'success' && (needs.move-tag.result == 'success' || needs.move-tag.result == 'skipped') }}
+    needs: [tag, move-tag, build]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Download release artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           pattern: release-*
           path: release-assets
@@ -507,7 +545,7 @@ jobs:
         if: ${{ needs.tag.outputs.releaseKind == 'nightly' }}
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.IKEMEN_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
@@ -520,7 +558,7 @@ jobs:
 
       - name: Update dev release
         if: ${{ needs.tag.outputs.releaseKind == 'nightly' }}
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
@@ -549,7 +587,7 @@ jobs:
 
       - name: Create Release
         if: ${{ needs.tag.outputs.releaseKind != 'nightly' }}
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
