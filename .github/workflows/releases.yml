@@ -42,7 +42,7 @@ name: releases
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || 'nightly' }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   tag:

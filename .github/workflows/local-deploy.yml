@@ -17,6 +17,10 @@ on:
         required: true
         default: /mnt/syn1/games/Ikemen
 
+concurrency:
+  group: ikemen-local-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   linux:
     name: Deploy Linux installer
