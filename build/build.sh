@@ -92,6 +92,9 @@ FFMPEG_REV="${FFMPEG_REV:-release/7.1}"
 # Always default to build/ffmpeg under the repo root (absolute path).
 FFMPEG_PREFIX="${FFMPEG_PREFIX:-$REPO_ROOT/$BUILDDIR/ffmpeg}"
 BUILD_FFMPEG="${BUILD_FFMPEG:-auto}"   # auto|yes|no
+# Native libxmp support is opt-in.  The default build uses sound_xm_stub.go;
+# set BUILD_LIBXMP=1 to require the headers/library and compile with the tag.
+BUILD_LIBXMP="${BUILD_LIBXMP:-0}"
 
 # ---- App metadata (overridden by CI)
 APP_VERSION="${APP_VERSION:-nightly}"
@@ -457,8 +460,8 @@ function varLinux() {
 	binName="Ikemen_GO_Linux"
 }
 function varLinuxARM() {
-	export GOOS=linux
-	export GOARCH=arm64
+	# Keep the cross target explicit even when invoked from an amd64 host.
+	export GOOS=linux GOARCH=arm64
 	binName="Ikemen_GO_LinuxARM"
 }
 function varAndroid() {
@@ -497,12 +500,47 @@ function ensure_pkg_config_path() {
 	fi
 }
 
+function configure_libxmp() {
+	if [[ "$BUILD_LIBXMP" == "1" ]]; then
+		require_libxmp
+		case " ${GOFLAGS:-} " in
+			*" -tags=libxmp "*) ;;
+			*) export GOFLAGS="${GOFLAGS:-} -tags=libxmp" ;;
+		esac
+	fi
+}
+
+function pkg_modules() {
+	local modules="libavformat libavcodec libavutil libswscale libswresample libavfilter sdl2"
+	[[ "$BUILD_LIBXMP" == "1" ]] && modules+=" libxmp"
+	printf '%s' "$modules"
+}
+
+function ffmpeg_target_key() {
+	printf '%s|%s|%s|%s|%s' "$GOOS" "$GOARCH" "${FFMPEG_PREFIX:-}" "${ANDROID_DEPS_PATH:-}" "$FFMPEG_REV"
+}
+
+function ffmpeg_install_is_valid() {
+	local prefix="$FFMPEG_PREFIX" stamp="$FFMPEG_SRCDIR/.ikemen-build-stamp" pcdir
+	[[ "$GOOS" == "android" ]] && prefix="$ANDROID_DEPS_PATH"
+	pcdir="$prefix/lib/pkgconfig"
+	[[ -f "$stamp" ]] && [[ "$(cat "$stamp")" == "$(ffmpeg_target_key)" ]] || return 1
+	for module in libavformat libavcodec libavutil libswresample libswscale libavfilter; do
+		[[ -f "$pcdir/$module.pc" ]] || return 1
+	done
+}
+
 function build_ffmpeg() {
-	# check $FFMPEG_SRCDIR first so we don't build if sources are already there (e.g. from a previous build or manual clone)
-	if [[ -d "$FFMPEG_SRCDIR" ]]; then
-		echo "==> FFmpeg sources already exist in $FFMPEG_SRCDIR, skipping clone and build (delete that directory to force rebuild)"
+	# The checkout is shared by targets, so only skip when the installed libraries
+	# and target stamp match this exact OS/arch/prefix combination.
+	if [[ -d "$FFMPEG_SRCDIR" ]] && ffmpeg_install_is_valid; then
+		echo "==> FFmpeg already built for $(ffmpeg_target_key), reusing installed libraries"
 		ensure_pkg_config_path
 		return 0
+	fi
+	if [[ -d "$FFMPEG_SRCDIR" ]]; then
+		echo "==> FFmpeg cache does not match $(ffmpeg_target_key); rebuilding for this target"
+		rm -rf "$FFMPEG_SRCDIR"
 	fi
 	echo "==> Building minimal FFmpeg to $FFMPEG_PREFIX (sources in $FFMPEG_SRCDIR)"
 	mkdir -p "$BUILDDIR"
@@ -587,6 +625,7 @@ function build_ffmpeg() {
 	fi
 	echo "==> FFmpeg pkg-config files installed to: $pcdir"
 	ls -l "$pcdir" || true
+	printf '%s' "$(ffmpeg_target_key)" > "$FFMPEG_SRCDIR/.ikemen-build-stamp"
 	popd >/dev/null
 }
 
@@ -1012,14 +1051,14 @@ function build() {
 	else
 		maybe_build_ffmpeg
 		export PKG_CONFIG="${PKG_CONFIG:-pkg-config}"
-		# Ensure libxmp is present
-		require_libxmp
+		configure_libxmp
 		# Ensure SDL2 is present
 		require_sdl2
 		# Pull dependency flags from pkg-config (FFmpeg + libxmp + SDL2)
-		export CGO_CFLAGS="$($PKG_CONFIG --cflags libavformat libavcodec libavutil libswscale libswresample libavfilter libxmp sdl2) ${CGO_CFLAGS:-}"
+		local modules; modules="$(pkg_modules)"
+		export CGO_CFLAGS="$($PKG_CONFIG --cflags $modules) ${CGO_CFLAGS:-}"
 		local deps_libs
-		deps_libs="$($PKG_CONFIG --libs libavformat libavcodec libavutil libswscale libswresample libavfilter libxmp sdl2)"
+		deps_libs="$($PKG_CONFIG --libs $modules)"
 		# RPATH for local libs on *nix; macOS adds rpath to bundle/exec path
 		if [[ "$GOOS" == "linux" ]]; then
 			export CGO_LDFLAGS="${deps_libs} -lpthread -lm -ldl -lz -Wl,-rpath,\$ORIGIN -Wl,-rpath,\$ORIGIN/lib ${CGO_LDFLAGS:-}"
@@ -1059,14 +1098,14 @@ function buildWin() {
 	stage_windows_resources
 	maybe_build_ffmpeg
 	export PKG_CONFIG="${PKG_CONFIG:-pkg-config}"
-	# Ensure libxmp is present
-	require_libxmp
+	configure_libxmp
 	# Ensure SDL2 is present
 	require_sdl2
 	# Pull dependency flags from pkg-config (FFmpeg + libxmp + SDL2)
-	export CGO_CFLAGS="$($PKG_CONFIG --cflags libavformat libavcodec libavutil libswscale libswresample libavfilter libxmp sdl2) ${CGO_CFLAGS:-}"
+	local modules; modules="$(pkg_modules)"
+	export CGO_CFLAGS="$($PKG_CONFIG --cflags $modules) ${CGO_CFLAGS:-}"
 	local deps_libs
-	deps_libs="$($PKG_CONFIG --libs libavformat libavcodec libavutil libswscale libswresample libavfilter libxmp sdl2)"
+	deps_libs="$($PKG_CONFIG --libs $modules)"
 	create_delay_import_libs_windows
 	# Prefer our delay-libs first so -lavcodec resolves delay-load flavor
 	export CGO_LDFLAGS="-L$PWD/$DELAYLIB_DIR ${deps_libs} ${CGO_LDFLAGS:-}"
@@ -1252,9 +1291,8 @@ function bundle_shared_libs() {
 		echo "==> Bundling Android dependencies from $ANDROID_DEPS_PATH..."
 		cp -av "$ANDROID_DEPS_PATH"/lib/*.so* "$dest_lib/" 2>/dev/null || true
 	fi
-	# Always try to bundle libxmp for portable runtime on Linux/macOS.
-	# (Windows and Android were handled above.)
-	if [[ "$GOOS" != "windows" && "$GOOS" != "android" ]]; then
+	# Bundle optional libxmp only when the native build was requested.
+	if [[ "$BUILD_LIBXMP" == "1" && "$GOOS" != "windows" && "$GOOS" != "android" ]]; then
 		# Prefer pkg-config to locate the correct lib directory.
 		local pc libdir libdir_sdl2
 		pc="${PKG_CONFIG:-pkg-config}"
