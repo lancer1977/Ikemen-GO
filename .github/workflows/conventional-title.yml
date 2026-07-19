@@ -6,6 +6,11 @@ on:
 permissions: write-all
 
 name: conventional-title
+
+concurrency:
+  group: ikemen-conventional-title-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   conventional-title:
     name: PR title

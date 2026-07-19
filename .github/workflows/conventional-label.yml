@@ -6,6 +6,11 @@ on:
 permissions: write-all
 
 name: conventional-release-labels
+
+concurrency:
+  group: ikemen-conventional-label-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   label:
     name: PR label
