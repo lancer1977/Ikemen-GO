@@ -18,7 +18,7 @@ on:
         default: /mnt/syn1/games/Ikemen
 
 concurrency:
-  group: ikemen-local-deploy-${{ github.ref }}
+  group: ikemen-local-deploy-${{ github.ref }}-${{ github.event.inputs.target }}-${{ github.event.inputs.output_root }}
   cancel-in-progress: false
 
 jobs:
