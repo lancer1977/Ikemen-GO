@@ -15,14 +15,6 @@ Follow the closest `AGENTS.md` first, then the workspace-root `AGENTS.md` when t
 - Preserve existing patterns unless there is a strong reason to change them.
 - If this repo participates in portfolio monitoring, treat the Dev Forge Work Matrix as the operator-facing control surface; keep repo-local current-work notes short and avoid duplicating portfolio state in multiple places.
 
-
-## Hermes Kanban First
-
-- For any new slice, backlog item, generated card pack, or DreadBreadcrumb follow-up, create or identify the Hermes Kanban card first.
-- Repo-local docs (`00_agile/`, `docs/roadmaps/`, `docs/features/`, `CURRENT-WORK.md`) are tracking mirrors: they should link back to the Hermes `t_*` card and may keep local doc-card IDs for grouping, but they are not the execution source of truth.
-- When planning broad work, create a Hermes umbrella/planner card before materializing local generated cards. Promote only the next safe slice(s) to ready; leave broad backlogs in triage/blocked until scoped.
-- Every local card row or markdown backlog entry should include `Hermes Kanban: t_*` once the live card exists, or `Hermes Kanban: pending promotion` if it is only a parked local breadcrumb.
-
 ## Validation
 
 - Prefer creating or updating unit tests when they are the right validation surface.
@@ -59,8 +51,8 @@ Follow the closest `AGENTS.md` first, then the workspace-root `AGENTS.md` when t
 
 For DevOps, infrastructure, deployment, security, GitOps, and service work:
 
-1. GitHub is authoritative for Issues, PRs, CI, reviews, merges, releases, and delivery state. Hermes Kanban is the execution queue only.
-2. One GitHub Issue plus one active Hermes Kanban card should normally produce one PR directly to `main`.
+1. GitHub is authoritative for Issues, PRs, CI, reviews, merges, releases, and delivery state, and is the execution queue.
+2. One GitHub Issue should normally produce one PR directly to `main`.
 3. Before branch work or a PR, fetch `origin/main` and reconcile against the current remote default branch. Do not build branch-on-branch PR stacks unless an explicit integration owner and final target are stated.
 4. Do not merge, deploy, close issues, rotate secrets, or claim production success unless the task explicitly authorizes it and verification evidence exists.
 5. If branches diverge, stop merging the stack. Create one integration branch from current `origin/main`, resolve semantic conflicts deliberately, run tests, and open one replacement PR to `main`.
