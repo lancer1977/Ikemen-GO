@@ -1,0 +1,49 @@
+name: go-test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop, release]
+  pull_request:
+    branches: [develop, release]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ikemen-go-test-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go-test:
+    name: Run Go tests
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-latest' || fromJSON('["self-hosted","linux","x64","pr-validation","ikemen-go"]') }}
+    env:
+      GOEXPERIMENT: arenas
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Go from go.mod
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      # go test/go vet compile the module (cgo bindings to SDL2/OpenGL/GTK/
+      # FFmpeg), so the native headers documented in README.md /
+      # scripts/install-linux-build-deps.sh must be present first. The
+      # self-hosted "ikemen-go" runner already has these pre-provisioned;
+      # GitHub-hosted runners (used for fork PRs, see runs-on above) do not,
+      # so only install there.
+      - name: Install native build dependencies
+        if: runner.environment == 'github-hosted'
+        run: ./scripts/install-linux-build-deps.sh
+
+      - name: Run Go tests
+        run: go test ./...
+
+      - name: Run go vet
+        run: go vet ./...
