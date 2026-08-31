@@ -32,6 +32,16 @@ jobs:
           go-version-file: go.mod
           cache: false
 
+      # go test/go vet compile the module (cgo bindings to SDL2/OpenGL/GTK/
+      # FFmpeg), so the native headers documented in README.md /
+      # scripts/install-linux-build-deps.sh must be present first. The
+      # self-hosted "ikemen-go" runner already has these pre-provisioned;
+      # GitHub-hosted runners (used for fork PRs, see runs-on above) do not,
+      # so only install there.
+      - name: Install native build dependencies
+        if: runner.environment == 'github-hosted'
+        run: ./scripts/install-linux-build-deps.sh
+
       - name: Run Go tests
         run: go test ./...
 
