@@ -20,6 +20,13 @@ jobs:
     runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-latest' || fromJSON('["self-hosted","linux","x64","pr-validation","ikemen-go"]') }}
     env:
       GOEXPERIMENT: arenas
+      # This job's tests import cgo bindings (SDL2/OpenGL/GTK/FFmpeg), so cgo
+      # must be enabled. The self-hosted "ikemen-go" runner is a persistent
+      # machine shared across jobs; a prior job's `go env -w CGO_ENABLED=0`
+      # (or similar) can leak into this one via the persisted go env config.
+      # Setting it explicitly here as a real environment variable overrides
+      # any such persisted setting for this job, regardless of runner state.
+      CGO_ENABLED: 1
     steps:
       - name: Check out repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
