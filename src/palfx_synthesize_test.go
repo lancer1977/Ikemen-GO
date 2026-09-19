@@ -45,13 +45,15 @@ func TestPalFXSynthesize(t *testing.T) {
 			eInvertall: false,
 		}
 		pfx := &PalFX{
-			eAdd:        [3]int32{10, -20, 300},
-			eMul:        [3]int32{64, 32, 16},
-			eHue:        3,
-			eColor:      0.5,
-			eInvertall:  true,
-			invertall:   true,
-			invertblend: 0,
+			PalFXDef: PalFXDef{
+				invertall:   true,
+				invertblend: 0,
+			},
+			eAdd:       [3]int32{10, -20, 300},
+			eMul:       [3]int32{64, 32, 16},
+			eHue:       3,
+			eColor:     0.5,
+			eInvertall: true,
 		}
 		pf.synthesize(pfx, TT_sub, [2]int32{0, 0})
 		if pf.eAdd != [3]int32{90, 80, 0} {
@@ -67,21 +69,25 @@ func TestPalFXSynthesize(t *testing.T) {
 
 	t.Run("invertblend_remap", func(t *testing.T) {
 		base := &PalFX{
+			PalFXDef: PalFXDef{
+				invertall:   true,
+				invertblend: 1,
+			},
 			eAdd:        [3]int32{0, 0, 0},
 			eMul:        [3]int32{256, 256, 256},
 			eColor:      1,
 			eHue:        0,
 			eInvertall:  true,
-			invertall:   true,
-			invertblend: 1,
 		}
 		other := &PalFX{
+			PalFXDef: PalFXDef{
+				invertall:   true,
+				invertblend: 1,
+			},
 			eAdd:         [3]int32{0, 0, 0},
 			eMul:         [3]int32{256, 256, 256},
 			eInvertall:   true,
 			eInvertblend: 2,
-			invertall:    true,
-			invertblend:  1,
 		}
 		base.synthesize(other, TT_add, [2]int32{1, 1})
 		if base.eInvertblend != 2 || !base.eInvertall {

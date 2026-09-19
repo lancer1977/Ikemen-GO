@@ -68,9 +68,11 @@ func TestCameraBounds_HonorEnableDebugAndClamp(t *testing.T) {
 	sys.tickCount = 1
 
 	c := &Camera{
+		stageCamera: stageCamera{
+			zoomin: 3,
+		},
 		ZoomEnable: true,
 		MinScale:   1.5,
-		zoomin:     3,
 	}
 	if got := c.ScaleBound(2, 4); got != 2 {
 		t.Fatalf("ScaleBound enabled = %v, want 2", got)
@@ -103,10 +105,12 @@ func TestCameraBounds_HonorEnableDebugAndClamp(t *testing.T) {
 
 func TestCameraBaseScaleAndGroundLevel(t *testing.T) {
 	c := &Camera{
-		ztopscale:            1.75,
-		zoff:                 240,
-		aspectcorrection:     12,
-		zoomanchorcorrection: 8,
+		stageCamera: stageCamera{
+			ztopscale:            1.75,
+			aspectcorrection:     12,
+			zoomanchorcorrection: 8,
+		},
+		zoff: 240,
 	}
 	if got := c.BaseScale(); got != 1.75 {
 		t.Fatalf("BaseScale() = %v, want 1.75", got)

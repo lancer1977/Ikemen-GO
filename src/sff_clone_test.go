@@ -25,7 +25,7 @@ func TestSffGetSpriteAndCloneSpriteWithPal(t *testing.T) {
 	if got == src {
 		t.Fatal("cloneSpriteWithPal should copy the sprite value")
 	}
-	if got.Pal == src.Pal {
+	if len(got.Pal) == len(src.Pal) && len(got.Pal) > 0 && &got.Pal[0] == &src.Pal[0] {
 		t.Fatal("cloneSpriteWithPal should deep-copy the palette")
 	}
 	if len(got.Pal) != 3 || got.Pal[0] != 9 || got.Pal[2] != 7 {
