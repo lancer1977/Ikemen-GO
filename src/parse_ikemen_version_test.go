@@ -6,7 +6,7 @@ func TestParseIkemenVersion_ArrayParserDoesNotStripNonNumericSuffixes(t *testing
 	// DEFECT: The array parser stops when it encounters a non-numeric character in a segment,
 	// so "1.02.3-beta+build.7" yields [1, 2, 0] instead of [1, 2, 3].
 	// The float parser handles suffixes correctly via regex stripping.
-	// This is a known engine defect that should be tracked in an issue.
+	// Tracked as lancer1977/Ikemen-GO#14.
 	ver, verF := ParseIkemenVersion("1.02.3-beta+build.7")
 	if ver != [3]uint16{1, 2, 0} {
 		t.Fatalf("ver = %#v, want %#v", ver, [3]uint16{1, 2, 0})

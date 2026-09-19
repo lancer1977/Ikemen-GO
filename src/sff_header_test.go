@@ -74,7 +74,7 @@ func TestSffHeaderRead(t *testing.T) {
 			uint32(13),
 			uint32(14),
 			uint32(15),
-			uint32(0),  // dummy between lofs and tofs
+			uint32(0), // dummy between lofs and tofs
 			uint32(16),
 		} {
 			if err := binary.Write(&buf, binary.LittleEndian, v); err != nil {

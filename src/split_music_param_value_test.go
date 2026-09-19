@@ -10,8 +10,11 @@ func TestSplitMusicParamValue(t *testing.T) {
 	if path != "sound/title.ogg" {
 		t.Fatalf("splitMusicParamValue path = %q", path)
 	}
-	// splitMusicParamValue uses strings.Fields() which splits on whitespace but does not
-	// strip commas, so commas between parameters appear as separate entries in extras.
+	// DEFECT: splitMusicParamValue tokenises with strings.Fields(), which splits on
+	// whitespace only, so commas survive as standalone tokens. expandMusicKV then
+	// consumes those tokens positionally as volume/loopstart/loopend, and Atoi(",")
+	// is 0 -- a comma-separated music line plays silently instead of at the default
+	// volume of 100. Tracked as lancer1977/Ikemen-GO#16.
 	if !reflect.DeepEqual(extras, []string{",", "loop=1", ",", "vol=80"}) {
 		t.Fatalf("splitMusicParamValue extras = %#v", extras)
 	}

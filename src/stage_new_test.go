@@ -1,7 +1,9 @@
 package main
 
-import ("math"
-	"testing")
+import (
+	"math"
+	"testing"
+)
 
 func TestNewStage(t *testing.T) {
 	s := newStage("stages/test.def")
@@ -20,9 +22,12 @@ func TestNewStage(t *testing.T) {
 	if !math.IsNaN(float64(s.scale[0])) || !math.IsNaN(float64(s.scale[1])) {
 		t.Fatalf("newStage scale should be NaN, got %#v", s.scale)
 	}
-	// newStageProps initializes StageProps with roundpos=false (the zero value for bool)
-	// so the struct will equal StageProps{} - just verify roundpos is explicitly false
-	if s.stageprops.roundpos != false {
-		t.Fatalf("newStage stageprops.roundpos should be false, got %#v", s.stageprops)
+	// StageProps currently holds a single bool that newStageProps sets to false,
+	// so a correctly initialised value is indistinguishable from the zero value.
+	// Asserting equality with newStageProps() rather than with a hand-written
+	// zero value keeps this honest: if a field with a non-zero default is added,
+	// this starts checking something real instead of silently staying true.
+	if s.stageprops != newStageProps() {
+		t.Fatalf("newStage stageprops = %#v, want %#v", s.stageprops, newStageProps())
 	}
 }

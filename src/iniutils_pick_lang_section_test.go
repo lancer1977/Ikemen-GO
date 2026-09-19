@@ -7,7 +7,8 @@ import (
 )
 
 func TestPickLangSection(t *testing.T) {
-	t.Parallel()
+	// Not parallel: this test mutates the package-level sys, which every test in
+	// this package shares.
 
 	oldLang := sys.cfg.Config.Language
 	sys.cfg.Config.Language = "pt"

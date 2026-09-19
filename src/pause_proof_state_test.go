@@ -20,7 +20,7 @@ func TestUpdatePauseProof_AdvancesThroughCapturePhases(t *testing.T) {
 		},
 	}
 	s.fightScreen.active = true
-	s.fightScreen.round = &FightScreenRound{}  // Ensure round is set before copying to sys
+	s.fightScreen.round = &FightScreenRound{} // Ensure round is set before copying to sys
 	s.intro = 0
 	s.maxRoundTime = 180
 	// Set the -pauseproof flag to enable the pause proof system

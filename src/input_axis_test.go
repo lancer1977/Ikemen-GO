@@ -3,7 +3,8 @@ package main
 import "testing"
 
 func TestCheckAxisForDpad(t *testing.T) {
-	t.Parallel()
+	// Not parallel: this test mutates the package-level sys, which every test in
+	// this package shares.
 
 	prevSys := sys
 	prevLUT := ButtonToStringLUT
@@ -41,7 +42,8 @@ func TestCheckAxisForDpad(t *testing.T) {
 }
 
 func TestCheckAxisForTrigger(t *testing.T) {
-	t.Parallel()
+	// Not parallel: this test mutates the package-level sys, which every test in
+	// this package shares.
 
 	prevLUT := ButtonToStringLUT
 	defer func() { ButtonToStringLUT = prevLUT }()

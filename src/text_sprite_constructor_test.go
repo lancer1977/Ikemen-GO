@@ -20,10 +20,40 @@ func TestNewTextSpriteInitializesDefaults(t *testing.T) {
 	if ts.palfx == nil {
 		t.Fatal("expected palfx to be initialized")
 	}
-	// DEFECT: loadDefaults does ts.params[:0] without checking if params is nil,
-	// which should panic for fresh TextSprite. Production code leaves params as nil.
-	// This should be fixed in font.go loadDefaults to initialize params to make([]interface{}, 0)
+	// loadDefaults reslices params to params[:0] so a recycled TextSprite keeps
+	// its backing array across a Clear(). Slicing a nil slice is legal and yields
+	// nil, so a freshly constructed sprite simply has no backing array yet. nil is
+	// a usable empty slice here -- appending to it works -- so this is the intended
+	// outcome, not a missing initialisation.
 	if ts.params != nil {
-		t.Fatalf("expected params to be nil due to production bug, got %#v", ts.params)
+		t.Fatalf("a fresh TextSprite has no params backing array yet, got %#v", ts.params)
+	}
+}
+
+// The point of the params[:0] reslice in loadDefaults is reuse: clearing a
+// sprite that already accumulated params must drop the contents while keeping
+// the allocation. Without this the reslice would be pointless and a plain nil
+// assignment would do.
+func TestTextSpriteClearEmptiesParamsButKeepsBackingArray(t *testing.T) {
+	oldSys := sys
+	defer func() { sys = oldSys }()
+	sys.scrrect = [4]int32{0, 0, 640, 480}
+
+	ts := NewTextSprite()
+	ts.params = make([]interface{}, 0, 8)
+	ts.params = append(ts.params, "a", "b")
+	before := &ts.params[:1][0]
+
+	ts.Clear()
+
+	if len(ts.params) != 0 {
+		t.Fatalf("Clear() should empty params, got %#v", ts.params)
+	}
+	if cap(ts.params) != 8 {
+		t.Fatalf("Clear() should keep the params capacity, got %d want 8", cap(ts.params))
+	}
+	ts.params = append(ts.params, "c")
+	if &ts.params[0] != before {
+		t.Fatal("Clear() should reuse the existing params backing array")
 	}
 }

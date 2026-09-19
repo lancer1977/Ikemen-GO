@@ -9,7 +9,7 @@ func TestSetGameAspect_PropagatesStageAndFighterScaling(t *testing.T) {
 	stage := &Stage{
 		stageCamera: stageCamera{localcoord: [2]int32{400, 300}},
 	}
-	fighter := &Char{playerNo: 0}  // Explicitly set playerNo
+	fighter := &Char{playerNo: 0} // Explicitly set playerNo
 
 	sys = System{
 		SystemStateVars: SystemStateVars{

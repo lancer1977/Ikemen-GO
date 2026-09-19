@@ -11,7 +11,7 @@ func TestInitPlayerIDAssignsAndPreservesCharacterIds(t *testing.T) {
 	sys.chars = [MaxPlayerNo][]*Char{}
 	sys.cfg.Config.HelperMax = 2
 	sys.round = 1
-	sys.lastCharId = 0  // Start fresh from 0
+	sys.lastCharId = 0 // Start fresh from 0
 
 	p0 := &Char{}
 	p1 := &Char{}

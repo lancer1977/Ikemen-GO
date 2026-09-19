@@ -6,7 +6,10 @@ func TestMatchOverAndFinalRoundConditions(t *testing.T) {
 	oldSys := sys
 	defer func() { sys = oldSys }()
 
-	sys = oldSys
+	// roundIsFinal() reads sys.sel.gameParams, which production creates lazily
+	// and which is therefore nil on a System that has not run a match.
+	ensureGlobalGameParams(t)
+
 	sys.matchWins = [2]int32{2, 2}
 	sys.wins = [2]int32{0, 2}
 	// matchOver checks each team independently: (wins[0]>0 && wins[0]>=threshold) || (wins[1]>0 && wins[1]>=threshold)

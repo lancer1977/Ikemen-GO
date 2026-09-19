@@ -17,21 +17,37 @@ func TestRandomHelpers_StayWithinConfiguredRangesAgain(t *testing.T) {
 		}
 	}
 
-	// Test RandF32 with deterministic sequence instead of range assertion.
-	// Note: RandF32's formula can return values outside the specified range due to
-	// division by (IMax/(max-min+1.0)+1.0) rather than the correct IMax scaling.
-	// This is a production defect, but the test documents the actual behavior.
+	// DEFECT: RandF32 reuses the integer bucket arithmetic from Rand, where the
+	// "+1" counts an inclusive endpoint. For a continuous range that term simply
+	// widens the span, so RandF32(min, max) actually spans [min, min+(max-min+1)]
+	// and roughly half of all draws land above the requested maximum. RandF, just
+	// below it in common.go, has the correct formula.
+	// Tracked as lancer1977/Ikemen-GO#18.
+	//
+	// The assertions below pin the real behaviour: the widened bound holds, and
+	// overshoot is actually produced. Both fail once the formula is fixed, which
+	// is the point -- this test should then become a plain range assertion.
 	Srand(5)
-	vals := make([]float32, 5)
-	for i := 0; i < len(vals); i++ {
-		vals[i] = RandF32(1.5, 2.5)
-	}
-	// All values should be generated reproducibly with the seed
-	Srand(5)
-	for i := 0; i < len(vals); i++ {
-		if got := RandF32(1.5, 2.5); got != vals[i] {
-			t.Fatalf("RandF32() iteration %d: got %v, want %v (reproducibility check)", i, got, vals[i])
+	const rfMin, rfMax float32 = 1.5, 2.5
+	widened := rfMin + (rfMax - rfMin + 1.0)
+	overshoot := 0
+	const draws = 2000
+	for i := 0; i < draws; i++ {
+		got := RandF32(rfMin, rfMax)
+		if got < rfMin || got > widened {
+			t.Fatalf("RandF32() = %v, outside even the widened span [%v,%v]", got, rfMin, widened)
 		}
+		if got > rfMax {
+			overshoot++
+		}
+	}
+	if overshoot == 0 {
+		t.Fatalf("RandF32 produced no values above the requested max of %v in %d draws; "+
+			"#18 appears fixed, so this test should assert the real range instead", rfMax, draws)
+	}
+	if overshoot < draws/4 {
+		t.Fatalf("RandF32 overshoot rate dropped to %d/%d; the span arithmetic changed, "+
+			"re-check #18", overshoot, draws)
 	}
 }
 

@@ -6,7 +6,10 @@ func TestTimeOverFreezeAndRoundNoDamageFollowMatchState(t *testing.T) {
 	oldSys := sys
 	defer func() { sys = oldSys }()
 
-	sys = oldSys
+	// roundNoDamage() reads sys.fightScreen.round, which is nil on a System that
+	// has not entered a fight.
+	ensureGlobalRound(t)
+
 	sys.curRoundTime = 0
 	sys.finishType = FT_TO
 	sys.winposetime = 1

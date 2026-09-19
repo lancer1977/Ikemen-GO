@@ -110,11 +110,12 @@ func TestMaybeWriteLiveSnapshot_OmitsStatusWhenNotInMatchDueToDeadFallback(t *te
 
 	s.maybeWriteLiveSnapshot()
 
-	// KNOWN BUG: maybeWriteLiveSnapshot calls writeLiveStatus as a fallback when
-	// !middleOfMatch() && !matchOver(), but writeLiveStatus guards with the same
-	// condition, so the fallback status file is never written. This is an engine
-	// defect that causes status files to be silently omitted in this scenario.
-	// See: the duplicate guard conditions in live_snapshot.go:95 and live_eventing.go:362
+	// DEFECT: maybeWriteLiveSnapshot calls writeLiveStatus as an out-of-match
+	// fallback under !middleOfMatch() && !matchOver(), but writeLiveStatus opens
+	// with the identical guard and returns immediately. The fallback is therefore
+	// dead code and the status file is silently never written.
+	// See live_snapshot.go:95 and live_eventing.go:362.
+	// Tracked as lancer1977/Ikemen-GO#15.
 	if _, err := os.Stat(livePath); !os.IsNotExist(err) {
 		t.Fatalf("expected no live snapshot when not in match, got err=%v", err)
 	}

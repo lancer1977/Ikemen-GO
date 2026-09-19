@@ -12,7 +12,7 @@ func TestRectMutators_UpdatePackedColorAlphaAndWindowState(t *testing.T) {
 
 	r := &Rect{}
 	r.SetColor([3]int32{1, 2, 3})
-	// col[0]=1>>16, col[1]=2<<8, col[2]=3 = 0x010203
+	// SetColor packs as col[0]<<16 | col[1]<<8 | col[2] = 1<<16|2<<8|3 = 0x010203
 	if r.col != 0x010203 {
 		t.Fatalf("SetColor() = %#x, want 0x010203", r.col)
 	}

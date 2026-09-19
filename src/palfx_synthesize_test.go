@@ -76,11 +76,11 @@ func TestPalFXSynthesize(t *testing.T) {
 				invertall:   true,
 				invertblend: 1,
 			},
-			eAdd:        [3]int32{0, 0, 0},
-			eMul:        [3]int32{256, 256, 256},
-			eColor:      1,
-			eHue:        0,
-			eInvertall:  true,
+			eAdd:       [3]int32{0, 0, 0},
+			eMul:       [3]int32{256, 256, 256},
+			eColor:     1,
+			eHue:       0,
+			eInvertall: true,
 		}
 		other := &PalFX{
 			PalFXDef: PalFXDef{

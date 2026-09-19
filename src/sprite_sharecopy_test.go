@@ -18,7 +18,8 @@ func TestSpriteShareCopy(t *testing.T) {
 		Tex:      &fakeTexture{},
 	}
 
-	// Test preserving palidx when already set (>= 0)
+	// shareCopy only adopts the source palidx when the destination has none
+	// (a negative index). An index already set is left alone.
 	dst := &Sprite{palidx: 42}
 	dst.shareCopy(src)
 
@@ -50,5 +51,23 @@ func TestSpriteShareCopy(t *testing.T) {
 	<-sys.mainThreadTask
 	if dst2.palidx != src.palidx {
 		t.Fatalf("shareCopy should copy palidx when unset")
+	}
+}
+
+// The other half of the palidx guard: an unset destination adopts the source's
+// index. Covering only the preserve branch would let the copy branch rot.
+func TestSpriteShareCopy_AdoptsPalidxWhenUnset(t *testing.T) {
+	src := &Sprite{
+		Pal:      []uint32{1, 2, 3},
+		Size:     [2]uint16{4, 5},
+		palidx:   7,
+		coldepth: 8,
+	}
+
+	dst := &Sprite{palidx: -1}
+	dst.shareCopy(src)
+
+	if dst.palidx != src.palidx {
+		t.Fatalf("shareCopy should adopt palidx when unset, got %d want %d", dst.palidx, src.palidx)
 	}
 }

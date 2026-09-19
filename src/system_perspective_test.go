@@ -12,7 +12,7 @@ func TestTickFrameHelpersRespectPauseAndInterpolationState(t *testing.T) {
 	sys.frameStepFlag = false
 	sys.oldTickCount = 0
 	sys.tickCount = 1
-	sys.tickCountF = 2  // Must be > tickCount for tickNextFrame() to advance
+	sys.tickCountF = 2 // Must be > tickCount for tickNextFrame() to advance
 	sys.nextAddTime = 0
 	if !sys.tickFrame() {
 		t.Fatal("tickFrame() should advance when not paused")

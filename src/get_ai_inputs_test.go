@@ -3,7 +3,8 @@ package main
 import "testing"
 
 func TestGetAIInputs(t *testing.T) {
-	t.Parallel()
+	// Not parallel: this test mutates the package-level sys, which every test in
+	// this package shares.
 
 	oldSys := sys
 	defer func() { sys = oldSys }()

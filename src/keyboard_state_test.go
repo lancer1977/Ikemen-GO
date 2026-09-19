@@ -3,11 +3,15 @@ package main
 import "testing"
 
 func TestGetKeyboardState(t *testing.T) {
-	t.Parallel()
+	// Not parallel: this test mutates the package-level sys, which every test in
+	// this package shares.
 
 	prevSys := sys
 	sys = System{}
 	t.Cleanup(func() { sys = prevSys })
+
+	// System{} leaves keyState as a nil map, and assigning into one panics.
+	sys.keyState = make(map[Key]bool)
 
 	sys.keyState[Key(1)] = true
 	sys.keyState[Key(4)] = true
