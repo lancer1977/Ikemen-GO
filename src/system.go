@@ -6288,6 +6288,24 @@ func (l *Loader) loadStage() bool {
 
 func (l *Loader) load() {
 	defer func() {
+		// Recover here, inside load()'s own defer, rather than relying only
+		// on SafeGo's outer recover (common.go SafeGo). SafeGo's recover
+		// runs in a separate, later deferred call in the same goroutine, so
+		// if load() panics, the panic-forwarding send below would otherwise
+		// happen strictly AFTER the `l.loadExit <- l.state` send in this
+		// defer -- but reset() (below) treats receiving from l.loadExit as
+		// proof this goroutine is done touching sys, and unblocks the
+		// caller (and any `sys = ...` reassignment it does next) while this
+		// goroutine is still mid-unwind and about to read sys.mainThreadTask.
+		// That is a genuine data race (caught by `go test -race`) and the
+		// deeper cause behind the leaked-goroutine "RUnlock of unlocked
+		// RWMutex" panic in lancer1977/Ikemen-GO#25: forward the panic here
+		// so it, too, completes before loadExit is signaled.
+		if r := recover(); r != nil {
+			sys.mainThreadTask <- func() {
+				panic(r)
+			}
+		}
 		l.loadExit <- l.state
 	}()
 
@@ -6446,8 +6464,16 @@ func (l *Loader) load() {
 func (l *Loader) reset() {
 	if l.state != LS_NotYet {
 		// Ensure the loader goroutine gets a cooperative cancel signal.
+		// Do NOT also write l.state here: l.state is read and written by the
+		// load() goroutine itself without any lock, so a concurrent write
+		// from this (caller) goroutine races with it (observed under
+		// `go test -race`, see lancer1977/Ikemen-GO#25). requestCancel()
+		// closing cancelCh is the real, race-free signal load() waits on
+		// via cancelRequested(); once load() observes it, load() sets its
+		// own l.state and exits, sending on loadExit. Only after that
+		// channel receive below (which happens-after load()'s exit, per Go's
+		// memory model) is it safe for this goroutine to write l.state again.
 		l.requestCancel()
-		l.state = LS_Cancel
 		<-l.loadExit
 		l.state = LS_NotYet
 	}

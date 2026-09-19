@@ -26,6 +26,12 @@ func TestTurnsPreloadActiveReflectsConfigAndSelectedMembers(t *testing.T) {
 func TestStartNextTurnsPreloadSelectsNextMemberOrSkipsLoadedOne(t *testing.T) {
 	oldSys := sys
 	defer func() { sys = oldSys }()
+	// Belt-and-braces: if the test exits early (e.g. via t.Fatal) before the
+	// explicit sys.loader.reset() call below runs, make sure the Loader's
+	// background goroutine is still stopped before sys gets swapped back.
+	// Registered after the sys restore defer so it runs first (defers are
+	// LIFO). See the longer explanation at the reset() call site below.
+	defer func() { sys.loader.reset() }()
 
 	sys = oldSys
 	sys.cfg.Config.TurnsLoading = true
@@ -48,6 +54,19 @@ func TestStartNextTurnsPreloadSelectsNextMemberOrSkipsLoadedOne(t *testing.T) {
 	if sys.loader.state != LS_Loading {
 		t.Fatalf("startNextTurnsPreload() should start loader when work found, got %v", sys.loader.state)
 	}
+	// runTread() started the Loader's load() goroutine (SafeGo, system.go:6473),
+	// which keeps reading/writing sys fields (sys.selMutex, sys.turnsPreloadMember
+	// via turnsPreloadActive(), sys.chars, ...) on its own 10ms-poll schedule
+	// until it observes a cancel or finishes. The rest of this test mutates
+	// those same fields directly, so the goroutine must be stopped here —
+	// not only at teardown — or it races/corrupts sys concurrently with the
+	// test body itself. Loader.reset() cancels it and blocks on <-l.loadExit
+	// until it has actually exited, which previously showed up as a ~1-in-8
+	// fatal "RUnlock of unlocked RWMutex" panic when a leaked instance of
+	// this goroutine outlived the test and raced a later `sys = System{}`
+	// reset in some other test (lancer1977/Ikemen-GO#25), and -race also
+	// flags data races on the same fields within this test body itself.
+	sys.loader.reset()
 
 	sys.turnsPreloadMember = [2]int{-1, -1}
 	sys.chars[2] = []*Char{{memberNo: 1, selectNo: 1}}

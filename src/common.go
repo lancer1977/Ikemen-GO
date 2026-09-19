@@ -42,7 +42,7 @@ func Rand(min, max int32) int32 {
 }
 
 func RandF32(min, max float32) float32 {
-	return min + float32(Random())/(float32(IMax)/(max-min+1.0)+1.0)
+	return min + float32(Random())*(max-min)/float32(IMax)
 }
 
 func RandI(x, y int32) int32 {
@@ -421,7 +421,17 @@ func decodeShiftJIS(input string) string {
 		LogMessage("Warning: Failed to decode string as Shift_JIS, falling back to original. String: %s, Error: %v", input, err)
 		return input
 	}
-	return string(decodedBytes)
+
+	decoded := string(decodedBytes)
+	// The ShiftJIS decoder substitutes U+FFFD for bytes it cannot map rather than
+	// returning an error. If the decoded string contains replacement characters
+	// but the original did not, it means decoding failed. Fall back to the original.
+	if strings.Contains(decoded, "�") && !strings.Contains(input, "�") {
+		LogMessage("Warning: Failed to decode string as Shift_JIS, falling back to original. String: %s", input)
+		return input
+	}
+
+	return decoded
 }
 
 func FileExist(filename string) string {
@@ -584,7 +594,11 @@ func SearchFile(file string, dirs []string, defaultDirs ...string) string {
 			if baseDirInZip == "." {
 				baseDirInZip = ""
 			}
-			return []string{join(zipFileCtx, baseDirInZip)}
+			bases := []string{join(zipFileCtx, baseDirInZip)}
+			if filepath.Ext(pathInZipCtx) == "" {
+				bases = addUnique(bases, join(zipFileCtx, pathInZipCtx))
+			}
+			return bases
 		}
 		if strings.HasSuffix(root, "/") {
 			return []string{strings.TrimSuffix(root, "/")}
@@ -681,27 +695,33 @@ func SplitAndTrim(str, sep string) (ss []string) {
 
 func OldSprintf(f string, a ...interface{}) (s string) {
 	iIdx, lIdx, numVerbs := []int{}, []int{}, 0
+	truncatedPercent := -1
 	for i := 0; i < len(f); i++ {
 		if f[i] == '%' {
+			percentPos := i
 			i++
 			if i >= len(f) {
+				truncatedPercent = percentPos
 				break
 			}
 			for ; i < len(f) && (f[i] == ' ' || f[i] == '0' ||
 				f[i] == '-' || f[i] == '+' || f[i] == '#'); i++ {
 			}
 			if i >= len(f) {
+				truncatedPercent = percentPos
 				break
 			}
 			for ; i < len(f) && f[i] >= '0' && f[i] <= '9'; i++ {
 			}
 			if i >= len(f) {
+				truncatedPercent = percentPos
 				break
 			}
 			if f[i] == '.' {
 				for i++; i < len(f) && f[i] >= '0' && f[i] <= '9'; i++ {
 				}
 				if i >= len(f) {
+					truncatedPercent = percentPos
 					break
 				}
 			}
@@ -726,6 +746,21 @@ func OldSprintf(f string, a ...interface{}) (s string) {
 		for i := len(lIdx) - 1; i >= 0; i-- {
 			b = SliceDelete(b, lIdx[i])
 		}
+		f = string(b)
+	}
+	// Escape any dangling '%' due to truncation in the format string.
+	// This prevents fmt.Sprintf from leaking its NOVERB error text into output.
+	if truncatedPercent >= 0 {
+		b := []byte(f)
+		// Calculate the new position of the '%' after any deletions from rewriting
+		newPos := truncatedPercent
+		for _, idx := range lIdx {
+			if idx < truncatedPercent {
+				newPos--
+			}
+		}
+		// Insert an additional '%' to escape the dangling one: '%' becomes '%%'
+		b = append(b[:newPos], append([]byte{'%'}, b[newPos:]...)...)
 		f = string(b)
 	}
 	if len(a) > numVerbs {
@@ -807,14 +842,18 @@ func sliceMove[T any](array []T, srcIndex int, dstIndex int) []T {
 func ParseIkemenVersion(versionStr string) ([3]uint16, float32) {
 	var ver [3]uint16
 	parts := SplitAndTrim(versionStr, ".")
+	reStripNonNumeric := regexp.MustCompile(`[^0-9]`)
 	for i, s := range parts {
 		if i >= len(ver) {
 			break
 		}
-		if v, err := strconv.ParseUint(s, 10, 16); err == nil {
-			ver[i] = uint16(v)
-		} else {
-			break
+		// Strip non-numeric characters from this segment before parsing
+		// (e.g., "3-beta" becomes "3", matching the float path behavior)
+		cleanSegment := reStripNonNumeric.ReplaceAllString(s, "")
+		if cleanSegment != "" {
+			if v, err := strconv.ParseUint(cleanSegment, 10, 16); err == nil {
+				ver[i] = uint16(v)
+			}
 		}
 	}
 

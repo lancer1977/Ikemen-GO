@@ -25,20 +25,14 @@ func TestBytecodeParamRanges(t *testing.T) {
 	if !isHitDefParam(palFX_time) {
 		t.Fatal("expected hitDef to include palFX params")
 	}
-	// DEFECT: afterImage_redirectid and hitDef_attr are the same byte (26), so
-	// isHitDefParam cannot tell them apart. afterImage_redirectid is declared
-	// after afterImage_last inside the same const block, taking the value the
-	// next namespace computes as its own first parameter. palFX_redirectid and
-	// bgPalFX_id collide at 11 the same way. The Projectile controller orders
-	// isHitDefParam before isAfterImageParam, so a colliding id routes to the
-	// hitdef handler as its attack attribute.
-	// Tracked as lancer1977/Ikemen-GO#20.
-	if afterImage_redirectid != hitDef_attr {
-		t.Fatalf("afterImage_redirectid (%d) and hitDef_attr (%d) no longer collide; "+
-			"#20 is fixed, so this should assert exclusion again",
-			afterImage_redirectid, hitDef_attr)
+
+	// Verify parameter ID collisions are fixed (lancer1977/Ikemen-GO#20)
+	if palFX_redirectid == bgPalFX_id {
+		t.Fatalf("palFX_redirectid (%d) and bgPalFX_id (%d) collide; #20 is not fixed",
+			palFX_redirectid, bgPalFX_id)
 	}
-	if !isHitDefParam(afterImage_redirectid) {
-		t.Fatal("expected the colliding id to be misclassified as a hitDef param")
+	if afterImage_redirectid == hitDef_attr {
+		t.Fatalf("afterImage_redirectid (%d) and hitDef_attr (%d) collide; #20 is not fixed",
+			afterImage_redirectid, hitDef_attr)
 	}
 }

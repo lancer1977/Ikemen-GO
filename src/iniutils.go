@@ -834,7 +834,7 @@ func assignToPatternMap(v reflect.Value, lastPartName string, value interface{},
 			if err != nil {
 				continue
 			}
-			if re.MatchString(lastPartName) {
+			if re.MatchString(strings.ToLower(lastPartName)) {
 				fieldVal := v.Field(i)
 				if fieldVal.Kind() == reflect.Map && fieldVal.Type().Key().Kind() == reflect.String {
 					if fieldVal.IsNil() {
@@ -3001,6 +3001,10 @@ func parseMusicSection(section *ini.Section) Music {
 // fontKey builds a deduplication key "normalizedPath|height".
 func fontKey(path string, height int32) string {
 	p := filepath.ToSlash(path)
+	// Explicitly normalize backslashes to forward slashes for cross-platform consistency.
+	// filepath.ToSlash only converts the host OS's separator; on non-Windows builds,
+	// backslashes are left as-is. This breaks dedup for Windows-authored paths on Linux/macOS.
+	p = strings.ReplaceAll(p, "\\", "/")
 	return fmt.Sprintf("%s|%d", p, height)
 }
 
