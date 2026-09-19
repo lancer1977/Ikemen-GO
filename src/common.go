@@ -691,27 +691,33 @@ func SplitAndTrim(str, sep string) (ss []string) {
 
 func OldSprintf(f string, a ...interface{}) (s string) {
 	iIdx, lIdx, numVerbs := []int{}, []int{}, 0
+	truncatedPercent := -1
 	for i := 0; i < len(f); i++ {
 		if f[i] == '%' {
+			percentPos := i
 			i++
 			if i >= len(f) {
+				truncatedPercent = percentPos
 				break
 			}
 			for ; i < len(f) && (f[i] == ' ' || f[i] == '0' ||
 				f[i] == '-' || f[i] == '+' || f[i] == '#'); i++ {
 			}
 			if i >= len(f) {
+				truncatedPercent = percentPos
 				break
 			}
 			for ; i < len(f) && f[i] >= '0' && f[i] <= '9'; i++ {
 			}
 			if i >= len(f) {
+				truncatedPercent = percentPos
 				break
 			}
 			if f[i] == '.' {
 				for i++; i < len(f) && f[i] >= '0' && f[i] <= '9'; i++ {
 				}
 				if i >= len(f) {
+					truncatedPercent = percentPos
 					break
 				}
 			}
@@ -736,6 +742,21 @@ func OldSprintf(f string, a ...interface{}) (s string) {
 		for i := len(lIdx) - 1; i >= 0; i-- {
 			b = SliceDelete(b, lIdx[i])
 		}
+		f = string(b)
+	}
+	// Escape any dangling '%' due to truncation in the format string.
+	// This prevents fmt.Sprintf from leaking its NOVERB error text into output.
+	if truncatedPercent >= 0 {
+		b := []byte(f)
+		// Calculate the new position of the '%' after any deletions from rewriting
+		newPos := truncatedPercent
+		for _, idx := range lIdx {
+			if idx < truncatedPercent {
+				newPos--
+			}
+		}
+		// Insert an additional '%' to escape the dangling one: '%' becomes '%%'
+		b = append(b[:newPos], append([]byte{'%'}, b[newPos:]...)...)
 		f = string(b)
 	}
 	if len(a) > numVerbs {
