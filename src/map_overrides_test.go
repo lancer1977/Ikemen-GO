@@ -18,6 +18,12 @@ func TestApplyMapOverridesCopiesCharacterMapEntries(t *testing.T) {
 }
 
 func TestApplyMapOverridesNoOpsWithoutMapData(t *testing.T) {
+	oldSys := sys
+	defer func() { sys = oldSys }()
+
+	sys = System{sel: *newSelect()}
+	t.Cleanup(func() { sys.sel.gameParams = nil })
+
 	c := &Char{}
 	c.applyMapOverrides()
 	if c.mapArray != nil {

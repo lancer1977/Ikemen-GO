@@ -10,6 +10,8 @@ func TestUpdatePauseProof_AdvancesThroughCapturePhases(t *testing.T) {
 		sys = prevSys
 	})
 
+	ensureGlobalRound(t)
+
 	pauseProofSeconds = 1
 	s := &System{
 		SystemStateVars: SystemStateVars{
@@ -18,8 +20,11 @@ func TestUpdatePauseProof_AdvancesThroughCapturePhases(t *testing.T) {
 		},
 	}
 	s.fightScreen.active = true
+	s.fightScreen.round = &FightScreenRound{}  // Ensure round is set before copying to sys
 	s.intro = 0
 	s.maxRoundTime = 180
+	// Set the -pauseproof flag to enable the pause proof system
+	s.cmdFlags = map[string]string{"-pauseproof": ""}
 	sys = *s
 
 	s.updatePauseProof()
