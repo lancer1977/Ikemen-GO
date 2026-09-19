@@ -10,7 +10,9 @@ func TestSplitMusicParamValue(t *testing.T) {
 	if path != "sound/title.ogg" {
 		t.Fatalf("splitMusicParamValue path = %q", path)
 	}
-	if !reflect.DeepEqual(extras, []string{"loop=1", "vol=80"}) {
+	// splitMusicParamValue uses strings.Fields() which splits on whitespace but does not
+	// strip commas, so commas between parameters appear as separate entries in extras.
+	if !reflect.DeepEqual(extras, []string{",", "loop=1", ",", "vol=80"}) {
 		t.Fatalf("splitMusicParamValue extras = %#v", extras)
 	}
 

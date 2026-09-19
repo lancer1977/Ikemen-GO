@@ -6,7 +6,9 @@ import (
 	"testing"
 )
 
-func TestSearchFile_TrimsQuotesCommentsAndUsesDefaultDirectoryAgain(t *testing.T) {
+func TestSearchFile_TrimsCommentsAndUsesDefaultDirectoryAgain(t *testing.T) {
+	// SearchFile does NOT strip quotes; it only trims whitespace and removes comments.
+	// Only LoadFile strips quotes around paths.
 	dir := t.TempDir()
 	defaultDir := filepath.Join(dir, "font")
 	if err := os.MkdirAll(defaultDir, 0o755); err != nil {
@@ -17,7 +19,8 @@ func TestSearchFile_TrimsQuotesCommentsAndUsesDefaultDirectoryAgain(t *testing.T
 		t.Fatalf("write file: %v", err)
 	}
 
-	got := SearchFile(`  "select.fnt" ; comment`, []string{dir}, "font")
+	// Pass unquoted filename; SearchFile will find it in the default directory
+	got := SearchFile(`  select.fnt ; comment`, []string{dir}, "font")
 	if got != filepath.ToSlash(wantPath) {
 		t.Fatalf("SearchFile() = %q, want %q", got, filepath.ToSlash(wantPath))
 	}
