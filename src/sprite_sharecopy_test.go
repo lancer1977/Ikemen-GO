@@ -5,18 +5,6 @@ import (
 	"time"
 )
 
-// fakeTexture implements Texture interface for testing
-type fakeTexture struct{}
-
-func (f *fakeTexture) SetData(data []byte)                                                      {}
-func (f *fakeTexture) SetSubData(data []byte, x, y, width, height, stride int32)               {}
-func (f *fakeTexture) SetDataG(data []byte, mag, min, ws, wt TextureSamplingParam)             {}
-func (f *fakeTexture) SetPixelData(data []float32)                                              {}
-func (f *fakeTexture) IsValid() bool                                                            { return true }
-func (f *fakeTexture) GetWidth() int32                                                          { return 0 }
-func (f *fakeTexture) GetHeight() int32                                                         { return 0 }
-func (f *fakeTexture) CopyData(src *Texture)                                                    {}
-
 func TestSpriteShareCopy(t *testing.T) {
 	orig := sys.mainThreadTask
 	defer func() { sys.mainThreadTask = orig }()

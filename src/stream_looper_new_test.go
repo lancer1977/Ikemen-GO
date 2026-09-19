@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io"
 	"testing"
 )
 
@@ -29,7 +28,9 @@ func TestNewStreamLooper(t *testing.T) {
 		t.Fatalf("newStreamLooper should widen invalid loop end: %#v", sl)
 	}
 
-	if _, ok := newStreamLooper(base, 1, 0, 0).(io.Seeker); ok {
-		t.Fatal("unexpected interface assertion")
+	// A zero loopend is invalid and must widen to the full stream length.
+	sl = newStreamLooper(base, 1, 0, 0).(*StreamLooper)
+	if sl.loopcount != 1 || sl.loopstart != 0 || sl.loopend != 100 {
+		t.Fatalf("newStreamLooper should widen a zero loop end: %#v", sl)
 	}
 }

@@ -55,7 +55,7 @@ func TestWrapDrawWithAspectState_RestoresOuterStateAroundCallback(t *testing.T) 
 func TestWrapDrawWithAspectState_ReturnsNilForNilCallback(t *testing.T) {
 	s := &System{}
 	if got := s.wrapDrawWithAspectState(nil); got != nil {
-		t.Fatalf("expected nil callback to return nil wrapper, got %#v", got)
+		t.Fatalf("expected nil callback to return nil wrapper, got %T", got)
 	}
 }
 
