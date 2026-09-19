@@ -10,17 +10,17 @@ type fakeTextureSprite struct {
 	data [][]byte
 }
 
-func (t *fakeTexture) SetData(data []byte) {
+func (t *fakeTextureSprite) SetData(data []byte) {
 	t.data = append(t.data, append([]byte{}, data...))
 }
 
-func (t *fakeTexture) SetSubData(data []byte, x, y, width, height, stride int32)   {}
-func (t *fakeTexture) SetDataG(data []byte, mag, min, ws, wt TextureSamplingParam) {}
-func (t *fakeTexture) SetPixelData(data []float32)                                 {}
-func (t *fakeTexture) IsValid() bool                                               { return true }
-func (t *fakeTexture) GetWidth() int32                                             { return 0 }
-func (t *fakeTexture) GetHeight() int32                                            { return 0 }
-func (t *fakeTexture) CopyData(src *Texture)                                       {}
+func (t *fakeTextureSprite) SetSubData(data []byte, x, y, width, height, stride int32)   {}
+func (t *fakeTextureSprite) SetDataG(data []byte, mag, min, ws, wt TextureSamplingParam) {}
+func (t *fakeTextureSprite) SetPixelData(data []float32)                                 {}
+func (t *fakeTextureSprite) IsValid() bool                                               { return true }
+func (t *fakeTextureSprite) GetWidth() int32                                             { return 0 }
+func (t *fakeTextureSprite) GetHeight() int32                                            { return 0 }
+func (t *fakeTextureSprite) CopyData(src *Texture)                                       {}
 
 func TestSpriteDefaultsAndCachePalTex(t *testing.T) {
 	t.Run("newSprite", func(t *testing.T) {

@@ -28,7 +28,7 @@ type Font_VK struct {
 	vao         uint32
 	vbo         uint32
 	program     uint32
-	color       color
+	color       colorValue
 	shaderPalFX ShaderPalFX
 	resolution  [2]float32
 	textures    []*TextureAtlas
