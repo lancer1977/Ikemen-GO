@@ -6,7 +6,7 @@ import (
 	"gopkg.in/ini.v1"
 )
 
-func TestSetValueUpdate_SimpleFieldUpdatesFails(t *testing.T) {
+func TestSetValueUpdate_RequiresTwoLevelSectionKeyQuery(t *testing.T) {
 	t.Parallel()
 
 	type sample struct {
@@ -17,11 +17,13 @@ func TestSetValueUpdate_SimpleFieldUpdatesFails(t *testing.T) {
 	s := &sample{}
 	f := ini.Empty()
 
-	// DEFECT: updateINIFile fails to write simple (root-level) struct fields to INI.
-	// When processing a query like "enabled", the code incorrectly treats the field
-	// tag as a section name instead of a key name, leaving keyNameParts empty and
-	// causing "unable to determine key name" error. This breaks SetValueUpdate for
-	// simple struct fields. User impact: cannot update simple config values via INI.
+	// Not a defect: updateINIFile derives an INI [section]/key pair from the
+	// query, so it needs at least two path segments (the first becomes the
+	// section, the rest become the key). A single-segment query like "enabled"
+	// has nothing to use as the key, hence the error. This matches production
+	// usage: every real Config/Motif/Storyboard field lives at least one level
+	// deep (e.g. "Options.Difficulty", "Sound.MaxBGMVolume"), and every
+	// production call site already passes a two-part-or-deeper query.
 	err := SetValueUpdate(s, f, "enabled", true)
 	if err == nil {
 		t.Fatalf("SetValueUpdate(enabled): expected error but succeeded")

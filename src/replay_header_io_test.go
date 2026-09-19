@@ -38,6 +38,7 @@ func TestReplayHeaderIO_DefectFormatVersionOverwritten(t *testing.T) {
 		// in the JSON are lost; all replays appear to have format version 1.
 		// See netplay.go:875 (writes replayFormatVersion, not header.FormatVersion) and
 		// netplay.go:923 (overwrites header.FormatVersion with the binary version).
+		// Tracked as lancer1977/Ikemen-GO#22.
 		if got.FormatVersion != 1 {
 			t.Fatalf("FormatVersion should be overwritten to 1, got %d", got.FormatVersion)
 		}

@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestResolveWithLookup_ReturnsRelativePathNotAbsolute(t *testing.T) {
+func TestResolveWithLookup_ReturnsPathRelativeToSearchRoot(t *testing.T) {
 	t.Parallel()
 
 	if got := resolveWithLookup("value", "", "base"); got != "value" {
@@ -31,12 +31,11 @@ func TestResolveWithLookup_ReturnsRelativePathNotAbsolute(t *testing.T) {
 	}
 	defer func() { _ = os.Chdir(oldWd) }()
 
-	// DEFECT: resolveWithLookup returns relative paths instead of absolute paths.
-	// SearchFile finds the file and returns the path as it was used to search (relative),
-	// but for configuration files, absolute paths are more useful and prevent issues
-	// when the working directory changes. User impact: file paths in loaded configs are
-	// relative to where the config was loaded from, not absolute, causing path resolution
-	// failures if the working directory changes later.
+	// Not a defect: resolveWithLookup just returns whatever SearchFile finds,
+	// and SearchFile reports paths relative to the search root it was given
+	// (here "base"), not absolutized. That is SearchFile's documented,
+	// consistent behavior across all its callers, not a bug specific to
+	// resolveWithLookup.
 	got := resolveWithLookup("select.def", "def", "base")
 	if got != "base/select.def" {
 		t.Fatalf("resolveWithLookup(def) = %q, want %q", got, "base/select.def")

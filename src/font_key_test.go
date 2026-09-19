@@ -3,7 +3,7 @@ package main
 import "testing"
 
 // TestFontKeyBackslashNotNormalized documents the real behavior of fontKey on Unix systems.
-// DEFECT: filepath.ToSlash only converts OS-specific separators, not backslashes.
+// DEFECT (lancer1977/Ikemen-GO#23): filepath.ToSlash only converts OS-specific separators, not backslashes.
 // On Windows, this would normalize backslashes to forward slashes. On Unix, backslashes
 // are not path separators, so they are left as-is. This breaks cross-platform deduplication
 // when config files contain Windows-style paths on Unix systems. Production code should
@@ -17,7 +17,7 @@ func TestFontKeyBackslashNotNormalized(t *testing.T) {
 }
 
 // TestRegisterFontIndexBackslashKey documents the real behavior when registering font indices.
-// DEFECT: Cascading from fontKey's backslash handling, the key will contain backslashes
+// DEFECT (lancer1977/Ikemen-GO#23): Cascading from fontKey's backslash handling, the key will contain backslashes
 // on Unix systems, not normalized forward slashes. This means lookups that expect
 // normalized keys (like from forward-slash paths) will fail to find the registered index.
 func TestRegisterFontIndexBackslashKey(t *testing.T) {

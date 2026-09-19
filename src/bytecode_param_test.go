@@ -25,12 +25,20 @@ func TestBytecodeParamRanges(t *testing.T) {
 	if !isHitDefParam(palFX_time) {
 		t.Fatal("expected hitDef to include palFX params")
 	}
-	// DEFECT: afterImage_redirectid is incorrectly included in isHitDefParam().
-	// The hitDef range [hitDef_attr, hitDef_last] overlaps with afterImage sentinels.
-	// isHitDefParam should exclude unrelated param type sentinels (afterImage_redirectid, etc).
-	// User consequence: wrong param types accepted in hitdef context, potential corruption.
-	// See bytecode.go:7328 - range check [hitDef_attr, hitDef_last] includes afterImage values.
+	// DEFECT: afterImage_redirectid and hitDef_attr are the same byte (26), so
+	// isHitDefParam cannot tell them apart. afterImage_redirectid is declared
+	// after afterImage_last inside the same const block, taking the value the
+	// next namespace computes as its own first parameter. palFX_redirectid and
+	// bgPalFX_id collide at 11 the same way. The Projectile controller orders
+	// isHitDefParam before isAfterImageParam, so a colliding id routes to the
+	// hitdef handler as its attack attribute.
+	// Tracked as lancer1977/Ikemen-GO#20.
+	if afterImage_redirectid != hitDef_attr {
+		t.Fatalf("afterImage_redirectid (%d) and hitDef_attr (%d) no longer collide; "+
+			"#20 is fixed, so this should assert exclusion again",
+			afterImage_redirectid, hitDef_attr)
+	}
 	if !isHitDefParam(afterImage_redirectid) {
-		t.Fatal("afterImage_redirectid is currently included in hitDef params (defect)")
+		t.Fatal("expected the colliding id to be misclassified as a hitDef param")
 	}
 }

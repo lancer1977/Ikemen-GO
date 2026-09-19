@@ -18,7 +18,7 @@ func TestGetValueFromPatternMap_CaseInsensitiveMatchingDefect(t *testing.T) {
 
 	var s sample
 
-	// DEFECT: getValueFromPatternMap fails to match mixed-case keys against lowercase patterns.
+	// DEFECT (lancer1977/Ikemen-GO#21): getValueFromPatternMap fails to match mixed-case keys against lowercase patterns.
 	// The regex pattern "^item[0-9]+$" (lowercase) is matched against "Item12" (mixed case),
 	// causing the pattern match to fail. While the code normalizes the map key to lowercase
 	// later, it checks the pattern BEFORE normalization. This prevents case-insensitive

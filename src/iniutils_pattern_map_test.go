@@ -18,7 +18,7 @@ func TestAssignToPatternMap_CaseInsensitiveMatchingDefect(t *testing.T) {
 	s := sample{}
 	v := reflect.ValueOf(&s).Elem()
 
-	// DEFECT: assignToPatternMap fails to match mixed-case keys against lowercase patterns.
+	// DEFECT (lancer1977/Ikemen-GO#21): assignToPatternMap fails to match mixed-case keys against lowercase patterns.
 	// The regex pattern "^item[0-9]+$" (lowercase) is matched against "Item1" (mixed case),
 	// causing the pattern match to fail. While the code normalizes the map key to lowercase
 	// later, it checks the pattern BEFORE normalization. This prevents case-insensitive

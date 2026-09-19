@@ -29,7 +29,7 @@ func TestIsLuaArrayTable(t *testing.T) {
 		t.Fatal("string-keyed table should not be array-like")
 	}
 
-	// DEFECT: sparse table with only key 2 is incorrectly identified as array-like.
+	// DEFECT (lancer1977/Ikemen-GO#24): sparse table with only key 2 is incorrectly identified as array-like.
 	// The function checks if each numeric key is <= table length, but doesn't verify
 	// contiguous keys starting from 1. A true Lua array requires keys 1..n with no gaps.
 	// This causes sparse tables to be misclassified, breaking INI serialization logic
