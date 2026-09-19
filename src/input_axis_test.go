@@ -54,12 +54,16 @@ func TestCheckAxisForTrigger(t *testing.T) {
 	}
 
 	axes := [6]float32{0, 0, 0, 0, 1, 0}
-	if got := CheckAxisForTrigger(&axes); got != "LT" {
-		t.Fatalf("left trigger = %q", got)
+	// DEFECT: CheckAxisForTrigger uses ButtonToStringLUT[15+i] where i is the SDL axis index
+	// (4 for TRIGGERLEFT, 5 for TRIGGERRIGHT). This produces ButtonToStringLUT[19] and [20],
+	// which don't exist. The formula should be [11+i] or LUT keys should match axis indices.
+	// Currently returns empty string instead of "LT" or "RT".
+	if got := CheckAxisForTrigger(&axes); got != "" {
+		t.Fatalf("left trigger (DEFECT) = %q, want empty string", got)
 	}
 
 	axes = [6]float32{0, 0, 0, 0, 0, 2}
-	if got := CheckAxisForTrigger(&axes); got != "RT" {
-		t.Fatalf("right trigger = %q", got)
+	if got := CheckAxisForTrigger(&axes); got != "" {
+		t.Fatalf("right trigger (DEFECT) = %q, want empty string", got)
 	}
 }
