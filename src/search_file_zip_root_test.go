@@ -39,13 +39,14 @@ func TestSearchFile_ZipDirectoryRootDropsSubdirectory(t *testing.T) {
 		t.Fatalf("close zip file: %v", err)
 	}
 
-	t.Run("directory_root_inside_zip_is_not_resolved", func(t *testing.T) {
-		// Only chars.zip/ryu.def is tried, never chars.zip/chars/ryu.def.
+	t.Run("directory_root_inside_zip_is_resolved", func(t *testing.T) {
+		// When a root names a directory inside an archive (extension-less path),
+		// the file should be found there, matching the behavior for plain-filesystem
+		// roots. #17 fix: now adds the directory itself as a candidate base.
 		got := SearchFile("ryu.def", []string{zipPath + "/chars"})
-		if got != "ryu.def" {
-			t.Fatalf("SearchFile(zip dir root) = %q; want the unresolved input %q. "+
-				"If this now returns the real path, #17 is fixed and this test "+
-				"should assert the resolved path instead.", got, "ryu.def")
+		want := filepath.ToSlash(zipPath + "/chars/ryu.def")
+		if got != want {
+			t.Fatalf("SearchFile(zip dir root) = %q; want %q", got, want)
 		}
 	})
 
