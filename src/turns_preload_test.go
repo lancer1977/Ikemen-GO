@@ -43,8 +43,10 @@ func TestStartNextTurnsPreloadSelectsNextMemberOrSkipsLoadedOne(t *testing.T) {
 	if sys.turnsPreloadMember != [2]int{1, 1} {
 		t.Fatalf("startNextTurnsPreload() selected members = %#v, want [1 1]", sys.turnsPreloadMember)
 	}
-	if sys.loader.state != LS_NotYet {
-		t.Fatalf("startNextTurnsPreload() should leave loader idle when already NotYet, got %v", sys.loader.state)
+	// When startNextTurnsPreload finds work to do and loader is NotYet, it calls runTread()
+	// which immediately transitions to LS_Loading. See system.go:6471.
+	if sys.loader.state != LS_Loading {
+		t.Fatalf("startNextTurnsPreload() should start loader when work found, got %v", sys.loader.state)
 	}
 
 	sys.turnsPreloadMember = [2]int{-1, -1}

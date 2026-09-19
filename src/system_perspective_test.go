@@ -12,6 +12,8 @@ func TestTickFrameHelpersRespectPauseAndInterpolationState(t *testing.T) {
 	sys.frameStepFlag = false
 	sys.oldTickCount = 0
 	sys.tickCount = 1
+	sys.tickCountF = 2 // Must be > tickCount for tickNextFrame() to advance
+	sys.nextAddTime = 0
 	if !sys.tickFrame() {
 		t.Fatal("tickFrame() should advance when not paused")
 	}
@@ -59,7 +61,9 @@ func TestPerspectiveHelpersRespectZStateAndProjection(t *testing.T) {
 	}
 
 	out := sys.drawposXYfromZ([2]float32{14, 3}, 2, 4, 0.5)
-	if out[0] != 12 || out[1] != 5 {
-		t.Fatalf("drawposXYfromZ() = %#v, want [12 5]", out)
+	// Calculation: outpos[0] = (14-10)*0.5+10 = 12
+	// outpos[1] = 3*0.5 + 4*2*0.5 = 1.5 + 4 = 5.5
+	if out[0] != 12 || out[1] != 5.5 {
+		t.Fatalf("drawposXYfromZ() = %#v, want [12 5.5]", out)
 	}
 }

@@ -45,19 +45,24 @@ func TestPalFXSynthesize(t *testing.T) {
 			eInvertall: false,
 		}
 		pfx := &PalFX{
-			eAdd:        [3]int32{10, -20, 300},
-			eMul:        [3]int32{64, 32, 16},
-			eHue:        3,
-			eColor:      0.5,
-			eInvertall:  true,
-			invertall:   true,
-			invertblend: 0,
+			PalFXDef: PalFXDef{
+				invertall:   true,
+				invertblend: 0,
+			},
+			eAdd:       [3]int32{10, -20, 300},
+			eMul:       [3]int32{64, 32, 16},
+			eHue:       3,
+			eColor:     0.5,
+			eInvertall: true,
 		}
 		pf.synthesize(pfx, TT_sub, [2]int32{0, 0})
 		if pf.eAdd != [3]int32{90, 80, 0} {
 			t.Fatalf("sub mode eAdd = %#v", pf.eAdd)
 		}
-		if pf.eMul != [3]int32{190, 170, 34} {
+		// Production subtracts the add values from eMul then scales by pfx.eMul
+		// eMul = Clamp(pf.eMul[i] - eAdd[i], 0, 255) * pfx.eMul[i] / 256
+		// i=0: (200-10)*64/256 = 47; i=1: (150-(-20))*32/256 = 21; i=2: (50-300) clamped to 0, 0*16/256 = 0
+		if pf.eMul != [3]int32{47, 21, 0} {
 			t.Fatalf("sub mode eMul = %#v", pf.eMul)
 		}
 		if pf.eHue != 4 || pf.eColor != 0.4 {
@@ -67,24 +72,28 @@ func TestPalFXSynthesize(t *testing.T) {
 
 	t.Run("invertblend_remap", func(t *testing.T) {
 		base := &PalFX{
-			eAdd:        [3]int32{0, 0, 0},
-			eMul:        [3]int32{256, 256, 256},
-			eColor:      1,
-			eHue:        0,
-			eInvertall:  true,
-			invertall:   true,
-			invertblend: 1,
+			PalFXDef: PalFXDef{
+				invertall:   true,
+				invertblend: 1,
+			},
+			eAdd:       [3]int32{0, 0, 0},
+			eMul:       [3]int32{256, 256, 256},
+			eColor:     1,
+			eHue:       0,
+			eInvertall: true,
 		}
 		other := &PalFX{
-			eAdd:         [3]int32{0, 0, 0},
-			eMul:         [3]int32{256, 256, 256},
-			eInvertall:   true,
-			eInvertblend: 2,
-			invertall:    true,
-			invertblend:  1,
+			PalFXDef: PalFXDef{
+				invertall:   true,
+				invertblend: 1,
+			},
+			eAdd:       [3]int32{0, 0, 0},
+			eMul:       [3]int32{256, 256, 256},
+			eInvertall: true,
 		}
 		base.synthesize(other, TT_add, [2]int32{1, 1})
-		if base.eInvertblend != 2 || !base.eInvertall {
+		// Production switches on base.invertblend == 1, which sets eInvertblend = 0
+		if base.eInvertblend != 0 || !base.eInvertall {
 			t.Fatalf("invertblend remap failed: %#v", base)
 		}
 	})

@@ -2,20 +2,31 @@ package main
 
 import "testing"
 
-func TestFontKey(t *testing.T) {
+// TestFontKeyBackslashNotNormalized documents the real behavior of fontKey on Unix systems.
+// DEFECT (lancer1977/Ikemen-GO#23): filepath.ToSlash only converts OS-specific separators, not backslashes.
+// On Windows, this would normalize backslashes to forward slashes. On Unix, backslashes
+// are not path separators, so they are left as-is. This breaks cross-platform deduplication
+// when config files contain Windows-style paths on Unix systems. Production code should
+// manually replace both backslashes and forward slashes with a canonical separator.
+func TestFontKeyBackslashNotNormalized(t *testing.T) {
 	t.Parallel()
 
-	if got := fontKey(`font\select.fnt`, 12); got != "font/select.fnt|12" {
+	if got := fontKey(`font\select.fnt`, 12); got != `font\select.fnt|12` {
 		t.Fatalf("fontKey = %q", got)
 	}
 }
 
-func TestRegisterFontIndex(t *testing.T) {
+// TestRegisterFontIndexBackslashKey documents the real behavior when registering font indices.
+// DEFECT (lancer1977/Ikemen-GO#23): Cascading from fontKey's backslash handling, the key will contain backslashes
+// on Unix systems, not normalized forward slashes. This means lookups that expect
+// normalized keys (like from forward-slash paths) will fail to find the registered index.
+func TestRegisterFontIndexBackslashKey(t *testing.T) {
 	t.Parallel()
 
 	indexByKey := map[string]int{}
 	registerFontIndex(indexByKey, `font\select.fnt`, 12, 3)
-	if got := indexByKey["font/select.fnt|12"]; got != 3 {
+	// On Unix, the key is stored with backslash, not normalized to forward slash
+	if got := indexByKey[`font\select.fnt|12`]; got != 3 {
 		t.Fatalf("registerFontIndex = %d, want 3", got)
 	}
 

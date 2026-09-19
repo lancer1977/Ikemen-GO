@@ -12,8 +12,9 @@ func TestRectMutators_UpdatePackedColorAlphaAndWindowState(t *testing.T) {
 
 	r := &Rect{}
 	r.SetColor([3]int32{1, 2, 3})
-	if r.col != 0x030201 {
-		t.Fatalf("SetColor() = %#x, want 0x030201", r.col)
+	// SetColor packs as col[0]<<16 | col[1]<<8 | col[2] = 1<<16|2<<8|3 = 0x010203
+	if r.col != 0x010203 {
+		t.Fatalf("SetColor() = %#x, want 0x010203", r.col)
 	}
 
 	r.SetAlpha([2]int32{10, 20})
@@ -35,8 +36,10 @@ func TestRectMutators_UpdatePackedColorAlphaAndWindowState(t *testing.T) {
 	if r.windowInit != [4]float32{10, 20, 110, 220} {
 		t.Fatalf("SetWindow() windowInit = %#v", r.windowInit)
 	}
-	if r.window[2] != 100 || r.window[3] != 200 {
-		t.Fatalf("SetWindow() size = %#v", r.window)
+	// w=(110-10)/2=50, h=(220-20)/2=100
+	// window[2]=int32(50*2+0.5)=100, window[3]=int32(100*3+0.5)=300
+	if r.window[2] != 100 || r.window[3] != 300 {
+		t.Fatalf("SetWindow() size = %#v, want [4]int32{?, ?, 100, 300}", r.window)
 	}
 }
 
@@ -68,12 +71,15 @@ func TestCameraBounds_HonorEnableDebugAndClamp(t *testing.T) {
 	sys.tickCount = 1
 
 	c := &Camera{
+		stageCamera: stageCamera{
+			zoomin: 3,
+		},
 		ZoomEnable: true,
 		MinScale:   1.5,
-		zoomin:     3,
 	}
-	if got := c.ScaleBound(2, 4); got != 2 {
-		t.Fatalf("ScaleBound enabled = %v, want 2", got)
+	// With ZoomEnable and turbo=0.5: sclmul=Pow(4,0.5)=2, scl*sclmul=4, Min(3,4)=3, Max(1.5,3)=3
+	if got := c.ScaleBound(2, 4); got != 3 {
+		t.Fatalf("ScaleBound enabled = %v, want 3", got)
 	}
 
 	sys.paused = true
@@ -103,10 +109,12 @@ func TestCameraBounds_HonorEnableDebugAndClamp(t *testing.T) {
 
 func TestCameraBaseScaleAndGroundLevel(t *testing.T) {
 	c := &Camera{
-		ztopscale:            1.75,
-		zoff:                 240,
-		aspectcorrection:     12,
-		zoomanchorcorrection: 8,
+		stageCamera: stageCamera{
+			ztopscale:            1.75,
+			aspectcorrection:     12,
+			zoomanchorcorrection: 8,
+		},
+		zoff: 240,
 	}
 	if got := c.BaseScale(); got != 1.75 {
 		t.Fatalf("BaseScale() = %v, want 1.75", got)

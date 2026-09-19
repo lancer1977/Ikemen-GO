@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	lua "github.com/yuin/gopher-lua"
+	"gopkg.in/ini.v1"
 )
 
 func TestLuaTableToIniFileFlattensSectionsAndMapsDefaultSection(t *testing.T) {
@@ -29,7 +30,20 @@ func TestLuaTableToIniFileFlattensSectionsAndMapsDefaultSection(t *testing.T) {
 		t.Fatalf("default section stats.score = %q, want 7", f.Section("").Key("stats.score").String())
 	}
 
-	if f2, err := luaTableToIniFile(nil); err != nil || len(f2.Sections()) != 0 {
-		t.Fatalf("luaTableToIniFile(nil) = (%#v, %v), want empty ini nil", f2, err)
+	// A nil table short-circuits to ini.Empty(), which is never nil and always
+	// carries the implicit DEFAULT section -- but that section must hold no
+	// keys, which is what "empty" has to mean here.
+	f2, err := luaTableToIniFile(nil)
+	if err != nil {
+		t.Fatalf("luaTableToIniFile(nil) returned error: %v", err)
+	}
+	if f2 == nil {
+		t.Fatal("luaTableToIniFile(nil) returned a nil file")
+	}
+	if names := f2.SectionStrings(); len(names) != 1 || names[0] != ini.DefaultSection {
+		t.Fatalf("luaTableToIniFile(nil) sections = %v, want only %q", names, ini.DefaultSection)
+	}
+	if keys := f2.Section("").Keys(); len(keys) != 0 {
+		t.Fatalf("luaTableToIniFile(nil) default section has %d keys, want 0", len(keys))
 	}
 }

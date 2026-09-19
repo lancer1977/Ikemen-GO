@@ -9,8 +9,11 @@ func TestNewGameStatePool(t *testing.T) {
 	if p.curStateID != 0 {
 		t.Fatalf("curStateID = %d, want 0", p.curStateID)
 	}
-	if p.poolObjs != nil {
-		t.Fatalf("poolObjs = %#v, want nil", p.poolObjs)
+	// NewGameStatePool initializes poolObjs as an empty map, not nil.
+	// An initialized empty map and nil behave identically for reads but differently
+	// for writes (nil would panic, empty map succeeds). See state.go:556.
+	if len(p.poolObjs) != 0 {
+		t.Fatalf("poolObjs should be empty, got %d entries", len(p.poolObjs))
 	}
 	if got := p.gameStatePool.New; got == nil {
 		t.Fatal("expected gameStatePool.New to be initialized")

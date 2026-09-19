@@ -26,6 +26,12 @@ func TestApplyGlyphDefaultsFromMovelist(t *testing.T) {
 						VisibleItems int32 `ini:"visibleitems"`
 						Width        int32 `ini:"width"`
 					} `ini:"window"`
+					Overlay OverlayProperties `ini:"overlay"`
+					Arrow   struct {
+						Up   AnimationProperties `ini:"up"`
+						Down AnimationProperties `ini:"down"`
+					} `ini:"arrow"`
+					Itemname map[string]string `ini:"itemname"`
 				}{
 					Glyphs: MovelistGlyphsProperties{
 						Offset:     [2]float32{1, 2},

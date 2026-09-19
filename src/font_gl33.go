@@ -24,7 +24,7 @@ type Font_GL33 struct {
 	windowWidth  int
 	windowHeight int
 	textures     []*TextureAtlas
-	color        color
+	color        colorValue
 	shaderPalFX  ShaderPalFX
 }
 

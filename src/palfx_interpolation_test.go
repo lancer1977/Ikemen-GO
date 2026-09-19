@@ -20,16 +20,24 @@ func TestPalFXInterpolationUpdate(t *testing.T) {
 	if pfx.eiTime != 3 {
 		t.Fatalf("expected eiTime to advance to 3, got %d", pfx.eiTime)
 	}
-	if pfx.eiMul != [3]int32{60, 120, 180} || pfx.eMul != [3]int32{60, 60, 45} {
+	// Production interpolates between imul[i+3] (start) and imul[i] (end).
+	// With t=0.75, eiMul[i] = (1-0.75)*imul[i+3] + 0.75*imul[i]
+	// Then eMul[i] = eiMul[i] * mul[i] / 256
+	if pfx.eiMul != [3]int32{35, 70, 105} || pfx.eMul != [3]int32{35, 35, 26} {
 		t.Fatalf("unexpected interpolated muls: ei=%#v e=%#v", pfx.eiMul, pfx.eMul)
 	}
-	if pfx.eiAdd != [3]int32{6, 7, 8} || pfx.eAdd != [3]int32{10, 12, 14} {
+	// eiAdd[i] = (1-0.75)*iadd[i+3] + 0.75*iadd[i], then eAdd[i] = eiAdd[i] + add[i]
+	if pfx.eiAdd != [3]int32{3, 4, 5} || pfx.eAdd != [3]int32{7, 9, 11} {
 		t.Fatalf("unexpected interpolated adds: ei=%#v e=%#v", pfx.eiAdd, pfx.eAdd)
 	}
+	// eiColor = Lerp(icolor[1], icolor[0], 0.75) = 0.25*1 + 0.75*0.5 = 0.25 + 0.375 = 0.625
+	// eColor = eiColor * color = 0.625 * 0.25 = 0.15625
 	if pfx.eiColor != 0.625 || pfx.eColor != 0.15625 {
 		t.Fatalf("unexpected interpolated color: ei=%v e=%v", pfx.eiColor, pfx.eColor)
 	}
-	if pfx.eiHue != 5 || pfx.eHue != 6 {
+	// eiHue = Lerp(ihue[1], ihue[0], 0.75) = 0.25*6 + 0.75*2 = 1.5 + 1.5 = 3
+	// eHue = eiHue + hue = 3 + 1 = 4
+	if pfx.eiHue != 3 || pfx.eHue != 4 {
 		t.Fatalf("unexpected interpolated hue: ei=%v e=%v", pfx.eiHue, pfx.eHue)
 	}
 }

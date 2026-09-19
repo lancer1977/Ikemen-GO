@@ -5,7 +5,7 @@ import "testing"
 func TestSyncFontsMap(t *testing.T) {
 	var dst map[string]*FontProperties
 	fonts := map[int]*Fnt{
-		2: {Type: 7, Size: 12, Spacing: 3, offset: [2]int32{4, 5}},
+		2: {Type: "truetype", Size: [2]uint16{12, 12}, Spacing: [2]int32{3, 3}, offset: [2]int32{4, 5}},
 	}
 	indexByKey := map[string]int{
 		fontKey("font/select.fnt", 16): 2,
@@ -23,7 +23,7 @@ func TestSyncFontsMap(t *testing.T) {
 	if fp.Font != "font/select.fnt" || fp.Height != 16 {
 		t.Fatalf("syncFontsMap font metadata = %#v", fp)
 	}
-	if fp.Type != 7 || fp.Size != 12 || fp.Spacing != 3 || fp.Offset != [2]int32{4, 5} {
+	if fp.Type != "truetype" || fp.Size != [2]uint16{12, 12} || fp.Spacing != [2]int32{3, 3} || fp.Offset != [2]int32{4, 5} {
 		t.Fatalf("syncFontsMap copied fields = %#v", fp)
 	}
 }

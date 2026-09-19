@@ -784,9 +784,18 @@ func TestPathHelpers_DeriveSiblingTelemetryFilesFromConfiguredRoots(t *testing.T
 	if got := s.combatEventsPath(); got != filepath.Join(tempDir, "combat_events.jsonl") {
 		t.Fatalf("unexpected combat events path: %q", got)
 	}
-	if got := s.matchEventsPath(); got != filepath.Join(tempDir, "match_events.jsonl") {
+	// matchEventsPath is the odd one out: unlike combatEventsPath and
+	// richFightPath it has no -livedatafile/-resultfile sibling fallback, so it
+	// drops straight to the baseDir default unless -matcheventsfile is given.
+	if got := s.matchEventsPath(); got != filepath.Join(s.baseDir, "save", "match_events.jsonl") {
 		t.Fatalf("unexpected match events path: %q", got)
 	}
+	explicit := filepath.Join(tempDir, "match_events.jsonl")
+	s.cmdFlags["-matcheventsfile"] = explicit
+	if got := s.matchEventsPath(); got != explicit {
+		t.Fatalf("unexpected explicit match events path: %q", got)
+	}
+	delete(s.cmdFlags, "-matcheventsfile")
 	if got := s.richFightPath(); got != filepath.Join(tempDir, "fight_history.jsonl") {
 		t.Fatalf("unexpected rich fight path: %q", got)
 	}

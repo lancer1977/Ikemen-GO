@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func TestIsZipPath_RecognizesArchiveAndInternalEntryForms(t *testing.T) {
-	isZip, zipFile, inside := IsZipPath(`C:\data\packs\chars.zip\ryu\ryu.def`)
+	isZip, zipFile, inside := IsZipPath("C:/data/packs/chars.zip/ryu/ryu.def")
 	if !isZip || zipFile != "C:/data/packs/chars.zip" || inside != "ryu/ryu.def" {
 		t.Fatalf("IsZipPath(internal) = %v, %q, %q", isZip, zipFile, inside)
 	}

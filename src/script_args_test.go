@@ -22,8 +22,10 @@ func TestLuaArgHelpers(t *testing.T) {
 	if nilArg(l, 1) {
 		t.Fatal("nilArg(false) = true, want false")
 	}
-	if !boolArg(l, 1) {
-		t.Fatal("boolArg(false) = true, want false")
+	// boolArg delegates to Lua's truthiness: false and nil are falsy,
+	// everything else is truthy. lua.LFalse is falsy, so boolArg should return false.
+	if boolArg(l, 1) {
+		t.Fatal("boolArg(lua.LFalse) should return false")
 	}
 	l.Pop(1)
 

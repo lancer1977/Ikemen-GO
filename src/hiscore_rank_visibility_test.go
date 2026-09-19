@@ -27,6 +27,7 @@ func TestRankingWouldPlace_ReturnsTrueWhenVisibleWindowHasRoom(t *testing.T) {
 		cmdFlags: map[string]string{
 			"-stats": statsPath,
 		},
+		sel: *newSelect(),
 	}
 	sys.statsLog.Matches = []StatsMatch{{MatchTime: 60, WinSide: 0, Wins: [2]int32{1, 0}, TotalScore: [2]int32{4000, 0}}}
 	sys.timerRounds = []int32{60}
@@ -67,6 +68,7 @@ func TestRankingWouldPlace_ReturnsFalseWhenEntryFallsOutOfWindow(t *testing.T) {
 		cmdFlags: map[string]string{
 			"-stats": statsPath,
 		},
+		sel: *newSelect(),
 	}
 	sys.statsLog.Matches = []StatsMatch{{MatchTime: 60, WinSide: 0, Wins: [2]int32{1, 0}, TotalScore: [2]int32{4000, 0}}}
 	sys.timerRounds = []int32{60}
@@ -86,7 +88,15 @@ func TestRankingWouldPlace_ReturnsFalseWhenEntryFallsOutOfWindow(t *testing.T) {
 
 func TestModeCleared_RespectsRankingConditionAndResultsScreenRoundTarget(t *testing.T) {
 	prevSys := sys
-	sys = System{}
+	// A zero System leaves sel unpopulated, so sel.gameParams dereferences nil.
+	sys = System{sel: *newSelect()}
+	// winnerTeam() falls through to roundState(), which dereferences
+	// fightScreen.round; a zero System leaves it nil.
+	sys.fightScreen.round = &FightScreenRound{}
+	// winTeam defaults to 0, which makes winnerTeam() report team 1 as the
+	// winner and short-circuits modeCleared before the ranking check. -1 is
+	// the "no winner yet" state both cases below need.
+	sys.winTeam = -1
 	t.Cleanup(func() {
 		sys = prevSys
 	})
@@ -104,7 +114,6 @@ func TestModeCleared_RespectsRankingConditionAndResultsScreenRoundTarget(t *test
 			RoundsToWin: 3,
 		},
 	}
-	sys.winTeam = 0
 	sys.endMatch = false
 	sys.round = 4
 	if modeCleared("arcade", 2) {

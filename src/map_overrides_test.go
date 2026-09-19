@@ -18,6 +18,15 @@ func TestApplyMapOverridesCopiesCharacterMapEntries(t *testing.T) {
 }
 
 func TestApplyMapOverridesNoOpsWithoutMapData(t *testing.T) {
+	oldSys := sys
+	defer func() { sys = oldSys }()
+
+	// applyMapOverrides lazily creates sys.sel.gameParams via the global sys, so
+	// this test mutates shared state. The deferred restore above already puts the
+	// whole System back; forcing gameParams to nil in a t.Cleanup would run after
+	// that restore and leak a nil into the tests that follow.
+	sys = System{sel: *newSelect()}
+
 	c := &Char{}
 	c.applyMapOverrides()
 	if c.mapArray != nil {

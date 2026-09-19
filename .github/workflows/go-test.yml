@@ -1,0 +1,59 @@
+name: go-test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop, release]
+  pull_request:
+    branches: [develop, release]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ikemen-go-test-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go-test:
+    name: Run Go tests
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-latest' || fromJSON('["self-hosted","linux","x64","pr-validation","ikemen-go"]') }}
+    env:
+      GOEXPERIMENT: arenas
+      # This job's tests import cgo bindings (SDL2/OpenGL/GTK/FFmpeg), so cgo
+      # must be enabled. The self-hosted "ikemen-go" runner is a persistent
+      # machine shared across jobs; a prior job's `go env -w CGO_ENABLED=0`
+      # (or similar) can leak into this one via the persisted go env config.
+      # Setting it explicitly here as a real environment variable overrides
+      # any such persisted setting for this job, regardless of runner state.
+      CGO_ENABLED: 1
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Go from go.mod
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      # go test compiles the module (cgo bindings to SDL2/OpenGL/GTK/
+      # FFmpeg), so the native headers documented in README.md /
+      # scripts/install-linux-build-deps.sh must be present first. Install
+      # unconditionally on all Linux runners; the script safely detects apt-based
+      # systems and fails gracefully on others.
+      - name: Install native build dependencies
+        run: ./scripts/install-linux-build-deps.sh
+
+      - name: Run Go tests
+        run: go test ./...
+
+      # `go vet ./...` is deliberately not run here yet. The tree currently has
+      # 244 vet findings, none of them introduced by this workflow: 33 in
+      # production (mostly unsafe.Pointer in the Vulkan backend) and 211 in
+      # tests, of which 210 are the same copylocks pattern caused by System
+      # embedding a mutex by value. A step that is always red teaches everyone
+      # to ignore it, so it stays out until the count is zero.
+      # Tracked as lancer1977/Ikemen-GO#19.

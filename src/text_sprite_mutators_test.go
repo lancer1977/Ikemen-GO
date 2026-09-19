@@ -62,8 +62,10 @@ func TestTextSpriteMutators_UpdateLocalcoordPositionScaleAndWindow(t *testing.T)
 	if ts.windowInit != [4]float32{10, 20, 110, 220} {
 		t.Fatalf("SetWindow() windowInit = %#v", ts.windowInit)
 	}
-	if ts.window[2] != 200 || ts.window[3] != 1200 {
-		t.Fatalf("SetWindow() window = %#v", ts.window)
+	// w = (110-10)*2 = 200, h = (220-20)*2 = 400
+	// window[2] = int32(200*2+0.5) = 400, window[3] = int32(400*3+0.5) = 1200
+	if ts.window[2] != 400 || ts.window[3] != 1200 {
+		t.Fatalf("SetWindow() window = %#v, want [4]int32{?, ?, 400, 1200}", ts.window)
 	}
 }
 

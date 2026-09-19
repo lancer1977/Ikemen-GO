@@ -54,7 +54,9 @@ func TestSffLoadPalettes(t *testing.T) {
 		if len(s.palList.palettes) != 2 {
 			t.Fatalf("expected two loaded palettes, got %d", len(s.palList.palettes))
 		}
-		if s.palList.PalTable[[2]uint16{1, 1}] != 0 || s.palList.PalTable[[2]uint16{1, 2}] != 1 {
+		// Palette 0 is unique (plSize > 0), so it maps to index 0
+		// Palette 1 is linked (plSize == 0), so it links to the palette at link=0
+		if s.palList.PalTable[[2]uint16{1, 1}] != 0 || s.palList.PalTable[[2]uint16{1, 2}] != 0 {
 			t.Fatalf("unexpected palette table: %#v", s.palList.PalTable)
 		}
 		if len(s.palList.palettes[1]) == 0 || s.palList.palettes[1][0] != s.palList.palettes[0][0] {
@@ -100,7 +102,7 @@ func TestSffLoadPalettes(t *testing.T) {
 		if s.palList.PalTable[[2]uint16{1, 1}] != 0 {
 			t.Fatalf("duplicate key should reuse first palette index, got %#v", s.palList.PalTable)
 		}
-		if s.palList.palettes[1] != s.palList.palettes[0] {
+		if len(s.palList.palettes[1]) != len(s.palList.palettes[0]) || (len(s.palList.palettes[1]) > 0 && &s.palList.palettes[1][0] != &s.palList.palettes[0][0]) {
 			t.Fatalf("duplicate key should reuse existing palette slice")
 		}
 	})

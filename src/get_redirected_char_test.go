@@ -3,7 +3,8 @@ package main
 import "testing"
 
 func TestGetRedirectedChar(t *testing.T) {
-	t.Parallel()
+	// Not parallel: this test mutates the package-level sys, which every test in
+	// this package shares.
 
 	oldSys := sys
 	defer func() { sys = oldSys }()
@@ -20,7 +21,9 @@ func TestGetRedirectedChar(t *testing.T) {
 		3, 1, // param id, exp count
 	}
 	block = append(block, []byte{2, 0, 0, 0}...) // exp length
-	block = append(block, []byte(exp)...)
+	for _, op := range exp {
+		block = append(block, byte(op))
+	}
 
 	if got := getRedirectedChar(src, block, 3, "redirectid"); got != dst {
 		t.Fatalf("getRedirectedChar returned %#v, want %#v", got, dst)

@@ -3,7 +3,8 @@ package main
 import "testing"
 
 func TestRound2AndDefKey(t *testing.T) {
-	t.Parallel()
+	// Not parallel: this test mutates the package-level sys, which every test in
+	// this package shares.
 
 	if got := round2(12.345); got != 12.35 {
 		t.Fatalf("round2(12.345) = %v, want 12.35", got)
@@ -17,7 +18,8 @@ func TestRound2AndDefKey(t *testing.T) {
 }
 
 func TestRankingTypeFor(t *testing.T) {
-	t.Parallel()
+	// Not parallel: this test mutates the package-level sys, which every test in
+	// this package shares.
 
 	prevSys := sys
 	sys = System{}
@@ -33,7 +35,8 @@ func TestRankingTypeFor(t *testing.T) {
 }
 
 func TestTallyRun(t *testing.T) {
-	t.Parallel()
+	// Not parallel: this test mutates the package-level sys, which every test in
+	// this package shares.
 
 	prevSys := sys
 	sys = System{}

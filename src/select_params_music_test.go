@@ -2,7 +2,7 @@ package main
 
 import "testing"
 
-func TestSplitMusicParamValue(t *testing.T) {
+func TestSplitMusicParamValueSpaceSeparated(t *testing.T) {
 	t.Parallel()
 
 	path, extras := splitMusicParamValue(" bgm/title.ogg  80  100  200 ")
