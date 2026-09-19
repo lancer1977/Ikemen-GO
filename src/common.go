@@ -421,7 +421,17 @@ func decodeShiftJIS(input string) string {
 		LogMessage("Warning: Failed to decode string as Shift_JIS, falling back to original. String: %s, Error: %v", input, err)
 		return input
 	}
-	return string(decodedBytes)
+
+	decoded := string(decodedBytes)
+	// The ShiftJIS decoder substitutes U+FFFD for bytes it cannot map rather than
+	// returning an error. If the decoded string contains replacement characters
+	// but the original did not, it means decoding failed. Fall back to the original.
+	if strings.Contains(decoded, "�") && !strings.Contains(input, "�") {
+		LogMessage("Warning: Failed to decode string as Shift_JIS, falling back to original. String: %s", input)
+		return input
+	}
+
+	return decoded
 }
 
 func FileExist(filename string) string {
