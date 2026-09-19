@@ -834,7 +834,7 @@ func assignToPatternMap(v reflect.Value, lastPartName string, value interface{},
 			if err != nil {
 				continue
 			}
-			if re.MatchString(lastPartName) {
+			if re.MatchString(strings.ToLower(lastPartName)) {
 				fieldVal := v.Field(i)
 				if fieldVal.Kind() == reflect.Map && fieldVal.Type().Key().Kind() == reflect.String {
 					if fieldVal.IsNil() {
