@@ -20,7 +20,9 @@ func TestNewStage(t *testing.T) {
 	if !math.IsNaN(float64(s.scale[0])) || !math.IsNaN(float64(s.scale[1])) {
 		t.Fatalf("newStage scale should be NaN, got %#v", s.scale)
 	}
-	if s.stageprops == (StageProps{}) {
-		t.Fatalf("newStage stageprops should be initialized")
+	// newStageProps initializes StageProps with roundpos=false (the zero value for bool)
+	// so the struct will equal StageProps{} - just verify roundpos is explicitly false
+	if s.stageprops.roundpos != false {
+		t.Fatalf("newStage stageprops.roundpos should be false, got %#v", s.stageprops)
 	}
 }

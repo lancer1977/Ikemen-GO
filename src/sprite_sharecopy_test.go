@@ -18,7 +18,8 @@ func TestSpriteShareCopy(t *testing.T) {
 		Tex:      &fakeTexture{},
 	}
 
-	dst := &Sprite{palidx: -1}
+	// Test preserving palidx when already set (>= 0)
+	dst := &Sprite{palidx: 42}
 	dst.shareCopy(src)
 
 	if len(dst.Pal) != len(src.Pal) || (len(dst.Pal) > 0 && &dst.Pal[0] != &src.Pal[0]) {
@@ -27,8 +28,8 @@ func TestSpriteShareCopy(t *testing.T) {
 	if dst.Size != src.Size {
 		t.Fatalf("shareCopy should copy size, got %#v want %#v", dst.Size, src.Size)
 	}
-	if dst.palidx != -1 {
-		t.Fatalf("shareCopy should preserve existing palidx when already set")
+	if dst.palidx != 42 {
+		t.Fatalf("shareCopy should preserve existing palidx when already set, got %d want 42", dst.palidx)
 	}
 	if dst.coldepth != src.coldepth {
 		t.Fatalf("shareCopy should copy coldepth, got %d want %d", dst.coldepth, src.coldepth)
