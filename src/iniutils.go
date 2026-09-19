@@ -3001,6 +3001,10 @@ func parseMusicSection(section *ini.Section) Music {
 // fontKey builds a deduplication key "normalizedPath|height".
 func fontKey(path string, height int32) string {
 	p := filepath.ToSlash(path)
+	// Explicitly normalize backslashes to forward slashes for cross-platform consistency.
+	// filepath.ToSlash only converts the host OS's separator; on non-Windows builds,
+	// backslashes are left as-is. This breaks dedup for Windows-authored paths on Linux/macOS.
+	p = strings.ReplaceAll(p, "\\", "/")
 	return fmt.Sprintf("%s|%d", p, height)
 }
 
