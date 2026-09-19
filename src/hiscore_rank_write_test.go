@@ -35,6 +35,9 @@ func TestComputeAndSaveRanking_WritesUpdatedStatsFile(t *testing.T) {
 		cmdFlags: map[string]string{
 			"-stats": statsPath,
 		},
+		// A zero Select leaves gameParams nil, so sys.sel.gameParams below
+		// would dereference nil.
+		sel: *newSelect(),
 	}
 	sys.statsLog.Matches = []StatsMatch{
 		{
@@ -94,7 +97,10 @@ func TestComputeAndSaveRanking_WritesUpdatedStatsFile(t *testing.T) {
 
 func TestComputeAndSaveRanking_BootstrapsMissingStatsFile(t *testing.T) {
 	tempDir := t.TempDir()
-	statsPath := filepath.Join(tempDir, "missing", "stats.json")
+	// The file is absent but its directory exists, which is the real bootstrap
+	// case: main.go creates save/ up front, and writeStatsPretty does a plain
+	// os.WriteFile with no MkdirAll.
+	statsPath := filepath.Join(tempDir, "stats.json")
 
 	prevSys := sys
 	sys = System{
@@ -106,6 +112,9 @@ func TestComputeAndSaveRanking_BootstrapsMissingStatsFile(t *testing.T) {
 		cmdFlags: map[string]string{
 			"-stats": statsPath,
 		},
+		// A zero Select leaves gameParams nil, so sys.sel.gameParams below
+		// would dereference nil.
+		sel: *newSelect(),
 	}
 	sys.statsLog.Matches = []StatsMatch{
 		{

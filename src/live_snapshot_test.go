@@ -8,6 +8,7 @@ import (
 )
 
 func TestMaybeWriteLiveSnapshot_WritesSnapshotDuringMatch(t *testing.T) {
+	ensureGlobalRound(t)
 	tempDir := t.TempDir()
 	livePath := filepath.Join(tempDir, "live_data.json")
 	statusPath := filepath.Join(tempDir, "live_status.json")
@@ -54,6 +55,7 @@ func TestMaybeWriteLiveSnapshot_WritesSnapshotDuringMatch(t *testing.T) {
 }
 
 func TestMaybeWriteLiveSnapshot_SkipsOddFramesButWritesStatus(t *testing.T) {
+	ensureGlobalRound(t)
 	tempDir := t.TempDir()
 	livePath := filepath.Join(tempDir, "live_data.json")
 	statusPath := filepath.Join(tempDir, "live_status.json")
@@ -83,6 +85,7 @@ func TestMaybeWriteLiveSnapshot_SkipsOddFramesButWritesStatus(t *testing.T) {
 }
 
 func TestMaybeWriteLiveSnapshot_FallsBackToStatusWhenNotInMatch(t *testing.T) {
+	ensureGlobalRound(t)
 	tempDir := t.TempDir()
 	livePath := filepath.Join(tempDir, "live_data.json")
 	statusPath := filepath.Join(tempDir, "live_status.json")
@@ -93,6 +96,10 @@ func TestMaybeWriteLiveSnapshot_FallsBackToStatusWhenNotInMatch(t *testing.T) {
 			round:        2,
 			matchTime:    180,
 			curRoundTime: 90,
+			// middleOfMatch() is !fightLoopEnd && matchTime != 0 &&
+			// !postMatchFlg, so a non-zero matchTime alone still counts as
+			// in-match. fightLoopEnd is what actually ends it.
+			fightLoopEnd: true,
 		},
 		frameCounter: 6,
 		cmdFlags: map[string]string{

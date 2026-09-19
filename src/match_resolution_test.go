@@ -58,6 +58,7 @@ func TestMatchOverAndFinalRoundConditions(t *testing.T) {
 }
 
 func TestWinnerTeamResolvesFromMatchAndRoundState(t *testing.T) {
+	ensureGlobalRound(t)
 	oldSys := sys
 	defer func() { sys = oldSys }()
 
