@@ -36,11 +36,26 @@ func TestMotifHiscoreNameHelpers(t *testing.T) {
 	mo := &Motif{
 		HiscoreInfo: HiscoreInfoProperties{
 			Glyphs: []string{"A", ">", "C"},
-			Item: HiscoreItemProperties{
-				Name: HiscoreItemNameProperties{
+			Item: struct {
+				Offset  [2]float32     `ini:"offset"`
+				Spacing [2]float32     `ini:"spacing"`
+				Rank    ItemProperties `ini:"rank"`
+				Result  ItemProperties `ini:"result"`
+				Name    ItemProperties `ini:"name"`
+				Face    struct {
+					AnimationCharPreloadProperties `skipinit:"true"`
+					Num                            int32               `ini:"num"`
+					Spacing                        [2]float32          `ini:"spacing"`
+					Bg                             AnimationProperties `ini:"bg"`
+					Unknown                        AnimationProperties `ini:"unknown"`
+				} `ini:"face"`
+			}{
+				Name: ItemProperties{
 					Uppercase: true,
-					Text: map[string]string{
-						"default": "%s",
+					TextMapProperties: TextMapProperties{
+						Text: map[string]string{
+							"default": "%s",
+						},
 					},
 				},
 			},

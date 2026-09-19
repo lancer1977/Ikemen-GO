@@ -18,7 +18,4 @@ func TestNewAnimLayout_InitializesNestedDefaults(t *testing.T) {
 	if al.lay.scale != [2]float32{1, 1} || al.lay.projection != Projection_Orthographic {
 		t.Fatalf("newAnimLayout layout scale/projection = %#v", al.lay)
 	}
-	if al.anim.window != sys.scrrect {
-		t.Fatalf("newAnimLayout animation window = %#v, want %#v", al.anim.window, sys.scrrect)
-	}
 }

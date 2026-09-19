@@ -26,7 +26,7 @@ func TestLuaIniScalarStringFormatsCommonScalarsAndRejectsUnsupportedTypes(t *tes
 	if _, err := luaIniScalarString(lua.LNumber(math.NaN())); err == nil {
 		t.Fatal("luaIniScalarString should reject NaN")
 	}
-	if _, err := luaIniScalarString(lua.LFunction(nil)); err == nil {
+	if _, err := luaIniScalarString(&lua.LTable{}); err == nil {
 		t.Fatal("luaIniScalarString should reject unsupported types")
 	}
 }
