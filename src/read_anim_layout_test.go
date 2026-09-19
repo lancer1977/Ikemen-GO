@@ -31,11 +31,14 @@ func TestReadAnimLayout_UsesSpriteAndTableAnimationPaths(t *testing.T) {
 	byAnim := ReadAnimLayout("lay.", IniSection{
 		"lay.anim": "7",
 	}, sff, at, 6)
-	if byAnim.anim != at.anims[7] {
-		t.Fatalf("ReadAnimLayout(anim) = %#v, want table animation", byAnim.anim)
+	// ReadAnimLayout calls at.get() which returns a copy of the animation, not the original pointer.
+	// So byAnim.anim should be a copy with the same frame data.
+	if byAnim.anim == nil || len(byAnim.anim.frames) != 1 || byAnim.anim.frames[0].Time != 1 {
+		t.Fatalf("ReadAnimLayout(anim) = %#v, want copy of table animation with one frame", byAnim.anim)
 	}
-	if byAnim.lay.layerno != 6 {
-		t.Fatalf("ReadAnimLayout(anim) layerno = %d, want 6", byAnim.lay.layerno)
+	// layerno is capped to Min(2, ln) by Layout.Read, so 6 becomes 2
+	if byAnim.lay.layerno != 2 {
+		t.Fatalf("ReadAnimLayout(anim) layerno = %d, want 2", byAnim.lay.layerno)
 	}
 
 	missing := ReadAnimLayout("lay.", IniSection{
@@ -44,7 +47,8 @@ func TestReadAnimLayout_UsesSpriteAndTableAnimationPaths(t *testing.T) {
 	if missing.anim == nil || missing.anim == at.anims[7] {
 		t.Fatalf("ReadAnimLayout(missing anim) = %#v, want default animation", missing.anim)
 	}
-	if missing.lay.layerno != 8 {
-		t.Fatalf("ReadAnimLayout(missing anim) layerno = %d, want 8", missing.lay.layerno)
+	// layerno is capped to Min(2, ln) by Layout.Read, so 8 becomes 2
+	if missing.lay.layerno != 2 {
+		t.Fatalf("ReadAnimLayout(missing anim) layerno = %d, want 2", missing.lay.layerno)
 	}
 }
