@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/faiface/beep"
+	"github.com/gopxl/beep/v2"
 )
 
 func TestNewBufferSeeker(t *testing.T) {

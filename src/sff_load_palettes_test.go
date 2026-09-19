@@ -100,7 +100,7 @@ func TestSffLoadPalettes(t *testing.T) {
 		if s.palList.PalTable[[2]uint16{1, 1}] != 0 {
 			t.Fatalf("duplicate key should reuse first palette index, got %#v", s.palList.PalTable)
 		}
-		if s.palList.palettes[1] != s.palList.palettes[0] {
+		if len(s.palList.palettes[1]) != len(s.palList.palettes[0]) || (len(s.palList.palettes[1]) > 0 && &s.palList.palettes[1][0] != &s.palList.palettes[0][0]) {
 			t.Fatalf("duplicate key should reuse existing palette slice")
 		}
 	})

@@ -12,7 +12,7 @@ func TestPaletteListSetSourceAndNewPal_ExpandAndMapIndices(t *testing.T) {
 	if len(pl.palettes) != 1 || len(pl.paletteMap) != 1 || len(pl.PalTex) != 1 {
 		t.Fatalf("SetSource(-1) should not change storage, got %#v", pl)
 	}
-	if pl.palettes[0] != existing || pl.paletteMap[0] != 0 {
+	if len(pl.palettes[0]) != len(existing) || (len(pl.palettes[0]) > 0 && &pl.palettes[0][0] != &existing[0]) || pl.paletteMap[0] != 0 {
 		t.Fatalf("SetSource(-1) should not mutate existing palette state, got %#v", pl)
 	}
 
@@ -23,7 +23,7 @@ func TestPaletteListSetSourceAndNewPal_ExpandAndMapIndices(t *testing.T) {
 	if len(pl.palettes) != 1 || len(pl.paletteMap) != 1 || len(pl.PalTex) != 1 {
 		t.Fatalf("NewPal() did not initialize storage: %#v", pl)
 	}
-	if pl.palettes[0] != pal || pl.paletteMap[0] != 0 {
+	if len(pl.palettes[0]) != len(pal) || (len(pl.palettes[0]) > 0 && &pl.palettes[0][0] != &pal[0]) || pl.paletteMap[0] != 0 {
 		t.Fatalf("NewPal() did not wire the new palette source: %#v", pl)
 	}
 
@@ -32,7 +32,7 @@ func TestPaletteListSetSourceAndNewPal_ExpandAndMapIndices(t *testing.T) {
 	if len(pl.palettes) != 3 || len(pl.paletteMap) != 3 || len(pl.PalTex) != 3 {
 		t.Fatalf("SetSource(2) did not expand storage: %#v", pl)
 	}
-	if pl.palettes[2] != other || pl.paletteMap[2] != 2 {
+	if len(pl.palettes[2]) != len(other) || (len(pl.palettes[2]) > 0 && &pl.palettes[2][0] != &other[0]) || pl.paletteMap[2] != 2 {
 		t.Fatalf("SetSource(2) did not assign palette source: %#v", pl)
 	}
 }

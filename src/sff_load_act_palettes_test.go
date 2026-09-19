@@ -19,7 +19,7 @@ func TestSffLoadActPalettes(t *testing.T) {
 	}
 
 	sys.cfg.Config.PaletteMax = 6
-	sys.sel.charlist = []Char{
+	sys.sel.charlist = []SelectChar{
 		{
 			def: dir,
 			pal_files: []string{

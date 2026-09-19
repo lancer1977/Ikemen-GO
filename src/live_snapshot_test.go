@@ -29,8 +29,8 @@ func TestMaybeWriteLiveSnapshot_WritesSnapshotDuringMatch(t *testing.T) {
 	}
 	s.chars[0] = []*Char{{name: "Ryu", teamside: 0}}
 	s.chars[1] = []*Char{{name: "Ken", teamside: 1}}
-	s.fightScreen.scores[0] = &FightScore{scorePoints: 1}
-	s.fightScreen.scores[1] = &FightScore{scorePoints: 0}
+	s.fightScreen.scores[0] = &FightScreenScore{scorePoints: 1}
+	s.fightScreen.scores[1] = &FightScreenScore{scorePoints: 0}
 
 	s.maybeWriteLiveSnapshot()
 

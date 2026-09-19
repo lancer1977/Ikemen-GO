@@ -1,6 +1,7 @@
 package main
 
-import "testing"
+import ("math"
+	"testing")
 
 func TestNewStage(t *testing.T) {
 	s := newStage("stages/test.def")
