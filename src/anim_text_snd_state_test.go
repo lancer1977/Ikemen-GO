@@ -4,6 +4,7 @@ import "testing"
 
 func TestAnimTextSnd_ResetRestoresCountersAndPaletteTiming(t *testing.T) {
 	ats := newAnimTextSnd(&Sff{}, 0)
+	ats.text = *newFSText(0)
 	ats.cnt = 5
 	ats.text.pfxinit = 42
 	ats.text.palfx.time = 7
@@ -20,6 +21,7 @@ func TestAnimTextSnd_ResetRestoresCountersAndPaletteTiming(t *testing.T) {
 
 func TestAnimTextSnd_ActionAdvancesCounterAndTextStep(t *testing.T) {
 	ats := newAnimTextSnd(&Sff{}, 0)
+	ats.text = *newFSText(0)
 	ats.cnt = 3
 	ats.text.pfxinit = 11
 	ats.text.palfx.time = 11
