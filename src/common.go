@@ -807,14 +807,18 @@ func sliceMove[T any](array []T, srcIndex int, dstIndex int) []T {
 func ParseIkemenVersion(versionStr string) ([3]uint16, float32) {
 	var ver [3]uint16
 	parts := SplitAndTrim(versionStr, ".")
+	reStripNonNumeric := regexp.MustCompile(`[^0-9]`)
 	for i, s := range parts {
 		if i >= len(ver) {
 			break
 		}
-		if v, err := strconv.ParseUint(s, 10, 16); err == nil {
-			ver[i] = uint16(v)
-		} else {
-			break
+		// Strip non-numeric characters from this segment before parsing
+		// (e.g., "3-beta" becomes "3", matching the float path behavior)
+		cleanSegment := reStripNonNumeric.ReplaceAllString(s, "")
+		if cleanSegment != "" {
+			if v, err := strconv.ParseUint(cleanSegment, 10, 16); err == nil {
+				ver[i] = uint16(v)
+			}
 		}
 	}
 

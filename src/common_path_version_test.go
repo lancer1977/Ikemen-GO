@@ -48,9 +48,10 @@ func TestLowercaseNoExtension_StripsExtensionAndLowercasesBaseName(t *testing.T)
 }
 
 func TestParseIkemenVersion_ParsesPreciseAndFloatForms(t *testing.T) {
+	// After fix for #14: now correctly parses "1.10.3-beta" to [1, 10, 3] (was [1, 10, 0])
 	ver, verF := ParseIkemenVersion("1.10.3-beta")
-	if ver != [3]uint16{1, 10, 0} {
-		t.Fatalf("ver = %#v, want %#v", ver, [3]uint16{1, 10, 0})
+	if ver != [3]uint16{1, 10, 3} {
+		t.Fatalf("ver = %#v, want %#v", ver, [3]uint16{1, 10, 3})
 	}
 	if verF != 1.103 {
 		t.Fatalf("verF = %v, want %v", verF, 1.103)
