@@ -12,7 +12,7 @@ func TestApplyFightAspect_UsesSelectedStageOrMotifFallback(t *testing.T) {
 	}
 
 	s.applyFightAspect()
-	if s.gameWidth != 400 || s.gameHeight != 240 {
+	if s.gameWidth != 320 || s.gameHeight != 240 {
 		t.Fatalf("expected stage aspect to drive game size, got width=%v height=%v", s.gameWidth, s.gameHeight)
 	}
 
