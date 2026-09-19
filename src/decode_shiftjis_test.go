@@ -20,9 +20,23 @@ func TestDecodeShiftJIS_PreservesUtf8AndDecodesShiftJISBytes(t *testing.T) {
 	}
 }
 
-func TestDecodeShiftJIS_FallsBackToOriginalOnDecodeFailure(t *testing.T) {
+// decodeShiftJIS has an error branch that logs a warning and returns the input
+// unchanged, but it is unreachable: japanese.ShiftJIS's decoder substitutes
+// U+FFFD for bytes it cannot map rather than returning an error, so
+// transform.Bytes never reports one. This test pins the behaviour that actually
+// happens today so the dead branch is visible rather than assumed live.
+func TestDecodeShiftJIS_SubstitutesReplacementCharForUndecodableBytes(t *testing.T) {
+	// 0x81 is a lead byte with no following trail byte, so it cannot form a
+	// valid Shift_JIS sequence, and it is not valid UTF-8 either.
 	input := string([]byte{0x81})
-	if got := decodeShiftJIS(input); got != input {
-		t.Fatalf("decodeShiftJIS(fallback) = %q, want original input %q", got, input)
+	got := decodeShiftJIS(input)
+
+	if got == input {
+		t.Fatalf("decodeShiftJIS returned the input unchanged, which would mean " +
+			"the error branch became reachable; update the comment above and " +
+			"the engine issue tracking it")
+	}
+	if got != "\uFFFD" {
+		t.Fatalf("decodeShiftJIS(0x81) = %q, want the replacement character", got)
 	}
 }
