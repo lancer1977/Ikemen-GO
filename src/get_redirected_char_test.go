@@ -1,7 +1,6 @@
 package main
 
-import ("testing"
-	"unsafe")
+import "testing"
 
 func TestGetRedirectedChar(t *testing.T) {
 	t.Parallel()
@@ -21,7 +20,9 @@ func TestGetRedirectedChar(t *testing.T) {
 		3, 1, // param id, exp count
 	}
 	block = append(block, []byte{2, 0, 0, 0}...) // exp length
-	block = append(block, unsafe.Slice((*byte)(unsafe.Pointer(unsafe.SliceData(exp))), len(exp))...)
+	for _, op := range exp {
+		block = append(block, byte(op))
+	}
 
 	if got := getRedirectedChar(src, block, 3, "redirectid"); got != dst {
 		t.Fatalf("getRedirectedChar returned %#v, want %#v", got, dst)
