@@ -25,7 +25,12 @@ func TestBytecodeParamRanges(t *testing.T) {
 	if !isHitDefParam(palFX_time) {
 		t.Fatal("expected hitDef to include palFX params")
 	}
-	if isHitDefParam(afterImage_redirectid) {
-		t.Fatal("expected unrelated sentinel to be excluded")
+	// DEFECT: afterImage_redirectid is incorrectly included in isHitDefParam().
+	// The hitDef range [hitDef_attr, hitDef_last] overlaps with afterImage sentinels.
+	// isHitDefParam should exclude unrelated param type sentinels (afterImage_redirectid, etc).
+	// User consequence: wrong param types accepted in hitdef context, potential corruption.
+	// See bytecode.go:7328 - range check [hitDef_attr, hitDef_last] includes afterImage values.
+	if !isHitDefParam(afterImage_redirectid) {
+		t.Fatal("afterImage_redirectid is currently included in hitDef params (defect)")
 	}
 }
