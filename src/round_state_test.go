@@ -6,7 +6,7 @@ func TestRoundStateTransitionsAcrossMatchPhases(t *testing.T) {
 	oldSys := sys
 	defer func() { sys = oldSys }()
 
-	sys = oldSys
+	ensureGlobalRound(t)
 	sys.fightScreen.round.ctrl_time = 10
 	sys.fightScreen.round.over_waittime = 4
 
