@@ -34,7 +34,10 @@ func TestBytecodeExp_ReadHelpersAdvanceCursorAndFollowStringPool(t *testing.T) {
 	sys.stringPool[0] = StringPool{List: []string{"zero", "one"}, Map: map[string]int{"zero": 0, "one": 1}}
 
 	raw := []byte{0x02, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x03, 0, 0, 0, 0x09, 0, 0, 0}
-	be := BytecodeExp(raw)
+	be := make(BytecodeExp, len(raw))
+	for i, b := range raw {
+		be[i] = OpCode(b)
+	}
 	i := 0
 
 	if got := be.ReadIntAt(&i); got != 2 || i != 4 {
@@ -61,7 +64,7 @@ func TestBytecodeExp_ReadHelpersHandleZeroLengthAndZeroIndex(t *testing.T) {
 	sys.workingState = &StateBytecode{playerNo: 0}
 	sys.stringPool[0] = StringPool{List: []string{"zero"}, Map: map[string]int{"zero": 0}}
 
-	be := BytecodeExp([]byte{0, 0, 0, 0, 0, 0, 0, 0})
+	be := BytecodeExp{0, 0, 0, 0, 0, 0, 0, 0}
 	if got := be.PeekLength(0); got != 0 {
 		t.Fatalf("PeekLength(0) = %d, want 0", got)
 	}

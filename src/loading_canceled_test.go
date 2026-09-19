@@ -6,7 +6,7 @@ func TestLoadingCanceled(t *testing.T) {
 	oldSys := sys
 	defer func() { sys = oldSys }()
 
-	sys.loader = newLoader()
+	sys.loader = *newLoader()
 	sys.gameEnd = false
 	if loadingCanceled() {
 		t.Fatal("expected loadingCanceled to be false with default state")
