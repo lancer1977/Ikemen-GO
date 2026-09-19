@@ -30,6 +30,9 @@ func TestGetCurrentAspect_UsesFightAspectAfterMatchWhenSkipEnabled(t *testing.T)
 	s.cfg.Video.FightAspectHeight = 9
 	s.postMatchFlg = true
 	s.cfg.Video.KeepAspect = true
+	// Set motif aspect ratio wider than screen to trigger skipMotifScaling
+	// motif aspect 16:9 (1.777) > screen aspect 4:3 (1.333)
+	s.motif.Info.Localcoord = [2]int32{1280, 720}
 	if got := s.getCurrentAspect(); got != CalculateAspect(16, 9) {
 		t.Fatalf("expected fight aspect post-match when skip is enabled, got %v", got)
 	}

@@ -27,6 +27,7 @@ func TestRankingWouldPlace_ReturnsTrueWhenVisibleWindowHasRoom(t *testing.T) {
 		cmdFlags: map[string]string{
 			"-stats": statsPath,
 		},
+		sel: *newSelect(),
 	}
 	sys.statsLog.Matches = []StatsMatch{{MatchTime: 60, WinSide: 0, Wins: [2]int32{1, 0}, TotalScore: [2]int32{4000, 0}}}
 	sys.timerRounds = []int32{60}
@@ -67,6 +68,7 @@ func TestRankingWouldPlace_ReturnsFalseWhenEntryFallsOutOfWindow(t *testing.T) {
 		cmdFlags: map[string]string{
 			"-stats": statsPath,
 		},
+		sel: *newSelect(),
 	}
 	sys.statsLog.Matches = []StatsMatch{{MatchTime: 60, WinSide: 0, Wins: [2]int32{1, 0}, TotalScore: [2]int32{4000, 0}}}
 	sys.timerRounds = []int32{60}
