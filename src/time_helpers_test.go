@@ -6,7 +6,8 @@ func TestTimeHelpersUseMatchTimerAndRoundState(t *testing.T) {
 	oldSys := sys
 	defer func() { sys = oldSys }()
 
-	sys = oldSys
+	sys = System{}
+	ensureGlobalRound(t)
 
 	sys.slowtime = 8
 	sys.intro = -1
