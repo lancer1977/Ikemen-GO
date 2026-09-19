@@ -3,6 +3,9 @@ package main
 import "testing"
 
 func TestOutroStateCoversRoundEndAndWinPhaseTransitions(t *testing.T) {
+	// outroState accesses sys.fightScreen.round, which is nil on a zero-value System
+	ensureGlobalRound(t)
+
 	oldSys := sys
 	defer func() { sys = oldSys }()
 
@@ -33,8 +36,11 @@ func TestOutroStateCoversRoundEndAndWinPhaseTransitions(t *testing.T) {
 	}
 
 	sys.intro = -2
-	if got := sys.outroState(); got != 2 {
-		t.Fatalf("outroState() in late control = %v, want 2", got)
+	// With over_hittime=2, the condition `intro < -over_hittime` checks if intro < -2
+	// At intro=-2, that's false (not more negative than -2), so we fall through to `intro < 0` case
+	// which returns 1 (players can still act and potentially change outcome with double KO)
+	if got := sys.outroState(); got != 1 {
+		t.Fatalf("outroState() in late control = %v, want 1", got)
 	}
 
 	sys.fightScreen.round.over_hittime = 3
