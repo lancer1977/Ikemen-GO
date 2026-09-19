@@ -129,6 +129,8 @@ func splitMusicParamValue(v string) (path string, extras []string) {
 	path = strings.TrimSpace(v[:bestEnd])
 	rest := strings.TrimSpace(v[bestEnd:])
 	if rest != "" {
+		// Strip commas to support both comma-separated and space-separated formats
+		rest = strings.ReplaceAll(rest, ",", " ")
 		extras = strings.Fields(rest)
 	}
 	return path, extras
