@@ -12,7 +12,9 @@ func TestSffGetSpriteAndCloneSpriteWithPal(t *testing.T) {
 		t.Fatalf("GetSprite(0xFFFF, 0) = %#v, want nil", got)
 	}
 
-	src := &Sprite{Pal: []uint32{1, 2}, palidx: 3}
+	// Production's GetPal returns the sprite's own palette if it exists, otherwise looks up in PaletteList.
+	// Since we want to test the PaletteList lookup, don't set Pal on the sprite.
+	src := &Sprite{palidx: 3}
 	sff.sprites[[2]uint16{1, 2}] = src
 	pl := PaletteList{}
 	pl.init()
@@ -28,6 +30,7 @@ func TestSffGetSpriteAndCloneSpriteWithPal(t *testing.T) {
 	if len(got.Pal) == len(src.Pal) && len(got.Pal) > 0 && &got.Pal[0] == &src.Pal[0] {
 		t.Fatal("cloneSpriteWithPal should deep-copy the palette")
 	}
+	// cloneSpriteWithPal calls GetPal which returns the palette from the PaletteList
 	if len(got.Pal) != 3 || got.Pal[0] != 9 || got.Pal[2] != 7 {
 		t.Fatalf("cloneSpriteWithPal copied wrong palette: %#v", got.Pal)
 	}

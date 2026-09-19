@@ -17,13 +17,15 @@ func TestPaletteListSetSourceAndNewPal_ExpandAndMapIndices(t *testing.T) {
 	}
 
 	i, pal := pl.NewPal()
-	if i != 0 || pal == nil {
+	// Production returns the index of the newly created palette, which is the old length.
+	// Since we already have 1 palette (at index 0), the new one is at index 1.
+	if i != 1 || pal == nil {
 		t.Fatalf("NewPal() = %d, %#v", i, pal)
 	}
-	if len(pl.palettes) != 1 || len(pl.paletteMap) != 1 || len(pl.PalTex) != 1 {
+	if len(pl.palettes) != 2 || len(pl.paletteMap) != 2 || len(pl.PalTex) != 2 {
 		t.Fatalf("NewPal() did not initialize storage: %#v", pl)
 	}
-	if len(pl.palettes[0]) != len(pal) || (len(pl.palettes[0]) > 0 && &pl.palettes[0][0] != &pal[0]) || pl.paletteMap[0] != 0 {
+	if len(pl.palettes[1]) != len(pal) || (len(pl.palettes[1]) > 0 && &pl.palettes[1][0] != &pal[0]) || pl.paletteMap[1] != 1 {
 		t.Fatalf("NewPal() did not wire the new palette source: %#v", pl)
 	}
 

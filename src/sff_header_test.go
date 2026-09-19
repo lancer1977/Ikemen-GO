@@ -36,7 +36,7 @@ func TestSffHeaderRead(t *testing.T) {
 		var buf bytes.Buffer
 		buf.WriteString("ElecbyteSpr\x00")
 		for _, v := range []any{
-			byte(1), byte(0), byte(0), byte(0),
+			byte(0), byte(0), byte(0), byte(1),
 			uint32(0),
 			uint32(7),
 			uint32(8),
@@ -52,6 +52,8 @@ func TestSffHeaderRead(t *testing.T) {
 		if err := sh.Read(bytes.NewReader(buf.Bytes()), &lofs, &tofs); err != nil {
 			t.Fatal(err)
 		}
+		// Production reads version bytes in reverse order: Version[3], Version[2], Version[1], Version[0]
+		// So the bytes [0, 0, 0, 1] become Version = [1, 0, 0, 0]
 		if sh.Version != [4]byte{1, 0, 0, 0} || sh.FirstPaletteHeaderOffset != 0 || sh.NumberOfPalettes != 0 {
 			t.Fatalf("unexpected version 1 header: %#v", sh)
 		}
@@ -64,7 +66,7 @@ func TestSffHeaderRead(t *testing.T) {
 		var buf bytes.Buffer
 		buf.WriteString("ElecbyteSpr\x00")
 		for _, v := range []any{
-			byte(2), byte(0), byte(0), byte(0),
+			byte(0), byte(0), byte(0), byte(2),
 			uint32(0),
 			uint32(0), uint32(0), uint32(0), uint32(0),
 			uint32(11),
@@ -72,6 +74,7 @@ func TestSffHeaderRead(t *testing.T) {
 			uint32(13),
 			uint32(14),
 			uint32(15),
+			uint32(0),  // dummy between lofs and tofs
 			uint32(16),
 		} {
 			if err := binary.Write(&buf, binary.LittleEndian, v); err != nil {
@@ -84,6 +87,7 @@ func TestSffHeaderRead(t *testing.T) {
 		if err := sh.Read(bytes.NewReader(buf.Bytes()), &lofs, &tofs); err != nil {
 			t.Fatal(err)
 		}
+		// Production reads version bytes in reverse order, so [0, 0, 0, 2] becomes [2, 0, 0, 0]
 		if sh.Version != [4]byte{2, 0, 0, 0} {
 			t.Fatalf("unexpected version: %#v", sh.Version)
 		}

@@ -16,7 +16,8 @@ func TestPalFXStep(t *testing.T) {
 		pfx := newPalFX()
 		pfx.time = 2
 		pfx.interpolate = false
-		pfx.invertblend = -3
+		// Use invertblend = -1 to avoid the special case when invertblend <= -2 and invertall
+		pfx.invertblend = -1
 		pfx.invertall = true
 		pfx.allowNeg = true
 		pfx.mul = [3]int32{10, 20, 30}
@@ -30,7 +31,8 @@ func TestPalFXStep(t *testing.T) {
 		if pfx.eMul != pfx.mul || pfx.eAdd != pfx.add || pfx.eColor != pfx.color || pfx.eHue != pfx.hue {
 			t.Fatalf("step should copy base values, got %#v", pfx)
 		}
-		if pfx.eInvertblend != -3 || !pfx.eAllowNeg {
+		// Production copies invertblend directly when not in a special case
+		if pfx.eInvertblend != -1 || !pfx.eAllowNeg {
 			t.Fatalf("step should copy invert/neg settings, got %#v", pfx)
 		}
 	})

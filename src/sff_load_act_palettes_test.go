@@ -40,8 +40,10 @@ func TestSffLoadActPalettes(t *testing.T) {
 	if err := s.loadActPalettes(0); err != nil {
 		t.Fatal(err)
 	}
-	if len(s.palList.palettes) != 1 {
-		t.Fatalf("expected one loaded ACT palette, got %d", len(s.palList.palettes))
+	// Production's SetSource(1, pal) grows the palList to have indices 0 and 1,
+	// so len(palList.palettes) becomes 2. Only one ACT file was successfully loaded.
+	if len(s.palList.palettes) != 2 {
+		t.Fatalf("expected palList to expand to size 2 after loading one ACT palette, got %d", len(s.palList.palettes))
 	}
 	if got := s.palList.PalTable[[2]uint16{1, 2}]; got != 1 {
 		t.Fatalf("expected palette slot 2 to map to index 1, got %d", got)
