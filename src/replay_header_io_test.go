@@ -31,16 +31,10 @@ func TestReplayHeaderIO_DefectFormatVersionOverwritten(t *testing.T) {
 	} else if got == nil {
 		t.Fatal("readReplayHeader returned nil")
 	} else {
-		// DEFECT: FormatVersion does not round-trip correctly.
-		// writeReplayHeader writes replayFormatVersion (1) to the binary header instead of
-		// header.FormatVersion. readReplayHeader then reads this binary version and overwrites
-		// the JSON-deserialized FormatVersion. User consequence: custom replay format versions
-		// in the JSON are lost; all replays appear to have format version 1.
-		// See netplay.go:875 (writes replayFormatVersion, not header.FormatVersion) and
-		// netplay.go:923 (overwrites header.FormatVersion with the binary version).
-		// Tracked as lancer1977/Ikemen-GO#22.
-		if got.FormatVersion != 1 {
-			t.Fatalf("FormatVersion should be overwritten to 1, got %d", got.FormatVersion)
+		// FormatVersion should round-trip correctly through write and read.
+		// Fixes lancer1977/Ikemen-GO#22.
+		if got.FormatVersion != want.FormatVersion {
+			t.Fatalf("FormatVersion mismatch: got %d want %d", got.FormatVersion, want.FormatVersion)
 		}
 		if got.SyncVersion != want.SyncVersion || got.ContentFingerprint != want.ContentFingerprint {
 			t.Fatalf("other header fields mismatch: got %#v want %#v", got, want)
