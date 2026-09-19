@@ -17,37 +17,28 @@ func TestRandomHelpers_StayWithinConfiguredRangesAgain(t *testing.T) {
 		}
 	}
 
-	// DEFECT: RandF32 reuses the integer bucket arithmetic from Rand, where the
-	// "+1" counts an inclusive endpoint. For a continuous range that term simply
-	// widens the span, so RandF32(min, max) actually spans [min, min+(max-min+1)]
-	// and roughly half of all draws land above the requested maximum. RandF, just
-	// below it in common.go, has the correct formula.
-	// Tracked as lancer1977/Ikemen-GO#18.
-	//
-	// The assertions below pin the real behaviour: the widened bound holds, and
-	// overshoot is actually produced. Both fail once the formula is fixed, which
-	// is the point -- this test should then become a plain range assertion.
+	// Test RandF32 with deterministic seed - statistically verify it stays within range
+	// Fixed in #18: removed the incorrect "+1.0" term that was copied from the integer
+	// Rand function. For continuous float ranges, the divisor should scale Random()
+	// across the span (max-min), not (max-min+1).
 	Srand(5)
 	const rfMin, rfMax float32 = 1.5, 2.5
-	widened := rfMin + (rfMax - rfMin + 1.0)
-	overshoot := 0
-	const draws = 2000
+	const draws = 20000
+	var aboveMax, belowMin int
 	for i := 0; i < draws; i++ {
 		got := RandF32(rfMin, rfMax)
-		if got < rfMin || got > widened {
-			t.Fatalf("RandF32() = %v, outside even the widened span [%v,%v]", got, rfMin, widened)
+		if got < rfMin {
+			belowMin++
 		}
 		if got > rfMax {
-			overshoot++
+			aboveMax++
 		}
 	}
-	if overshoot == 0 {
-		t.Fatalf("RandF32 produced no values above the requested max of %v in %d draws; "+
-			"#18 appears fixed, so this test should assert the real range instead", rfMax, draws)
+	if belowMin > 0 {
+		t.Fatalf("RandF32 produced %d/%d values below the requested min of %v", belowMin, draws, rfMin)
 	}
-	if overshoot < draws/4 {
-		t.Fatalf("RandF32 overshoot rate dropped to %d/%d; the span arithmetic changed, "+
-			"re-check #18", overshoot, draws)
+	if aboveMax > 0 {
+		t.Fatalf("RandF32 produced %d/%d values above the requested max of %v", aboveMax, draws, rfMax)
 	}
 }
 

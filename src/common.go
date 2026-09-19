@@ -42,7 +42,7 @@ func Rand(min, max int32) int32 {
 }
 
 func RandF32(min, max float32) float32 {
-	return min + float32(Random())/(float32(IMax)/(max-min+1.0)+1.0)
+	return min + float32(Random())*(max-min)/float32(IMax)
 }
 
 func RandI(x, y int32) int32 {
