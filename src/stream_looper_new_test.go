@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-type fakeStreamSeeker struct {
+type fakeStreamSeekerLooper struct {
 	length   int
 	position int
 }
@@ -17,7 +17,7 @@ func (f *fakeStreamSeeker) Position() int                           { return f.p
 func (f *fakeStreamSeeker) Seek(p int) error                        { f.position = p; return nil }
 
 func TestNewStreamLooper(t *testing.T) {
-	base := &fakeStreamSeeker{length: 100}
+	base := &fakeStreamSeekerLooper{length: 100}
 
 	sl := newStreamLooper(base, 2, -5, 200).(*StreamLooper)
 	if sl.loopstart != 0 || sl.loopend != 100 {

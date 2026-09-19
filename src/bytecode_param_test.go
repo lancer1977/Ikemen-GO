@@ -2,7 +2,7 @@ package main
 
 import "testing"
 
-func TestBytecodeParamClassifiers(t *testing.T) {
+func TestBytecodeParamRanges(t *testing.T) {
 	t.Parallel()
 
 	if !isPalFXParam(palFX_time) || !isPalFXParam(palFX_last) {

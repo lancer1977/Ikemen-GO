@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-type fakeTexture struct {
+type fakeTextureSprite struct {
 	data [][]byte
 }
 
@@ -35,7 +35,7 @@ func TestSpriteDefaultsAndCachePalTex(t *testing.T) {
 		if !s.isBlank() {
 			t.Fatalf("expected sprite with nil texture to be blank")
 		}
-		s.Tex = &fakeTexture{}
+		s.Tex = &fakeTextureSprite{}
 		if s.isBlank() {
 			t.Fatalf("expected sprite with size and texture to be non-blank")
 		}
@@ -43,7 +43,7 @@ func TestSpriteDefaultsAndCachePalTex(t *testing.T) {
 
 	t.Run("cache hit and miss", func(t *testing.T) {
 		s := &Sprite{
-			PalTex:  &fakeTexture{},
+			PalTex:  &fakeTextureSprite{},
 			paltemp: []uint32{1, 2, 3},
 		}
 		paltex := s.PalTex
@@ -52,7 +52,7 @@ func TestSpriteDefaultsAndCachePalTex(t *testing.T) {
 		if got != paltex {
 			t.Fatalf("expected cache hit to reuse texture")
 		}
-		if ft := s.PalTex.(*fakeTexture); len(ft.data) != 0 {
+		if ft := s.PalTex.(*fakeTextureSprite); len(ft.data) != 0 {
 			t.Fatalf("expected no texture writes on cache hit, got %d", len(ft.data))
 		}
 
@@ -60,7 +60,7 @@ func TestSpriteDefaultsAndCachePalTex(t *testing.T) {
 		if got != paltex {
 			t.Fatalf("expected cache miss to update existing texture")
 		}
-		if ft := s.PalTex.(*fakeTexture); len(ft.data) != 1 || len(ft.data[0]) != 1024 {
+		if ft := s.PalTex.(*fakeTextureSprite); len(ft.data) != 1 || len(ft.data[0]) != 1024 {
 			t.Fatalf("unexpected texture writes: %v", ft.data)
 		} else {
 			want := make([]byte, 12)
