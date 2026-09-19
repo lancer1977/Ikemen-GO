@@ -16,16 +16,25 @@ func TestMusicPrefixHelpers_NormalizeAndDetectEntries(t *testing.T) {
 		t.Fatalf("musicKeyPrefix(no suffix) = %q, want title", got)
 	}
 
-	// normalizeMusicPrefix replaces "." with "_", so inputs normalize as:
-	// - "round1" normalizes to "round1" (no dots)
-	// - "round.1" normalizes to "round_1"
-	// Both queries should find the same entry if both normalized keys exist in the map
+	// Map keys are always stored in underscore form: music.go normalizes the
+	// prefix when it builds the map, and HasPrefix normalizes the query before
+	// looking it up. So a single "round_1" entry must be reachable by both
+	// spellings -- that round trip is the whole point of the helper.
 	m := Music{
-		"round1":  []*bgMusic{{}},
 		"round_1": []*bgMusic{{}},
 	}
-	if !m.HasPrefix("round1") || !m.HasPrefix("round.1") {
-		t.Fatal("HasPrefix should normalize dotted prefixes")
+	if !m.HasPrefix("round.1") {
+		t.Fatal("HasPrefix should find an underscore key from a dotted prefix")
+	}
+	if !m.HasPrefix("round_1") {
+		t.Fatal("HasPrefix should find an underscore key from its own spelling")
+	}
+	if m.HasPrefix("round2") {
+		t.Fatal("HasPrefix should not report a prefix that is absent")
+	}
+	// An entry present but empty must not count as a match.
+	if (Music{"round_1": []*bgMusic{}}).HasPrefix("round.1") {
+		t.Fatal("HasPrefix should reject a present but empty entry")
 	}
 	if m.HasPrefix("victory") {
 		t.Fatal("HasPrefix should report false for missing prefix")
