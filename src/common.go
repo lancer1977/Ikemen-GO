@@ -584,7 +584,11 @@ func SearchFile(file string, dirs []string, defaultDirs ...string) string {
 			if baseDirInZip == "." {
 				baseDirInZip = ""
 			}
-			return []string{join(zipFileCtx, baseDirInZip)}
+			bases := []string{join(zipFileCtx, baseDirInZip)}
+			if filepath.Ext(pathInZipCtx) == "" {
+				bases = addUnique(bases, join(zipFileCtx, pathInZipCtx))
+			}
+			return bases
 		}
 		if strings.HasSuffix(root, "/") {
 			return []string{strings.TrimSuffix(root, "/")}
