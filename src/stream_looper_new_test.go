@@ -10,11 +10,11 @@ type fakeStreamSeekerLooper struct {
 	position int
 }
 
-func (f *fakeStreamSeeker) Stream(samples [][2]float64) (int, bool) { return 0, false }
-func (f *fakeStreamSeeker) Err() error                              { return nil }
-func (f *fakeStreamSeeker) Len() int                                { return f.length }
-func (f *fakeStreamSeeker) Position() int                           { return f.position }
-func (f *fakeStreamSeeker) Seek(p int) error                        { f.position = p; return nil }
+func (f *fakeStreamSeekerLooper) Stream(samples [][2]float64) (int, bool) { return 0, false }
+func (f *fakeStreamSeekerLooper) Err() error                              { return nil }
+func (f *fakeStreamSeekerLooper) Len() int                                { return f.length }
+func (f *fakeStreamSeekerLooper) Position() int                           { return f.position }
+func (f *fakeStreamSeekerLooper) Seek(p int) error                        { f.position = p; return nil }
 
 func TestNewStreamLooper(t *testing.T) {
 	base := &fakeStreamSeekerLooper{length: 100}
