@@ -17,7 +17,7 @@ func TestNewFSMsg(t *testing.T) {
 		t.Fatalf("newFSMsg defaults = %#v", msg)
 	}
 
-	sys.fightScreen.actions = []*FSAction{{start_x: 7}}
+	sys.fightScreen.actions = [2]*FightScreenAction{&FightScreenAction{start_x: 7}}
 	msg = newFSMsg(0)
 	if msg.counterX != 14 {
 		t.Fatalf("newFSMsg counterX = %v, want 14", msg.counterX)
