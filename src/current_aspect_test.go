@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func TestGetCurrentAspect_UsesMotifAspectOutsideMatch(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	s.scrrect = [4]int32{0, 0, 640, 480}
 	if got := s.getCurrentAspect(); got != CalculateAspect(640, 480) {
 		t.Fatalf("expected motif aspect outside match, got %v", got)
@@ -11,7 +11,7 @@ func TestGetCurrentAspect_UsesMotifAspectOutsideMatch(t *testing.T) {
 }
 
 func TestGetCurrentAspect_UsesFightAspectDuringMatchWhenMotifScalingIsSkipped(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	s.scrrect = [4]int32{0, 0, 640, 480}
 	s.cfg.Video.FightAspectWidth = 16
 	s.cfg.Video.FightAspectHeight = 9
@@ -24,7 +24,7 @@ func TestGetCurrentAspect_UsesFightAspectDuringMatchWhenMotifScalingIsSkipped(t 
 }
 
 func TestGetCurrentAspect_UsesFightAspectAfterMatchWhenSkipEnabled(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	s.scrrect = [4]int32{0, 0, 640, 480}
 	s.cfg.Video.FightAspectWidth = 16
 	s.cfg.Video.FightAspectHeight = 9

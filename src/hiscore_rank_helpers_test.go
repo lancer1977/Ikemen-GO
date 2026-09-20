@@ -22,7 +22,7 @@ func TestRankingTypeFor(t *testing.T) {
 	// this package shares.
 
 	prevSys := sys
-	sys = System{}
+	sys = *newTestSystem()
 	t.Cleanup(func() { sys = prevSys })
 
 	if got, ok := rankingTypeFor("arcade"); ok || got != "" {
@@ -39,7 +39,7 @@ func TestTallyRun(t *testing.T) {
 	// this package shares.
 
 	prevSys := sys
-	sys = System{}
+	sys = *newTestSystem()
 	t.Cleanup(func() { sys = prevSys })
 
 	sys.statsLog.Matches = []StatsMatch{

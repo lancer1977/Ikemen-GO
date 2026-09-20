@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func TestUIEnsureCommandListsTrimsGrowsAndRepairsLists(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	s.commandLists = []*CommandList{
 		nil,
 		{Buffer: nil, Names: map[string]int{}},

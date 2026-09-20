@@ -12,6 +12,14 @@ func TestSetGameAspect_PropagatesStageAndFighterScaling(t *testing.T) {
 	fighter := &Char{playerNo: 0} // Explicitly set playerNo
 
 	sys = System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			gameWidth:  400,
 			gameHeight: 240,

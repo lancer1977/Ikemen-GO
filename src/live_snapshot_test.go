@@ -14,6 +14,14 @@ func TestMaybeWriteLiveSnapshot_WritesSnapshotDuringMatch(t *testing.T) {
 	statusPath := filepath.Join(tempDir, "live_status.json")
 
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:        12,
 			round:        2,
@@ -61,6 +69,14 @@ func TestMaybeWriteLiveSnapshot_SkipsOddFramesButWritesStatus(t *testing.T) {
 	statusPath := filepath.Join(tempDir, "live_status.json")
 
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:        12,
 			round:        2,
@@ -91,6 +107,14 @@ func TestMaybeWriteLiveSnapshot_OmitsStatusWhenNotInMatchDueToDeadFallback(t *te
 	statusPath := filepath.Join(tempDir, "live_status.json")
 
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:        12,
 			round:        2,

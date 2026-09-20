@@ -11,6 +11,14 @@ func TestRecordCombatThresholds_WritesExpectedThresholdFacts(t *testing.T) {
 	tempDir := t.TempDir()
 	path := filepath.Join(tempDir, "combat_events.jsonl")
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match: 12,
 			round: 2,
@@ -57,7 +65,7 @@ func TestRecordCombatThresholds_WritesExpectedThresholdFacts(t *testing.T) {
 func TestRecordCombatThresholds_WritesKoConfirmationFact(t *testing.T) {
 	tempDir := t.TempDir()
 	path := filepath.Join(tempDir, "combat_events.jsonl")
-	s := &System{}
+	s := newTestSystem()
 
 	damageEvent := LiveCombatEvent{
 		Match:        12,

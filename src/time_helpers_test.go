@@ -9,7 +9,7 @@ func TestTimeHelpersUseMatchTimerAndRoundState(t *testing.T) {
 	// Start from a clean System so earlier tests cannot leak state into these
 	// timer assertions, then restore the round pointer that the reset just
 	// cleared -- timeTotal() reads sys.fightScreen.round.timerActive.
-	sys = System{}
+	sys = *newTestSystem()
 	ensureGlobalRound(t)
 
 	sys.slowtime = 8

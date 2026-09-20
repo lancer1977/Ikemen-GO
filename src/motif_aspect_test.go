@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func TestShouldPersistMotifAspect_RequiresKeepAspectAndSkippedMotifScaling(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	// getMotifAspect() reads from scrrect, so initialize it
 	s.scrrect = [4]int32{0, 0, 320, 240}
 
@@ -34,7 +34,7 @@ func TestShouldPersistMotifAspect_RequiresKeepAspectAndSkippedMotifScaling(t *te
 }
 
 func TestEnterAndLeaveMotifAspect_NoOpWhenPersistenceDisabled(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	s.scrrect = [4]int32{0, 0, 640, 480}
 	s.gameWidth = 320
 	s.gameHeight = 240

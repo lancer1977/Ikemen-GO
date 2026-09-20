@@ -155,15 +155,17 @@ type SystemStateVars struct {
 // Do not create more than 1.
 var sys = System{
 	soundMixer: &beep.Mixer{},
-	bgm:        *newBgm(),
+	bgm:        newBgm(),
 	//soundChannels: newSoundChannels(16), // Lazy allocation in Request()
 	allPalFX: newPalFX(),
 	bgPalFX:  newPalFX(),
 	ffx:      make(map[string]*FightFx),
 	//ffxRegexp:         "^(f)|^(s)|^(go)", // https://github.com/ikemen-engine/Ikemen-GO/issues/1620
-	sel:              *newSelect(),
+	sel:              newSelect(),
 	keyState:         make(map[Key]bool),
-	loader:           *newLoader(),
+	loader:           newLoader(),
+	selMutex:         &sync.RWMutex{},
+	loadMutex:        &sync.Mutex{},
 	ignoreMostErrors: true,
 	stageList:        make(map[int32]*Stage),
 	stageLocalcoords: make(map[string][2]int32),
@@ -220,7 +222,7 @@ type System struct {
 	debugRef                  [2]int // player number, helper index
 	debugLastID               int32
 	soundMixer                *beep.Mixer
-	bgm                       Bgm
+	bgm                       *Bgm
 	pauseVolumeApplied        bool
 	soundChannels             SoundChannels // System sounds. Lifebars etc
 	charSoundChannels         [MaxPlayerNo]SoundChannels
@@ -231,19 +233,19 @@ type System struct {
 	storyboard                Storyboard
 	cfg                       Config
 	ffx                       map[string]*FightFx
-	sel                       Select
+	sel                       *Select
 	keyState                  map[Key]bool
 	netConnection             *NetConnection
 	replayFile                *ReplayFile
 	keyConfig                 []KeyConfig
 	joystickConfig            []KeyConfig
-	loader                    Loader
+	loader                    *Loader
 	chars                     [MaxPlayerNo][]*Char
 	charList                  CharList
 	cgi                       [MaxPlayerNo]CharGlobalInfo
 	turnsPreloadMember        [2]int // -1 = none; otherwise selected Turns member index to load into side+2
-	selMutex                  sync.RWMutex
-	loadMutex                 sync.Mutex
+	selMutex                  *sync.RWMutex
+	loadMutex                 *sync.Mutex
 	ignoreMostErrors          bool
 	stringPool                [MaxPlayerNo]StringPool
 	bcStack, bcVarStack       BytecodeStack
@@ -320,13 +322,13 @@ type System struct {
 	charVarsBackup            map[int]CharVarBackup
 	shaderRefCount            map[string]int
 
-	statePool       GameStatePool
+	statePool       *GameStatePool
 	commandLists    []*CommandList
 	arenaSaveMap    map[int]*arena.Arena
 	arenaLoadMap    map[int]*arena.Arena
 	rollbackStateID int
-	savePool        GameStatePool
-	loadPool        GameStatePool
+	savePool        *GameStatePool
+	loadPool        *GameStatePool
 	rollback        RollbackSystem
 	rollbackConfig  RollbackProperties
 	saveState       *GameState
@@ -346,7 +348,7 @@ type System struct {
 
 	// keepAlive profiling (debug only)
 	keepAliveProfile bool
-	keepAliveOnce    sync.Once
+	keepAliveOnce    *sync.Once
 	keepAlivePrev    time.Time
 	keepAliveStart   time.Time
 	keepAliveCount   int

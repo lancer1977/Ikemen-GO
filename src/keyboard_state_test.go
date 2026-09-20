@@ -7,7 +7,7 @@ func TestGetKeyboardState(t *testing.T) {
 	// this package shares.
 
 	prevSys := sys
-	sys = System{}
+	sys = *newTestSystem()
 	t.Cleanup(func() { sys = prevSys })
 
 	// System{} leaves keyState as a nil map, and assigning into one panics.

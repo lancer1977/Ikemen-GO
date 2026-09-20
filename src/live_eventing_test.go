@@ -67,6 +67,14 @@ func TestRecordCombatDamage_WritesCombatAndThresholdEvents(t *testing.T) {
 	tempDir := t.TempDir()
 	path := filepath.Join(tempDir, "combat_events.jsonl")
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:  12,
 			round:  2,
@@ -120,6 +128,14 @@ func TestRecordCombatDamage_IgnoresNilDefenderAndZeroDamage(t *testing.T) {
 	tempDir := t.TempDir()
 	path := filepath.Join(tempDir, "combat_events.jsonl")
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		cmdFlags: map[string]string{
 			"-combateventsfile": path,
 		},
@@ -159,7 +175,7 @@ func TestLiveSideAndRosterKeyHelpers_MapSidesAndNames(t *testing.T) {
 		t.Fatalf("unexpected roster key: %q", got)
 	}
 
-	s := &System{}
+	s := newTestSystem()
 	if got := s.liveRosterKeyForSide(-1); got != "" {
 		t.Fatalf("expected invalid side to return blank roster key, got %q", got)
 	}
@@ -173,6 +189,14 @@ func TestWriteLiveStatus_WritesCurrentFightSnapshot(t *testing.T) {
 	tempDir := t.TempDir()
 	path := filepath.Join(tempDir, "live_status.json")
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:     12,
 			round:     2,
@@ -216,6 +240,14 @@ func TestWriteLiveStatus_UsesResultModeAfterMatchOver(t *testing.T) {
 	tempDir := t.TempDir()
 	path := filepath.Join(tempDir, "live_status.json")
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:     12,
 			round:     2,
@@ -252,6 +284,14 @@ func TestMaybeWriteTerminalLiveArtifacts_WritesResultAndMatchComplete(t *testing
 	resultPath := filepath.Join(tempDir, "result.json")
 	matchEventsPath := filepath.Join(tempDir, "match_events.jsonl")
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:     12,
 			round:     2,
@@ -305,7 +345,7 @@ func TestMaybeWriteTerminalLiveArtifacts_WritesResultAndMatchComplete(t *testing
 }
 
 func TestTerminalWinnerData_UsesLiveRosterKeys(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	s.winTeam = 1
 	s.chars[0] = []*Char{{name: "Ryu"}}
 	s.chars[1] = []*Char{{name: "Ken"}}
@@ -321,6 +361,14 @@ func TestMaybeWriteTerminalLiveArtifacts_WritesRichFightWhenEnabled(t *testing.T
 	tempDir := t.TempDir()
 	richPath := filepath.Join(tempDir, "fight_history.jsonl")
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:      12,
 			round:      2,
@@ -394,6 +442,14 @@ func TestRecordRoundOutcome_WritesMatchEvent(t *testing.T) {
 	tempDir := t.TempDir()
 	path := filepath.Join(tempDir, "match_events.jsonl")
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match: 12,
 			round: 2,
@@ -435,6 +491,14 @@ func TestRecordRoundStart_WritesMatchEvent(t *testing.T) {
 	tempDir := t.TempDir()
 	path := filepath.Join(tempDir, "match_events.jsonl")
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match: 12,
 			round: 1,
@@ -468,7 +532,7 @@ func TestRecordRoundStart_WritesMatchEvent(t *testing.T) {
 
 func TestMaybeProcessLiveCommandInbox_AppliesPowerAdjustAndWritesResult(t *testing.T) {
 	origSys := sys
-	sys = System{}
+	sys = *newTestSystem()
 	t.Cleanup(func() {
 		sys = origSys
 	})
@@ -497,6 +561,14 @@ func TestMaybeProcessLiveCommandInbox_AppliesPowerAdjustAndWritesResult(t *testi
 	sys.maxPowerMode = false
 
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:        12,
 			round:        1,
@@ -545,7 +617,7 @@ func TestMaybeProcessLiveCommandInbox_AppliesPowerAdjustAndWritesResult(t *testi
 
 func TestMaybeProcessLiveCommandInbox_AppliesSkipRoundAndWritesResult(t *testing.T) {
 	origSys := sys
-	sys = System{}
+	sys = *newTestSystem()
 	t.Cleanup(func() {
 		sys = origSys
 	})
@@ -573,6 +645,14 @@ func TestMaybeProcessLiveCommandInbox_AppliesSkipRoundAndWritesResult(t *testing
 	sys.chars[1] = []*Char{p2}
 
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:        12,
 			round:        1,
@@ -625,7 +705,7 @@ func TestMaybeProcessLiveCommandInbox_AppliesSkipRoundAndWritesResult(t *testing
 
 func TestApplyLiveCommand_AutoKillSetsTargetLifeToZero(t *testing.T) {
 	origSys := sys
-	sys = System{}
+	sys = *newTestSystem()
 	t.Cleanup(func() {
 		sys = origSys
 	})
@@ -641,6 +721,14 @@ func TestApplyLiveCommand_AutoKillSetsTargetLifeToZero(t *testing.T) {
 	sys.chars[0] = []*Char{root}
 
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:     12,
 			round:     1,
@@ -661,7 +749,7 @@ func TestApplyLiveCommand_AutoKillSetsTargetLifeToZero(t *testing.T) {
 
 func TestApplyLiveCommand_SkipRoundKOsOpposingSideAndResolvesWinner(t *testing.T) {
 	origSys := sys
-	sys = System{}
+	sys = *newTestSystem()
 	t.Cleanup(func() {
 		sys = origSys
 	})
@@ -672,6 +760,14 @@ func TestApplyLiveCommand_SkipRoundKOsOpposingSideAndResolvesWinner(t *testing.T
 	sys.chars[1] = []*Char{p2}
 
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:     12,
 			round:     2,
@@ -700,6 +796,14 @@ func TestApplyLiveCommand_SkipRoundKOsOpposingSideAndResolvesWinner(t *testing.T
 
 func TestApplyLiveCommand_ReportsValidationFailures(t *testing.T) {
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:     12,
 			round:     1,
@@ -725,12 +829,20 @@ func TestApplyLiveCommand_ReportsValidationFailures(t *testing.T) {
 
 func TestApplyLiveCommand_HandlesFightPhaseAndSuccessCases(t *testing.T) {
 	origSys := sys
-	sys = System{}
+	sys = *newTestSystem()
 	t.Cleanup(func() {
 		sys = origSys
 	})
 
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:     12,
 			round:     1,
@@ -773,6 +885,14 @@ func TestPathHelpers_DeriveSiblingTelemetryFilesFromConfiguredRoots(t *testing.T
 	statusPath := filepath.Join(tempDir, "status.json")
 
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		cmdFlags: map[string]string{
 			"-livedatafile":     liveDataPath,
 			"-commandinboxfile": inboxPath,

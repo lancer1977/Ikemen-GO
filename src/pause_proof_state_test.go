@@ -14,6 +14,14 @@ func TestUpdatePauseProof_AdvancesThroughCapturePhases(t *testing.T) {
 
 	pauseProofSeconds = 1
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			matchTime:    60,
 			curRoundTime: 120,
@@ -55,7 +63,7 @@ func TestUpdatePauseProof_AdvancesThroughCapturePhases(t *testing.T) {
 }
 
 func TestUpdatePauseProof_IsNoOpWithoutFlag(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	s.updatePauseProof()
 	if s.pauseProofStarted || s.pauseProofCapturePhase != 0 || s.isTakingScreenshot {
 		t.Fatalf("expected no-op without pauseproof flag, got started=%v phase=%d screenshot=%v", s.pauseProofStarted, s.pauseProofCapturePhase, s.isTakingScreenshot)

@@ -63,7 +63,7 @@ func TestStartNextTurnsPreloadSelectsNextMemberOrSkipsLoadedOne(t *testing.T) {
 	// test body itself. Loader.reset() cancels it and blocks on <-l.loadExit
 	// until it has actually exited, which previously showed up as a ~1-in-8
 	// fatal "RUnlock of unlocked RWMutex" panic when a leaked instance of
-	// this goroutine outlived the test and raced a later `sys = System{}`
+	// this goroutine outlived the test and raced a later `sys = *newTestSystem()`
 	// reset in some other test (lancer1977/Ikemen-GO#25), and -race also
 	// flags data races on the same fields within this test body itself.
 	sys.loader.reset()
