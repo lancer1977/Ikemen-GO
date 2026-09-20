@@ -52,7 +52,7 @@ func (r *FontRenderer_VK) Init(rendererVk interface{}) {
 		panic(err)
 	}
 	VertShader2 := make([]uint32, len(VertShader)/4)
-	vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&VertShader2)).Data), VertShader)
+	vk.Memcopy(unsafe.Pointer(unsafe.SliceData(VertShader2)), VertShader)
 	vertShader, err := renderer.CreateShader(renderer.device, VertShader2)
 	if err != nil {
 		panic(err)
@@ -64,7 +64,7 @@ func (r *FontRenderer_VK) Init(rendererVk interface{}) {
 		panic(err)
 	}
 	FragShader2 := make([]uint32, len(FragShader)/4)
-	vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&FragShader2)).Data), FragShader)
+	vk.Memcopy(unsafe.Pointer(unsafe.SliceData(FragShader2)), FragShader)
 	fragShader, err := renderer.CreateShader(renderer.device, FragShader2)
 	if err != nil {
 		panic(err)
