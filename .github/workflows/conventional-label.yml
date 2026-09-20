@@ -1,9 +1,11 @@
+# workflow-lint: pull_request_target, no checkout, no third-party actions, permissions minimal (see scripts/tests/test_workflow_pull_request_target_authority.py)
 on:
   pull_request_target:
     branches: [ develop, release ]
     types: [ opened, edited, reopened, synchronize ]
 
-permissions: write-all
+permissions:
+  pull-requests: write
 
 name: conventional-release-labels
 
@@ -17,18 +19,69 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: bcoe/conventional-release-labels@v1
+      # Reads PR title/body metadata only. Never checks out or executes PR source.
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
-          token: '${{ secrets.GITHUB_TOKEN }}'
-          type_labels: >-
-            {"build": "PR: build",
-            "fix": "PR: chore",
-            "breaking": "PR: breaking",
-            "docs": "PR: docs",
-            "feat": "PR: feat",
-            "fix": "PR: fix",
-            "other": "PR: other",
-            "perf": "PR: perf",
-            "refactor": "PR: refactor",
-            "style": "PR: style",
-            "test": "PR: test"}
+          script: |
+            const typeLabels = {
+              build: "PR: build",
+              fix: "PR: fix",
+              breaking: "PR: breaking",
+              docs: "PR: docs",
+              feat: "PR: feat",
+              other: "PR: other",
+              perf: "PR: perf",
+              refactor: "PR: refactor",
+              style: "PR: style",
+              test: "PR: test",
+            };
+            const managedLabels = new Set(Object.values(typeLabels));
+
+            try {
+              const title = context.payload.pull_request.title || "";
+              const body = context.payload.pull_request.body || "";
+              const match = title.match(/^(\w+)(\([^)]*\))?(!)?:\s/);
+
+              if (!match) {
+                core.warning(`PR title "${title}" is not a recognized conventional-commit type; no label applied.`);
+                return;
+              }
+
+              const isBreaking = match[3] === "!" || /BREAKING[ -]CHANGE/.test(body);
+              const type = isBreaking ? "breaking" : match[1].toLowerCase();
+              const label = typeLabels[type];
+
+              if (!label) {
+                core.warning(`Unrecognized conventional-commit type "${type}"; no label applied.`);
+                return;
+              }
+
+              const prNumber = context.payload.pull_request.number;
+              const { data: existing } = await github.rest.issues.listLabelsOnIssue({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+              });
+              const existingNames = existing.map((l) => l.name);
+
+              for (const stale of existingNames.filter((n) => managedLabels.has(n) && n !== label)) {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  name: stale,
+                });
+              }
+
+              if (!existingNames.includes(label)) {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  labels: [label],
+                });
+              }
+            } catch (error) {
+              // Safe-failure path: never fail open/silently. Surface the error and fail the check.
+              core.setFailed(`conventional-release-labels check errored: ${error.message}`);
+            }
