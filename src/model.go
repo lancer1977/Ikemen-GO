@@ -2662,8 +2662,8 @@ func (model *Model) calculateAnimQuatInterpolation(interpolation GLTFAnimationIn
 	}
 	if interpolation == InterpolationLinear {
 		rate := (animTime - model.animationTimeStamps[sampler.inputIndex][prevIndex]) / (model.animationTimeStamps[sampler.inputIndex][prevIndex+1] - model.animationTimeStamps[sampler.inputIndex][prevIndex])
-		q1 := mgl.Quat{sampler.output[prevIndex*4+3], mgl.Vec3{sampler.output[prevIndex*4], sampler.output[prevIndex*4+1], sampler.output[prevIndex*4+2]}}
-		q2 := mgl.Quat{sampler.output[(prevIndex+1)*4+3], mgl.Vec3{sampler.output[(prevIndex+1)*4], sampler.output[(prevIndex+1)*4+1], sampler.output[(prevIndex+1)*4+2]}}
+		q1 := mgl.Quat{W: sampler.output[prevIndex*4+3], V: mgl.Vec3{sampler.output[prevIndex*4], sampler.output[prevIndex*4+1], sampler.output[prevIndex*4+2]}}
+		q2 := mgl.Quat{W: sampler.output[(prevIndex+1)*4+3], V: mgl.Vec3{sampler.output[(prevIndex+1)*4], sampler.output[(prevIndex+1)*4+1], sampler.output[(prevIndex+1)*4+2]}}
 		dotProduct := q1.Dot(q2)
 		if dotProduct < 0 {
 			q1 = q1.Inverse()
@@ -2676,8 +2676,8 @@ func (model *Model) calculateAnimQuatInterpolation(interpolation GLTFAnimationIn
 		rate := (animTime - model.animationTimeStamps[sampler.inputIndex][prevIndex]) / delta
 		rateSquare := rate * rate
 		rateCube := rateSquare * rate
-		q := mgl.Quat{(2*rateCube-3*rateSquare+1)*sampler.output[prevIndex*12+3+4] + delta*(rateCube-2*rateSquare+rate)*sampler.output[prevIndex*12+3+8] + (-2*rateCube+3*rateSquare)*sampler.output[(prevIndex+1)*12+3+4] + delta*(rateCube-rateSquare)*sampler.output[(prevIndex+1)*12+3],
-			mgl.Vec3{
+		q := mgl.Quat{W: (2*rateCube-3*rateSquare+1)*sampler.output[prevIndex*12+3+4] + delta*(rateCube-2*rateSquare+rate)*sampler.output[prevIndex*12+3+8] + (-2*rateCube+3*rateSquare)*sampler.output[(prevIndex+1)*12+3+4] + delta*(rateCube-rateSquare)*sampler.output[(prevIndex+1)*12+3],
+			V: mgl.Vec3{
 				(2*rateCube-3*rateSquare+1)*sampler.output[prevIndex*12+4] + delta*(rateCube-2*rateSquare+rate)*sampler.output[prevIndex*12+8] + (-2*rateCube+3*rateSquare)*sampler.output[(prevIndex+1)*12+4] + delta*(rateCube-rateSquare)*sampler.output[(prevIndex+1)*12],
 				(2*rateCube-3*rateSquare+1)*sampler.output[prevIndex*12+1+4] + delta*(rateCube-2*rateSquare+rate)*sampler.output[prevIndex*12+1+8] + (-2*rateCube+3*rateSquare)*sampler.output[(prevIndex+1)*12+1+4] + delta*(rateCube-rateSquare)*sampler.output[(prevIndex+1)*12+1],
 				(2*rateCube-3*rateSquare+1)*sampler.output[prevIndex*12+2+4] + delta*(rateCube-2*rateSquare+rate)*sampler.output[prevIndex*12+2+8] + (-2*rateCube+3*rateSquare)*sampler.output[(prevIndex+1)*12+2+4] + delta*(rateCube-rateSquare)*sampler.output[(prevIndex+1)*12+2],

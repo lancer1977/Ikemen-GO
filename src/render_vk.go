@@ -8151,9 +8151,9 @@ func (r *Renderer_VK) ResolveBackBuffer() Texture {
 
 	blit := []vk.ImageBlit{{
 		SrcSubresource: vk.ImageSubresourceLayers{AspectMask: vk.ImageAspectFlags(vk.ImageAspectColorBit), LayerCount: 1},
-		SrcOffsets:     [2]vk.Offset3D{{0, 0, 0}, {int32(sys.scrrect[2]), int32(sys.scrrect[3]), 1}},
+		SrcOffsets:     [2]vk.Offset3D{{X: 0, Y: 0, Z: 0}, {X: int32(sys.scrrect[2]), Y: int32(sys.scrrect[3]), Z: 1}},
 		DstSubresource: vk.ImageSubresourceLayers{AspectMask: vk.ImageAspectFlags(vk.ImageAspectColorBit), LayerCount: 1},
-		DstOffsets:     [2]vk.Offset3D{{0, 0, 0}, {int32(sys.scrrect[2]), int32(sys.scrrect[3]), 1}},
+		DstOffsets:     [2]vk.Offset3D{{X: 0, Y: 0, Z: 0}, {X: int32(sys.scrrect[2]), Y: int32(sys.scrrect[3]), Z: 1}},
 	}}
 	vk.CmdBlitImage(cmd, r.mainRenderTarget.texture.img, vk.ImageLayoutTransferSrcOptimal, r.grabTexture.img, vk.ImageLayoutTransferDstOptimal, 1, blit, vk.FilterNearest)
 
