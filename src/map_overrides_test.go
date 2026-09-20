@@ -25,7 +25,7 @@ func TestApplyMapOverridesNoOpsWithoutMapData(t *testing.T) {
 	// this test mutates shared state. The deferred restore above already puts the
 	// whole System back; forcing gameParams to nil in a t.Cleanup would run after
 	// that restore and leak a nil into the tests that follow.
-	sys = System{sel: *newSelect()}
+	sys = *newTestSystem()
 
 	c := &Char{}
 	c.applyMapOverrides()

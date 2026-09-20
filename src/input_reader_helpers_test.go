@@ -17,7 +17,7 @@ func TestInputReaderResetClearsState(t *testing.T) {
 func TestInputReaderSocdResolutionHonorsConfiguredMethod(t *testing.T) {
 	oldSys := sys
 	t.Cleanup(func() { sys = oldSys })
-	sys = System{}
+	sys = *newTestSystem()
 
 	// Method 1 is last-direction priority. With all four directions held on the
 	// first frame, D and B are recorded as the first-held ones, so the opposing
@@ -53,7 +53,7 @@ func TestInputReaderSocdResolutionHonorsConfiguredMethod(t *testing.T) {
 func TestButtonAssistCheckResetsOutOfMatchAndBuffersInMatch(t *testing.T) {
 	oldSys := sys
 	t.Cleanup(func() { sys = oldSys })
-	sys = System{}
+	sys = *newTestSystem()
 
 	ir := &InputReader{ButtonAssistBuffer: [9]bool{true, true, true, true, true, true, true, true, true}}
 

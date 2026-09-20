@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func TestTerminalArtifactKey_ChangesWithMatchState(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	key1 := s.terminalArtifactKey()
 
 	s.match = 12
@@ -19,7 +19,7 @@ func TestTerminalArtifactKey_ChangesWithMatchState(t *testing.T) {
 }
 
 func TestTerminalWinnerData_ReturnsBlankWhenNoWinnerAndKeysWhenPresent(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	// terminalWinnerData() checks if s.winTeam < 0 to return early with blanks.
 	// The codebase uses -1 to represent "unset" for winTeam, not 0.
 	s.winTeam = -1

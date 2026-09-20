@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func TestCaptureAndRestoreAspectState_RoundTripsDimensions(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	s.gameWidth = 320
 	s.gameHeight = 240
 	s.widthScale = 1.25
@@ -22,7 +22,7 @@ func TestCaptureAndRestoreAspectState_RoundTripsDimensions(t *testing.T) {
 }
 
 func TestWrapDrawWithAspectState_RestoresOuterStateAroundCallback(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	s.gameWidth = 320
 	s.gameHeight = 240
 	s.widthScale = 1
@@ -53,14 +53,14 @@ func TestWrapDrawWithAspectState_RestoresOuterStateAroundCallback(t *testing.T) 
 }
 
 func TestWrapDrawWithAspectState_ReturnsNilForNilCallback(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	if got := s.wrapDrawWithAspectState(nil); got != nil {
 		t.Fatalf("expected nil callback to return nil wrapper, got %T", got)
 	}
 }
 
 func TestLuaDrawQueueRoutesAndFlushesCallbacks(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	s.gameWidth = 320
 	s.gameHeight = 240
 	s.widthScale = 1

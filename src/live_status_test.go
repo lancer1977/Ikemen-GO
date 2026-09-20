@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func TestLiveStatusFighterForSide_FallsBackForBlankNamesAndMissingSlots(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 
 	if got := s.liveStatusFighterForSide(-1); got != nil {
 		t.Fatalf("expected negative side to return nil, got %#v", got)
@@ -23,7 +23,7 @@ func TestLiveStatusFighterForSide_FallsBackForBlankNamesAndMissingSlots(t *testi
 }
 
 func TestLiveStatusStageName_UsesDisplayNameThenNameThenDef(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 
 	if got := s.liveStatusStageName(); got != "" {
 		t.Fatalf("expected nil stage to return blank name, got %q", got)
@@ -47,6 +47,14 @@ func TestLiveStatusStageName_UsesDisplayNameThenNameThenDef(t *testing.T) {
 
 func TestBuildLiveStatusSnapshot_UsesResultModeAfterMatchOver(t *testing.T) {
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match: 12,
 			round: 2,

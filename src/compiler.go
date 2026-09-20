@@ -7939,9 +7939,7 @@ func (c *CharCompiler) stateBlock(line *string, bl *StateBlock, root bool,
 				continue
 			}
 		}
-		break
 	}
-	return c.wrongClosureToken()
 }
 
 func (c *CharCompiler) stateCompileZSS(states map[int32]StateBytecode, filename, filetext string, constants map[string]float32) error {

@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func TestGetFightAspect_UsesStageCustomOrMotifFallback(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	s.scrrect = [4]int32{0, 0, 640, 480}
 
 	if got := s.getFightAspect(); got != CalculateAspect(640, 480) {

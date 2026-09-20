@@ -27,6 +27,14 @@ func TestComputeAndSaveRanking_WritesUpdatedStatsFile(t *testing.T) {
 
 	prevSys := sys
 	sys = System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:        12,
 			winTeam:      0,
@@ -35,9 +43,6 @@ func TestComputeAndSaveRanking_WritesUpdatedStatsFile(t *testing.T) {
 		cmdFlags: map[string]string{
 			"-stats": statsPath,
 		},
-		// A zero Select leaves gameParams nil, so sys.sel.gameParams below
-		// would dereference nil.
-		sel: *newSelect(),
 	}
 	sys.statsLog.Matches = []StatsMatch{
 		{
@@ -104,6 +109,14 @@ func TestComputeAndSaveRanking_BootstrapsMissingStatsFile(t *testing.T) {
 
 	prevSys := sys
 	sys = System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:        12,
 			winTeam:      0,
@@ -112,9 +125,6 @@ func TestComputeAndSaveRanking_BootstrapsMissingStatsFile(t *testing.T) {
 		cmdFlags: map[string]string{
 			"-stats": statsPath,
 		},
-		// A zero Select leaves gameParams nil, so sys.sel.gameParams below
-		// would dereference nil.
-		sel: *newSelect(),
 	}
 	sys.statsLog.Matches = []StatsMatch{
 		{

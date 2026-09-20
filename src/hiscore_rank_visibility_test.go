@@ -21,13 +21,20 @@ func TestRankingWouldPlace_ReturnsTrueWhenVisibleWindowHasRoom(t *testing.T) {
 
 	prevSys := sys
 	sys = System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			maxRoundTime: 120,
 		},
 		cmdFlags: map[string]string{
 			"-stats": statsPath,
 		},
-		sel: *newSelect(),
 	}
 	sys.statsLog.Matches = []StatsMatch{{MatchTime: 60, WinSide: 0, Wins: [2]int32{1, 0}, TotalScore: [2]int32{4000, 0}}}
 	sys.timerRounds = []int32{60}
@@ -62,13 +69,20 @@ func TestRankingWouldPlace_ReturnsFalseWhenEntryFallsOutOfWindow(t *testing.T) {
 
 	prevSys := sys
 	sys = System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			maxRoundTime: 120,
 		},
 		cmdFlags: map[string]string{
 			"-stats": statsPath,
 		},
-		sel: *newSelect(),
 	}
 	sys.statsLog.Matches = []StatsMatch{{MatchTime: 60, WinSide: 0, Wins: [2]int32{1, 0}, TotalScore: [2]int32{4000, 0}}}
 	sys.timerRounds = []int32{60}
@@ -89,7 +103,7 @@ func TestRankingWouldPlace_ReturnsFalseWhenEntryFallsOutOfWindow(t *testing.T) {
 func TestModeCleared_RespectsRankingConditionAndResultsScreenRoundTarget(t *testing.T) {
 	prevSys := sys
 	// A zero System leaves sel unpopulated, so sel.gameParams dereferences nil.
-	sys = System{sel: *newSelect()}
+	sys = *newTestSystem()
 	// winnerTeam() falls through to roundState(), which dereferences
 	// fightScreen.round; a zero System leaves it nil.
 	sys.fightScreen.round = &FightScreenRound{}
@@ -126,7 +140,7 @@ func TestModeCleared_RespectsRankingConditionAndResultsScreenRoundTarget(t *test
 
 func TestResultsScreenForMode_ReturnsNilForMissingOrDisabledScreens(t *testing.T) {
 	prevSys := sys
-	sys = System{}
+	sys = *newTestSystem()
 	t.Cleanup(func() {
 		sys = prevSys
 	})
