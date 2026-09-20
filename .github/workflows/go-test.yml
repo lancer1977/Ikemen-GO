@@ -50,10 +50,5 @@ jobs:
       - name: Run Go tests
         run: go test ./...
 
-      # `go vet ./...` is deliberately not run here yet. The tree currently has
-      # 244 vet findings, none of them introduced by this workflow: 33 in
-      # production (mostly unsafe.Pointer in the Vulkan backend) and 211 in
-      # tests, of which 210 are the same copylocks pattern caused by System
-      # embedding a mutex by value. A step that is always red teaches everyone
-      # to ignore it, so it stays out until the count is zero.
-      # Tracked as lancer1977/Ikemen-GO#19.
+      - name: Run go vet
+        run: go vet ./...
