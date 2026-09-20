@@ -48,6 +48,44 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || 'nightly' }}
   cancel-in-progress: false
 
+# ---------------------------------------------------------------------------
+# Job graph (fixes #10: tag-before-validation ordering)
+#
+#   tag ──▶ build (matrix: windows, linux, macos, android — ALL required;
+#            │      fail-fast:false only means "don't cancel siblings", not
+#            │      "some legs are advisory" — no leg currently has
+#            │      continue-on-error, so `needs.build.result` is 'success'
+#            │      only when every platform succeeds. Judgment call: if this
+#            │      repo ever wants a genuinely best-effort/advisory platform,
+#            │      that is a separate scoping decision — this change
+#            │      preserves the current "all four are required" behavior
+#            │      rather than inventing a new advisory tier.)
+#            │
+#            ▼
+#          move-tag (needs: [tag, build] — was needs: [tag] only. This is the
+#            │        actual fix: the tag can no longer move until the whole
+#            │        required build matrix has succeeded. Captures the
+#            │        pre-move nightly SHA so it can be restored if promotion
+#            │        fails downstream.)
+#            │
+#            ▼
+#          release (needs: [tag, build, move-tag] — publishes the GitHub
+#                    Release. For nightly, if this job fails AFTER move-tag
+#                    already moved the tag, a failure-handler step restores
+#                    `nightly` to the pre-move SHA so the tag is never left
+#                    pointing at a revision without a published release.)
+#
+# Decision table:
+#
+# | Case                                            | tag | build | move-tag | release | Result |
+# |--------------------------------------------------|-----|-------|----------|---------|--------|
+# | Push to develop/ci-test, all platforms succeed    | ok  | ok    | runs, ok | runs    | nightly tag + release move to new SHA, with checksums/manifest attached |
+# | Push to develop/ci-test, one platform build fails | ok  | fail  | skipped (`needs.build.result != 'success'`) | skipped (`needs.build.result != 'success'`) | `nightly` untouched; still points at last known-good SHA |
+# | Push to develop/ci-test, matrix cancelled         | ok  | cancelled | skipped | skipped | `nightly` untouched; no partial/ambiguous tag state |
+# | workflow_dispatch, publishRelease=false (diagnostic) | ok | ok (or as configured) | skipped (`if` requires `publishRelease == 'true'` on dispatch) | skipped (same gate) | Build/manifest artifacts produced for inspection; no tag/release mutation — unchanged from today |
+# | workflow_dispatch with explicit tag / publishRelease=true | ok | ok | runs (nightly path) or n/a (tagged path uses `release` job's tagged branch directly) | runs | Tag moved only after build succeeds; release published; rollback on failure as above |
+# ---------------------------------------------------------------------------
+
 jobs:
   tag:
     name: prepare tag
@@ -115,35 +153,6 @@ jobs:
           echo "releaseTag=$release_tag" >> "$GITHUB_OUTPUT"
           echo "releaseKind=$release_kind" >> "$GITHUB_OUTPUT"
           echo "buildTime=$(date '+%Y.%m.%d')" >> "$GITHUB_OUTPUT"
-
-  move-tag:
-    name: move nightly tag
-    if: ${{ needs.tag.outputs.releaseKind == 'nightly' && (github.event_name != 'workflow_dispatch' || github.event.inputs.publishRelease == 'true') }}
-    needs: tag
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 0
-
-      - name: Move nightly tag to this commit
-        shell: bash
-        env:
-          RELEASE_TAG: ${{ needs.tag.outputs.releaseTag }}
-        run: |
-          set -euo pipefail
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          tag="$RELEASE_TAG"
-
-          git fetch --force --tags origin
-          git tag -fa "$tag" "$GITHUB_SHA" -m "$tag: $GITHUB_SHA"
-          git push --force origin "refs/tags/$tag:refs/tags/$tag"
 
   build:
     name: prepare release
@@ -512,6 +521,28 @@ jobs:
             cp -v "${{ steps.artifacts_ffmpeg.outputs.artifact_ffsrc }}" release-files/
           fi
 
+      - name: Record provenance manifest (source SHA + artifact checksums)
+        if: ${{ steps.artifacts.outputs.artifact != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release-files
+          manifest="MANIFEST-${{ matrix.cfg.runner_os }}.txt"
+          {
+            echo "source_sha=${GITHUB_SHA}"
+            echo "runner_os=${{ matrix.cfg.runner_os }}"
+            echo "build_target=${{ matrix.cfg.build_target }}"
+            echo "release_kind=${{ needs.tag.outputs.releaseKind }}"
+            echo "release_tag=${{ needs.tag.outputs.releaseTag }}"
+            echo "workflow_run=${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}"
+            echo "---sha256sums---"
+            for f in *; do
+              [ "$f" = "$manifest" ] && continue
+              sha256sum "$f"
+            done
+          } > "$manifest"
+          cat "$manifest"
+
       - name: Upload release artifacts
         if: ${{ steps.artifacts.outputs.artifact != '' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -519,6 +550,55 @@ jobs:
           name: release-${{ matrix.cfg.runner_os }}
           path: release-files/*
           if-no-files-found: error
+
+  move-tag:
+    name: move nightly tag
+    # Gated on `needs.build.result == 'success'` — the whole point of #10.
+    # The nightly tag must never move (or be created) until every required
+    # platform in the build matrix has actually succeeded. A failed or
+    # cancelled build leaves this job (and the tag) untouched.
+    if: ${{ needs.tag.outputs.releaseKind == 'nightly' && needs.build.result == 'success' && (github.event_name != 'workflow_dispatch' || github.event.inputs.publishRelease == 'true') }}
+    needs: [tag, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      previousSha: ${{ steps.move.outputs.previousSha }}
+      moved: ${{ steps.move.outputs.moved }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Move nightly tag to this commit
+        id: move
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ needs.tag.outputs.releaseTag }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          tag="$RELEASE_TAG"
+
+          git fetch --force --tags origin
+
+          # Record the last known-good SHA (if the tag already exists) so a
+          # downstream release-publish failure can restore it instead of
+          # leaving `nightly` pointing at a revision with no published
+          # release evidence.
+          previous_sha=""
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            previous_sha="$(git rev-list -n1 "refs/tags/$tag")"
+          fi
+          echo "previousSha=$previous_sha" >> "$GITHUB_OUTPUT"
+
+          git tag -fa "$tag" "$GITHUB_SHA" -m "$tag: $GITHUB_SHA"
+          git push --force origin "refs/tags/$tag:refs/tags/$tag"
+          echo "moved=true" >> "$GITHUB_OUTPUT"
 
   release:
     name: publish release
@@ -528,6 +608,13 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout (for tag rollback if promotion fails)
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
       - name: Download release artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
@@ -549,7 +636,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          # The nightly tag has already been force-moved in the prepare tag job.
+          # The nightly tag has already been force-moved in the move-tag job,
+          # which only runs after the required build matrix succeeded.
           # Delete only the GitHub Release object so GitHub republishes it with fresh metadata.
           # Do NOT pass --cleanup-tag here, because that would delete the moved nightly tag too.
           if gh release view nightly --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
@@ -613,3 +701,48 @@ jobs:
           skipIfReleaseExists: false
           tag: ${{ needs.tag.outputs.releaseTag }}
           updateOnlyUnreleased: false
+
+      - name: Restore last known-good nightly tag on promotion failure
+        # move-tag already moved `nightly` to this commit before this job ran
+        # (that's the fix: it only got the chance to because build succeeded).
+        # If release publication itself then fails, don't leave `nightly`
+        # pointing at a revision whose release metadata never actually
+        # published — best-effort restore it to the SHA it pointed at before
+        # this run, so a broken promotion never becomes a silently-broken
+        # nightly ref. This can't be made a single atomic operation against
+        # the GitHub API (tag move and release publish are separate calls),
+        # so this is the closest available approximation: revert what we can
+        # revert (the tag) when what depended on it (the release) failed.
+        if: ${{ failure() && needs.tag.outputs.releaseKind == 'nightly' && needs.move-tag.result == 'success' && needs.move-tag.outputs.moved == 'true' && needs.move-tag.outputs.previousSha != '' }}
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ needs.tag.outputs.releaseTag }}
+          PREVIOUS_SHA: ${{ needs.move-tag.outputs.previousSha }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch --force --tags origin
+          git tag -fa "$RELEASE_TAG" "$PREVIOUS_SHA" \
+            -m "$RELEASE_TAG: restored to last known-good $PREVIOUS_SHA after a failed promotion of $GITHUB_SHA"
+          git push --force origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+
+      - name: Delete dangling nightly tag on promotion failure (no prior nightly existed)
+        # Same trigger as the restore step above, but for the case where
+        # `nightly` did not exist before this run (previousSha is empty) —
+        # there is nothing known-good to restore to, so leaving the freshly
+        # created tag in place would point `nightly` at a revision with no
+        # published release. Remove it instead of leaving it dangling.
+        if: ${{ failure() && needs.tag.outputs.releaseKind == 'nightly' && needs.move-tag.result == 'success' && needs.move-tag.outputs.moved == 'true' && needs.move-tag.outputs.previousSha == '' }}
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ needs.tag.outputs.releaseTag }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git push --delete origin "refs/tags/$RELEASE_TAG" || true
