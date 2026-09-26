@@ -203,7 +203,7 @@ if getCommandLineValue("-ailevel") ~= nil then
 end
 if getCommandLineValue("-speed") ~= nil then
 	local speed_input = tonumber(getCommandLineValue("-speed"))
-	if speed_input ~= nil and speed_input >= -9 and speed_input <= 9 then
+	if speed_input ~= nil and speed_input >= -9 and speed_input <= 10 then
 		local target_game_speed
 		if speed_input > 0 then
 			target_game_speed = speed_input
@@ -317,6 +317,43 @@ function main.f_animPosDraw(a, x, y, f)
 	end
 	animDraw(a)
 	animUpdate(a)
+end
+
+-- Ikemen-GO's math.random is wired to the engine's Park-Miller LCG
+-- (src/common.go Random()), not real entropy. Consecutive draws from an
+-- LCG are known to lie on a small number of hyperplanes when used as
+-- coordinate pairs (the classic "spectral test" weakness) -- exactly the
+-- pattern picking p1/p2 back-to-back from the same pool hits every match.
+-- Burning a couple of throwaway draws between the two real picks moves
+-- each one to an uncorrelated point in the LCG's sequence, without
+-- touching the engine's own RNG.
+local function f_decorrelate()
+	math.random()
+	if math.random() < 0.5 then
+		math.random()
+	end
+end
+main.f_decorrelate = f_decorrelate
+
+-- Picks two distinct, valid members from pool, decorrelating the two
+-- draws so they don't inherit the LCG's pairwise correlation.
+function main.f_pickTwoFromPool(pool)
+	if #pool < 2 then
+		return nil, nil
+	end
+	local p1ref = pool[math.random(#pool)]
+	f_decorrelate()
+	local p2ref = pool[math.random(#pool)]
+	for _ = 1, 80 do
+		if p1ref ~= p2ref and start.f_getCharData(p1ref) ~= nil and start.f_getCharData(p2ref) ~= nil then
+			return p1ref, p2ref
+		end
+		f_decorrelate()
+		p1ref = pool[math.random(#pool)]
+		f_decorrelate()
+		p2ref = pool[math.random(#pool)]
+	end
+	return p1ref, p2ref
 end
 
 --copy table content into new table
@@ -1324,7 +1361,7 @@ local function addOrderChar(mode, order, ref)
 	table.insert(main.t_orderChars[mode][order], ref)
 end
 
-function main.f_addChar(line, playable, loading, slot)
+function main.f_addChar(line, playable, loading, slot, faction)
 	table.insert(main.t_selChars, {})
 	local row = #main.t_selChars
 	local slot = slot or false
@@ -1362,11 +1399,16 @@ function main.f_addChar(line, playable, loading, slot)
 				break
 			end
 			main.t_selChars[row].char = c
+			main.t_selChars[row].recordKey = c:lower()
 			valid = true
 			main.t_selChars[row].playable = playable
 			local t_info = getCharInfo(row - 1)
 			main.t_selChars[row] = main.f_tableMerge(main.t_selChars[row], t_info)
+			main.t_selChars[row].recordKey = c:lower()
 			main.t_selChars[row].dir = main.t_selChars[row].def:gsub('[^/]+%.def$', '')
+			if faction ~= nil and faction ~= '' and main.t_selChars[row].faction == nil then
+				main.t_selChars[row].faction = faction
+			end
 			if playable then
 				for _, v in ipairs({'intro', 'ending', 'arcadepath'}) do
 					if main.t_selChars[row][v] ~= '' then
@@ -1502,9 +1544,11 @@ local tmp = ''
 local section = 0
 local row = 0
 local slot = false
+local pendingFaction = nil
+local slotFaction = nil
 local csCell = 0
-local content = main.f_fileRead(motif.files.select)
-content = content:gsub('([^\r\n;]*)%s*;[^\r\n]*', '%1')
+local rawContent = main.f_fileRead(motif.files.select)
+local content = rawContent:gsub('([^\r\n;]*)%s*;[^\r\n]*', '%1')
 content = content:gsub('\n%s*\n', '\n')
 
 lanChars = false
@@ -1524,16 +1568,30 @@ for line in content:gmatch('[^\r\n]+') do
 	end
 end
 
-for line in content:gmatch('[^\r\n]+') do
+local function factionNameFromComment(line)
+	local name = line:match('^%s*;%s*(.-)%s+[Ff]action%s*$')
+	if name == nil or name == '' then
+		return nil
+	end
+	return name
+end
+
+for rawLine in rawContent:gmatch('[^\r\n]+') do
 --for line in io.lines("data/select.def") do
+	local commentFaction = factionNameFromComment(rawLine)
+	local line = rawLine:gsub('([^\r\n;]*)%s*;[^\r\n]*', '%1')
 	local lineCase = line:lower()
 	if lineCase:match('^%s*%[%s*characters%s*%]') then
 		row = 0
 		section = 1
+		pendingFaction = nil
+		slotFaction = nil
 	elseif lineCase:match('^%s*%[%s*' .. gameOption('Config.Language') .. '.characters' .. '%s*%]') then
 		if lanChars then
 			row = 0
 			section = 1
+			pendingFaction = nil
+			slotFaction = nil
 		else 
 			section = -1
 		end
@@ -1570,11 +1628,14 @@ for line in content:gmatch('[^\r\n]+') do
 	elseif lineCase:match('^%s*%[%w+%]$') then
 		section = -1
 	elseif section == 1 then --[Characters]
+		if commentFaction ~= nil then
+			pendingFaction = commentFaction
+		elseif not lineCase:match('^%s*$') then
 		local csCol = (csCell % motif.select_info.columns) + 1
 		local csRow = math.floor(csCell / motif.select_info.columns) + 1
 		local cellKey = (csCol - 1) .. '-' .. (csRow - 1)
 		while not slot and motif.select_info.cell[cellKey] ~= nil and motif.select_info.cell[cellKey].skip do
-			main.f_addChar('skipslot', true, true, false, line)
+			main.f_addChar('skipslot', true, true, false)
 			csCell = csCell + 1
 			csCol = (csCell % motif.select_info.columns) + 1
 			csRow = math.floor(csCell / motif.select_info.columns) + 1
@@ -1585,14 +1646,19 @@ for line in content:gmatch('[^\r\n]+') do
 		elseif lineCase:match('^%s*slot%s*=%s*{%s*$') then --start of the 'multiple chars in one slot' assignment
 			table.insert(main.t_selGrid, {['chars'] = {}, ['slot'] = 1})
 			slot = true
+			slotFaction = pendingFaction
 		elseif slot and lineCase:match('^%s*}%s*$') then --end of 'multiple chars in one slot' assignment
 			slot = false
+			slotFaction = nil
+			pendingFaction = nil
 			csCell = csCell + 1
 		else
-			main.f_addChar(line, true, true, slot)
+			main.f_addChar(line, true, true, slot, slot and slotFaction or pendingFaction)
 			if not slot then
 				csCell = csCell + 1
+				pendingFaction = nil
 			end
+		end
 		end
 	elseif section == 2 then --[ExtraStages]
 		--store 'unlock' param and get rid of everything that follows it
@@ -2616,6 +2682,78 @@ main.t_itemname = {
 		hook.run("main.t_itemname", t, item)
 		return main.f_endlessRandom
 	end,
+	['tierladder'] = function(t, item)
+		main.cpuSide[1] = true
+		main.cpuSide[2] = true
+		main.endlessRandomActive = true
+		main.motif.vsscreen = false
+		main.motif.victoryscreen = false
+		main.selectMenu[1] = false
+		main.selectMenu[2] = false
+		main.stageMenu = true
+		main.teamMenu[1].single = true
+		main.teamMenu[2].single = true
+		textImgSetText(motif.select_info.title.TextSpriteData, motif.select_info.title.text.tierladder or 'TIER LADDER')
+		setGameMode('tierladder')
+		setHomeTeam(1)
+		hook.run("main.t_itemname", t, item)
+		return main.f_tierLadder
+	end,
+	['randomtierladder'] = function(t, item)
+		main.cpuSide[1] = true
+		main.cpuSide[2] = true
+		main.endlessRandomActive = true
+		-- Show the two fighters on the VS screen. (Background loading during the
+		-- VS screen hung the ladder, so characters load the normal way.)
+		modifyGameOption('Config.VsScreenLoading', false)
+		main.motif.vsscreen = true
+		main.motif.victoryscreen = false
+		main.selectMenu[1] = false
+		main.selectMenu[2] = false
+		main.stageMenu = true
+		main.teamMenu[1].single = true
+		main.teamMenu[2].single = true
+		textImgSetText(motif.select_info.title.TextSpriteData, motif.select_info.title.text.randomtierladder or 'RANDOM TIER LADDER')
+		setGameMode('randomtierladder')
+		setHomeTeam(1)
+		hook.run("main.t_itemname", t, item)
+		return main.f_randomTierLadder
+	end,
+	['utiergraduation'] = function(t, item)
+	main.cpuSide[1] = true
+	main.cpuSide[2] = true
+	-- Keep the next U-tier match loading in the background so the
+	-- transition between fights does not block on full character loading.
+	modifyGameOption('Config.VsScreenLoading', true)
+	main.motif.vsscreen = false
+		main.motif.victoryscreen = false
+		main.selectMenu[1] = false
+		main.selectMenu[2] = false
+		main.stageMenu = true
+		main.teamMenu[1].single = true
+		main.teamMenu[2].single = true
+		textImgSetText(motif.select_info.title.TextSpriteData, motif.select_info.title.text.utiergraduation or 'U TIER GRADUATION')
+		setGameMode('utiergraduation')
+		setHomeTeam(1)
+		hook.run("main.t_itemname", t, item)
+		return main.f_uTierGraduation
+	end,
+	['kfmfaction'] = function(t, item)
+		main.cpuSide[1] = true
+		main.cpuSide[2] = true
+		main.motif.vsscreen = false
+		main.motif.victoryscreen = false
+		main.selectMenu[1] = false
+		main.selectMenu[2] = false
+		main.stageMenu = true
+		main.teamMenu[1].single = true
+		main.teamMenu[2].single = true
+		textImgSetText(motif.select_info.title.TextSpriteData, motif.select_info.title.text.kfmfaction or 'KFM FACTION BRAWL')
+		setGameMode('kfmfaction')
+		setHomeTeam(1)
+		hook.run("main.t_itemname", t, item)
+		return main.f_kfmFaction
+	end,
 	['onevsall'] = function(t, item)
 		main.cpuSide[2] = true
 		main.motif.vsscreen = true
@@ -2626,12 +2764,40 @@ main.t_itemname = {
 		main.teamMenu[1].single = true
 		main.teamMenu[2].single = true
 		textImgSetText(motif.select_info.title.TextSpriteData, motif.select_info.title.text.onevsall or 'ONE VS ALL')
-		remapInput(1, getLastInputController())
-		remapInput(getLastInputController(), 1)
+		-- Only remap when a real controller picked this mode from the menu.
+		-- Launched with -onevsall there is no last controller (-1), which
+		-- made remapInput panic ("Invalid player number: 1, -1").
+		local lastInputController = getLastInputController()
+		if getCommandLineValue("-onevsall") == nil and lastInputController ~= nil and lastInputController >= 1 then
+			remapInput(1, lastInputController)
+			remapInput(lastInputController, 1)
+		end
 		setGameMode('onevsall')
 		setHomeTeam(1)
 		hook.run("main.t_itemname", t, item)
 		return main.f_oneVsAll
+	end,
+	-- One vs All, but every opponent is from the selected fighter's current
+	-- tier (re-checked each fight, so the pool follows the fighter up/down).
+	['onevsalltier'] = function(t, item)
+		main.cpuSide[2] = true
+		main.motif.vsscreen = true
+		main.motif.victoryscreen = false
+		main.selectMenu[1] = true
+		main.selectMenu[2] = false
+		main.stageMenu = true
+		main.teamMenu[1].single = true
+		main.teamMenu[2].single = true
+		textImgSetText(motif.select_info.title.TextSpriteData, motif.select_info.title.text.onevsalltier or 'ONE VS ALL (SAME TIER)')
+		local lastInputController = getLastInputController()
+		if getCommandLineValue("-onevsalltier") == nil and lastInputController ~= nil and lastInputController >= 1 then
+			remapInput(1, lastInputController)
+			remapInput(lastInputController, 1)
+		end
+		setGameMode('onevsalltier')
+		setHomeTeam(1)
+		hook.run("main.t_itemname", t, item)
+		return main.f_oneVsAllTier
 	end,
 }
 	main.t_itemname.teamarcade = main.t_itemname.arcade
@@ -3778,7 +3944,20 @@ function main.f_endlessRandom()
 		main.endlessRandomTournamentLoading = false
 		main.endlessRandomTournamentActive = true
 		writeObsCountdown()
+		main.cpuSide[1] = true
+		main.cpuSide[2] = true
+		main.motif.vsscreen = true
+		main.motif.victoryscreen = false
+		main.selectMenu[1] = false
+		main.selectMenu[2] = false
+		main.stageMenu = true
+		main.teamMenu[1].single = true
+		main.teamMenu[2].single = true
+		textImgSetText(motif.select_info.title.TextSpriteData, motif.select_info.title.text[tournament.mode] or tournament.title)
+		setGameMode(tournament.mode)
+		setHomeTeam(1)
 		main.f_tierTournament(tournament.tier, tournament.mode)
+		setGameMode('endlessrandom')
 		main.endlessRandomTournamentActive = false
 		main.currentTournamentName = nil
 		main.currentTournamentFightersRemaining = nil
@@ -3829,7 +4008,10 @@ function main.f_endlessRandom()
 			p1pal = start.f_selectPal(p1ref),
 			p2pal = start.f_selectPal(p2ref),
 			ai = 8,
-			vsscreen = main.motif.vsscreen,
+			time = smokeMode and 1 or nil,
+			p1rounds = smokeMode and 1 or nil,
+			p2rounds = smokeMode and 1 or nil,
+			vsscreen = false,
 			victoryscreen = false,
 			winscreen = false,
 			continue = false,
@@ -3857,23 +4039,1130 @@ function main.f_endlessRandom()
 	restoreMenu()
 end
 
+function main.f_tierLadder()
+	main.f_saveBaseRemapInput()
+	start.f_selectReset(true)
+	setMatchNo(1)
+	main.cpuSide[1] = true
+	main.cpuSide[2] = true
+		main.endlessRandomActive = true
+		local smokeMode = getCommandLineValue("-tierladdersmoke") ~= nil
+		local tournamentBracketSize = smokeMode and 2 or 16
+		local smokePostTournamentMatchSeen = false
+		local tierBases = {'U', 'F', 'D', 'C', 'B', 'A', 'S', 'X', 'Z'}
+		local tierIndex = 1
+		local tierFightsDone = 0
+		local smokeFightsTotal = 0
+		main.endlessRandomTournamentLoading = false
+		main.endlessRandomTournamentActive = false
+		main.currentTournamentName = nil
+		main.currentTournamentFightersRemaining = nil
+		main.currentTournamentWinnerName = nil
+		local function numberOr(value, fallback)
+			if value == nil then
+				return fallback
+			end
+			local numberValue = tonumber(value)
+			if numberValue == nil then
+				return fallback
+			end
+			return numberValue
+		end
+		local countdownOverride = numberOr(getCommandLineValue("-tierladdercountdown"), nil)
+		main.endlessRandomFightsUntilTournament = countdownOverride or numberOr(main.endlessRandomFightsUntilTournament, 100)
+
+		local function countdownText()
+			if main.endlessRandomTournamentLoading then
+				return 'LOADING RANDOM TOURNAMENT'
+			end
+			if main.endlessRandomTournamentActive then
+				if main.currentTournamentWinnerName ~= nil and tostring(main.currentTournamentWinnerName) ~= '' then
+					return 'Winner: ' .. tostring(main.currentTournamentWinnerName)
+				end
+				if main.currentTournamentFightersRemaining ~= nil then
+					local fightersRemaining = math.max(1, numberOr(main.currentTournamentFightersRemaining, 1))
+					if fightersRemaining == 1 then
+						return '1 fighter remains'
+					end
+					return string.format('%d fighters remain', fightersRemaining)
+				end
+				return 'TOURNAMENT'
+			end
+			if main.currentTournamentName ~= nil and tostring(main.currentTournamentName) ~= '' then
+				return 'TOURNAMENT: ' .. tostring(main.currentTournamentName)
+			end
+			local fightsLeft = math.max(0, numberOr(main.endlessRandomFightsUntilTournament, 100))
+			if fightsLeft == 0 then
+				return 'Tournament is Approaching!'
+			end
+			return string.format('%d fights until next tournament', fightsLeft)
+		end
+
+		local function obsTickerText()
+			local textValue = countdownText()
+			if textValue:match('^%d+ fights until next tournament$') then
+				local fightsLeft = math.max(0, numberOr(main.endlessRandomFightsUntilTournament, 100))
+				return string.format('%d   FIGHTS   UNTIL   NEXT   TOURNAMENT', fightsLeft)
+			elseif textValue == 'Tournament is Approaching!' then
+				return 'TOURNAMENT   IS   APPROACHING!'
+			elseif textValue == 'LOADING RANDOM TOURNAMENT' then
+				return 'LOADING   RANDOM   TOURNAMENT'
+			end
+			return textValue:gsub(' ', '   ')
+		end
+
+		local function writeObsCountdown()
+			local textValue = obsTickerText()
+			local jsonTextValue = tostring(textValue):gsub('\\', '\\\\'):gsub('"', '\\"')
+			local jsonTournamentName = main.currentTournamentName == nil and 'null' or ('"' .. tostring(main.currentTournamentName):gsub('\\', '\\\\'):gsub('"', '\\"') .. '"')
+			local jsonWinnerName = main.currentTournamentWinnerName == nil and 'null' or ('"' .. tostring(main.currentTournamentWinnerName):gsub('\\', '\\\\'):gsub('"', '\\"') .. '"')
+			local tournamentStatusVisible = main.endlessRandomTournamentActive == true
+			local tournamentStatusColor = tournamentStatusVisible and '#ff1a1a' or '#ffffff'
+			main.f_fileWrite('save/obs_tournament_countdown.txt', textValue .. '\n', 'w+')
+			main.f_fileWrite(
+				'save/obs_tournament_countdown.json',
+				string.format(
+					'{"text":"%s","fightsUntilTournament":%d,"tournamentLoading":%s,"tournamentActive":%s,"currentTournamentName":%s,"fightersRemaining":%d,"winnerName":%s,"tournamentStatusVisible":%s,"tournamentStatusColor":"%s","updatedAt":"%s"}\n',
+					jsonTextValue,
+					math.max(0, numberOr(main.endlessRandomFightsUntilTournament, 0)),
+					main.endlessRandomTournamentLoading == true and 'true' or 'false',
+					main.endlessRandomTournamentActive == true and 'true' or 'false',
+					jsonTournamentName,
+					math.max(0, numberOr(main.currentTournamentFightersRemaining, 0)),
+					jsonWinnerName,
+					tournamentStatusVisible and 'true' or 'false',
+					tournamentStatusColor,
+					os.date('!%Y-%m-%dT%H:%M:%SZ')
+				),
+				'w+'
+			)
+		end
+		main.f_writeEndlessRandomObsCountdown = writeObsCountdown
+		writeObsCountdown()
+
+		local function restoreMenu()
+			main.endlessRandomActive = false
+			main.endlessRandomTournamentLoading = false
+			main.endlessRandomTournamentActive = false
+			main.currentTournamentName = nil
+			main.currentTournamentFightersRemaining = nil
+			main.currentTournamentWinnerName = nil
+			main.f_writeEndlessRandomObsCountdown = nil
+			main.endlessRandomFightsUntilTournament = nil
+			bgReset(motif[main.background].BGDef)
+			playBgm({source = "motif.title", interrupt = true})
+			fadeInInit(motif[main.group].fadein.FadeData)
+		end
+
+		local function pickTierTournament()
+			local modes = {}
+			local randomTierAllowed = {F = true, D = true, C = true, B = true, A = true, S = true}
+			for mode, cfg in pairs(main.t_tierTournamentModes or {}) do
+				if cfg and cfg.tier and randomTierAllowed[tostring(cfg.tier):upper()] then
+					local _, available = main.f_tournamentPool(cfg.tier)
+					if (tonumber(available) or 0) >= tournamentBracketSize then
+						table.insert(modes, {mode = mode, tier = cfg.tier, title = cfg.title or mode, available = available})
+					end
+				end
+			end
+			if #modes == 0 then
+				for mode, cfg in pairs(main.t_tierTournamentModes or {}) do
+					if cfg and cfg.tier and randomTierAllowed[tostring(cfg.tier):upper()] then
+						local _, available = main.f_tournamentPool(cfg.tier)
+						if (tonumber(available) or 0) >= 2 then
+							table.insert(modes, {mode = mode, tier = cfg.tier, title = cfg.title or mode, available = available})
+						end
+					end
+				end
+			end
+			if #modes == 0 then
+				return nil
+			end
+			return modes[math.random(#modes)]
+		end
+
+		local function runRandomTierTournament()
+			local tournament = pickTierTournament()
+			if tournament == nil then
+				printConsole('tierladder: no tier tournaments configured')
+				main.endlessRandomFightsUntilTournament = 100
+				writeObsCountdown()
+				if smokeMode then
+					smokePostTournamentMatchSeen = true
+				end
+				return
+			end
+			main.endlessRandomTournamentLoading = true
+			main.currentTournamentName = tournament.title
+			writeObsCountdown()
+			refresh()
+			main.endlessRandomTournamentLoading = false
+			main.endlessRandomTournamentActive = true
+			writeObsCountdown()
+			main.cpuSide[1] = true
+			main.cpuSide[2] = true
+			main.motif.vsscreen = false
+			main.motif.victoryscreen = false
+			main.selectMenu[1] = false
+			main.selectMenu[2] = false
+			main.stageMenu = true
+			main.teamMenu[1].single = true
+			main.teamMenu[2].single = true
+			textImgSetText(motif.select_info.title.TextSpriteData, motif.select_info.title.text[tournament.mode] or tournament.title)
+			setGameMode(tournament.mode)
+			setHomeTeam(1)
+			main.f_tierTournament(tournament.tier, tournament.mode)
+			setGameMode('tierladder')
+			textImgSetText(motif.select_info.title.TextSpriteData, motif.select_info.title.text.tierladder or 'TIER LADDER')
+			main.endlessRandomTournamentActive = false
+			main.currentTournamentName = nil
+			main.currentTournamentFightersRemaining = nil
+			main.currentTournamentWinnerName = nil
+			main.endlessRandomFightsUntilTournament = 100
+			writeObsCountdown()
+			if smokeMode then
+				smokePostTournamentMatchSeen = true
+			end
+		end
+
+		local function tierBaseOf(ref)
+			local record = start.f_getCharRecord(ref)
+			local tier = tostring(start.f_getRecordTier(record) or record.tier or 'U'):upper()
+			if tier == 'Z' then
+				return 'Z'
+			end
+			return tier:match('^([UFDCBASX])[%+%-]*$')
+		end
+
+		local function tierLadderUnsafeChar(ref, data)
+			local rawParts = {
+				data and data.char,
+				data and data.def,
+				data and data.name,
+				data and data.displayname,
+				data and data.recordKey,
+				start.f_getCharRecordKey ~= nil and start.f_getCharRecordKey(ref) or nil,
+			}
+			local parts = {}
+			for _, value in ipairs(rawParts) do
+				if value ~= nil and tostring(value) ~= '' then
+					table.insert(parts, tostring(value))
+				end
+			end
+			local key = table.concat(parts, ' '):lower()
+			return key:find('cheapies_pack', 1, true) ~= nil
+				or key:find('alsiel', 1, true) ~= nil
+				or key:find('0%-5%-apresses') ~= nil
+				or key:find('0.5 a presses', 1, true) ~= nil
+				or key:find('amanojaku', 1, true) ~= nil
+		end
+
+		local function tierPool(base)
+			local pool = {}
+			local seen = {}
+			local orders = main.t_orderChars.default or start.f_getOrderChars()
+			for _, order in pairs(orders) do
+				if type(order) == 'table' then
+					for _, ref in ipairs(order) do
+						local data = start.f_getCharData(ref)
+						if data ~= nil and data.char ~= 'randomselect' and (data.hidden == nil or data.hidden <= 1) and not seen[ref] and tierBaseOf(ref) == base and not tierLadderUnsafeChar(ref, data) then
+							table.insert(pool, ref)
+							seen[ref] = true
+						end
+					end
+			end
+		end
+		return pool
+	end
+
+	local function pickPair(pool)
+		return main.f_pickTwoFromPool(pool)
+	end
+
+
+		while not esc() do
+			if smokeMode and smokePostTournamentMatchSeen then
+				break
+			end
+			clearSelected()
+			resetGameParams()
+			setMatchNo(math.max(1, matchNo()))
+		start.p[1].teamMode = 0
+		start.p[2].teamMode = 0
+		start.p[1].numChars = 1
+		start.p[2].numChars = 1
+		start.p[1].t_selected = {}
+		start.p[1].t_selTemp = {}
+		start.p[2].t_selected = {}
+		start.p[2].t_selTemp = {}
+		start.p[1].teamEnd = true
+		start.p[1].selEnd = true
+		start.p[2].teamEnd = true
+		start.p[2].selEnd = true
+		main.t_availableChars = main.f_tableCopy(main.t_orderChars.default or start.f_getOrderChars())
+
+		local base = tierBases[tierIndex]
+		local pool = tierPool(base)
+		if #pool < 2 then
+			printConsole('tierladder: skipping ' .. tostring(base) .. ' tier, only ' .. tostring(#pool) .. ' eligible fighters')
+			tierIndex = (tierIndex % #tierBases) + 1
+			tierFightsDone = 0
+			if smokeMode and tierIndex == 1 then
+				break
+			end
+		else
+			local p1ref, p2ref = pickPair(pool)
+			local p1data = p1ref and start.f_getCharData(p1ref)
+			local p2data = p2ref and start.f_getCharData(p2ref)
+			if p1data == nil or p2data == nil then
+				printConsole('tierladder: no ' .. tostring(base) .. ' tier pair available')
+				break
+			end
+			printConsole('tierladder: ' .. tostring(base) .. ' tier fight - ' .. tostring(p1data.char) .. ' vs ' .. tostring(p2data.char))
+
+			local ok = launchFight{
+				p1char = {p1data.char},
+				p2char = {p2data.char},
+				p1ref = p1ref,
+				p2ref = p2ref,
+				p1teammode = 'single',
+				p2teammode = 'single',
+				p1numchars = 1,
+				p2numchars = 1,
+				p1pal = start.f_selectPal(p1ref),
+				p2pal = start.f_selectPal(p2ref),
+				ai = 8,
+				time = smokeMode and 1 or nil,
+				p1rounds = smokeMode and 1 or nil,
+				p2rounds = smokeMode and 1 or nil,
+				vsscreen = false,
+				victoryscreen = false,
+				winscreen = false,
+				continue = false,
+			}
+				if ok == false or getWinnerTeam() == -1 then
+					printConsole('tierladder: match aborted')
+					break
+				end
+				main.endlessRandomFightsUntilTournament = math.max(0, numberOr(main.endlessRandomFightsUntilTournament, 100) - 1)
+				writeObsCountdown()
+				tierFightsDone = tierFightsDone + 1
+				smokeFightsTotal = smokeFightsTotal + 1
+				local fightsPerTier = (base == 'X' or base == 'Z') and 1 or 3
+				printConsole('tierladder: ' .. tostring(base) .. ' tier fight ' .. tostring(tierFightsDone) .. '/' .. tostring(fightsPerTier) .. ' complete')
+				if tierFightsDone >= fightsPerTier then
+					tierIndex = (tierIndex % #tierBases) + 1
+					tierFightsDone = 0
+				end
+				clearColor(0, 0, 0)
+				refresh()
+				if main.endlessRandomFightsUntilTournament <= 0 then
+					runRandomTierTournament()
+					if esc() then
+						break
+					end
+					if smokeMode and smokePostTournamentMatchSeen then
+						restoreMenu()
+						return
+					end
+				end
+				if smokeMode and smokeFightsTotal >= 4 then
+					break
+				end
+		end
+	end
+
+	restoreMenu()
+end
+
+function main.f_randomTierLadder()
+	main.f_saveBaseRemapInput()
+	start.f_selectReset(true)
+	setMatchNo(1)
+	main.cpuSide[1] = true
+	main.cpuSide[2] = true
+		main.endlessRandomActive = true
+		local smokeMode = getCommandLineValue("-randomtierladdersmoke") ~= nil
+		local tournamentBracketSize = smokeMode and 2 or 16
+		local smokePostTournamentMatchSeen = false
+		-- U tier is left to the separate U-vs-U windows; the ladder only runs
+		-- ranked tiers, 5 fights per visit each.
+		local tierBases = {'F', 'D', 'C', 'B', 'A', 'S', 'X', 'Z'}
+		local fightsPerTierByBase = {F = 5, D = 5, C = 5, B = 5, A = 5, S = 5, X = 5, Z = 5}
+		local function f_effectiveFightsFor(base)
+			local v = fightsPerTierByBase[base]
+			if type(v) == 'table' then
+				return math.random(v[1], v[2])
+			end
+			return v or fightsPerTier
+		end
+		local fightsPerTier = 5
+		local tierFightsDone = 0
+		local smokeFightsTotal = 0
+		main.endlessRandomTournamentLoading = false
+		main.endlessRandomTournamentActive = false
+		main.currentTournamentName = nil
+		main.currentTournamentFightersRemaining = nil
+		main.currentTournamentWinnerName = nil
+		local function numberOr(value, fallback)
+			if value == nil then
+				return fallback
+			end
+			local numberValue = tonumber(value)
+			if numberValue == nil then
+				return fallback
+			end
+			return numberValue
+		end
+		local countdownOverride = numberOr(getCommandLineValue("-randomtierladdercountdown"), nil)
+		main.endlessRandomFightsUntilTournament = countdownOverride or numberOr(main.endlessRandomFightsUntilTournament, 100)
+
+		local function countdownText()
+			if main.endlessRandomTournamentLoading then
+				return 'LOADING RANDOM TOURNAMENT'
+			end
+			if main.endlessRandomTournamentActive then
+				if main.currentTournamentWinnerName ~= nil and tostring(main.currentTournamentWinnerName) ~= '' then
+					return 'Winner: ' .. tostring(main.currentTournamentWinnerName)
+				end
+				if main.currentTournamentFightersRemaining ~= nil then
+					local fightersRemaining = math.max(1, numberOr(main.currentTournamentFightersRemaining, 1))
+					if fightersRemaining == 1 then
+						return '1 fighter remains'
+					end
+					return string.format('%d fighters remain', fightersRemaining)
+				end
+				return 'TOURNAMENT'
+			end
+			if main.currentTournamentName ~= nil and tostring(main.currentTournamentName) ~= '' then
+				return 'TOURNAMENT: ' .. tostring(main.currentTournamentName)
+			end
+			local fightsLeft = math.max(0, numberOr(main.endlessRandomFightsUntilTournament, 100))
+			if fightsLeft == 0 then
+				return 'Tournament is Approaching!'
+			end
+			return string.format('%d fights until next tournament', fightsLeft)
+		end
+
+		local function obsTickerText()
+			local textValue = countdownText()
+			if textValue:match('^%d+ fights until next tournament$') then
+				local fightsLeft = math.max(0, numberOr(main.endlessRandomFightsUntilTournament, 100))
+				return string.format('%d   FIGHTS   UNTIL   NEXT   TOURNAMENT', fightsLeft)
+			elseif textValue == 'Tournament is Approaching!' then
+				return 'TOURNAMENT   IS   APPROACHING!'
+			elseif textValue == 'LOADING RANDOM TOURNAMENT' then
+				return 'LOADING   RANDOM   TOURNAMENT'
+			end
+			return textValue:gsub(' ', '   ')
+		end
+
+		local function writeObsCountdown()
+			local textValue = obsTickerText()
+			local jsonTextValue = tostring(textValue):gsub('\\', '\\\\'):gsub('"', '\\"')
+			local jsonTournamentName = main.currentTournamentName == nil and 'null' or ('"' .. tostring(main.currentTournamentName):gsub('\\', '\\\\'):gsub('"', '\\"') .. '"')
+			local jsonWinnerName = main.currentTournamentWinnerName == nil and 'null' or ('"' .. tostring(main.currentTournamentWinnerName):gsub('\\', '\\\\'):gsub('"', '\\"') .. '"')
+			local tournamentStatusVisible = main.endlessRandomTournamentActive == true
+			local tournamentStatusColor = tournamentStatusVisible and '#ff1a1a' or '#ffffff'
+			main.f_fileWrite('save/obs_tournament_countdown.txt', textValue .. '\n', 'w+')
+			main.f_fileWrite(
+				'save/obs_tournament_countdown.json',
+				string.format(
+					'{"text":"%s","fightsUntilTournament":%d,"tournamentLoading":%s,"tournamentActive":%s,"currentTournamentName":%s,"fightersRemaining":%d,"winnerName":%s,"tournamentStatusVisible":%s,"tournamentStatusColor":"%s","updatedAt":"%s"}\n',
+					jsonTextValue,
+					math.max(0, numberOr(main.endlessRandomFightsUntilTournament, 0)),
+					main.endlessRandomTournamentLoading == true and 'true' or 'false',
+					main.endlessRandomTournamentActive == true and 'true' or 'false',
+					jsonTournamentName,
+					math.max(0, numberOr(main.currentTournamentFightersRemaining, 0)),
+					jsonWinnerName,
+					tournamentStatusVisible and 'true' or 'false',
+					tournamentStatusColor,
+					os.date('!%Y-%m-%dT%H:%M:%SZ')
+				),
+				'w+'
+			)
+		end
+		main.f_writeEndlessRandomObsCountdown = writeObsCountdown
+		writeObsCountdown()
+
+		local function restoreMenu()
+			main.endlessRandomActive = false
+			main.endlessRandomTournamentLoading = false
+			main.endlessRandomTournamentActive = false
+			main.currentTournamentName = nil
+			main.currentTournamentFightersRemaining = nil
+			main.currentTournamentWinnerName = nil
+			main.f_writeEndlessRandomObsCountdown = nil
+			main.endlessRandomFightsUntilTournament = nil
+			bgReset(motif[main.background].BGDef)
+			playBgm({source = "motif.title", interrupt = true})
+			fadeInInit(motif[main.group].fadein.FadeData)
+		end
+
+		local function pickTierTournament()
+			local modes = {}
+			local randomTierAllowed = {F = true, D = true, C = true, B = true, A = true, S = true}
+			for mode, cfg in pairs(main.t_tierTournamentModes or {}) do
+				if cfg and cfg.tier and randomTierAllowed[tostring(cfg.tier):upper()] then
+					local _, available = main.f_tournamentPool(cfg.tier)
+					if (tonumber(available) or 0) >= tournamentBracketSize then
+						table.insert(modes, {mode = mode, tier = cfg.tier, title = cfg.title or mode, available = available})
+					end
+				end
+			end
+			if #modes == 0 then
+				for mode, cfg in pairs(main.t_tierTournamentModes or {}) do
+					if cfg and cfg.tier and randomTierAllowed[tostring(cfg.tier):upper()] then
+						local _, available = main.f_tournamentPool(cfg.tier)
+						if (tonumber(available) or 0) >= 2 then
+							table.insert(modes, {mode = mode, tier = cfg.tier, title = cfg.title or mode, available = available})
+						end
+					end
+				end
+			end
+			if #modes == 0 then
+				return nil
+			end
+			return modes[math.random(#modes)]
+		end
+
+		local function runRandomTierTournament()
+			local tournament = pickTierTournament()
+			if tournament == nil then
+				printConsole('randomtierladder: no tier tournaments configured')
+				main.endlessRandomFightsUntilTournament = 100
+				writeObsCountdown()
+				if smokeMode then
+					smokePostTournamentMatchSeen = true
+				end
+				return
+			end
+			main.endlessRandomTournamentLoading = true
+			main.currentTournamentName = tournament.title
+			writeObsCountdown()
+			refresh()
+			main.endlessRandomTournamentLoading = false
+			main.endlessRandomTournamentActive = true
+			writeObsCountdown()
+			main.cpuSide[1] = true
+			main.cpuSide[2] = true
+			main.motif.vsscreen = false
+			main.motif.victoryscreen = false
+			main.selectMenu[1] = false
+			main.selectMenu[2] = false
+			main.stageMenu = true
+			main.teamMenu[1].single = true
+			main.teamMenu[2].single = true
+			textImgSetText(motif.select_info.title.TextSpriteData, motif.select_info.title.text[tournament.mode] or tournament.title)
+			setGameMode(tournament.mode)
+			setHomeTeam(1)
+			main.f_tierTournament(tournament.tier, tournament.mode)
+			setGameMode('randomtierladder')
+			textImgSetText(motif.select_info.title.TextSpriteData, motif.select_info.title.text.randomtierladder or 'RANDOM TIER LADDER')
+			main.endlessRandomTournamentActive = false
+			main.currentTournamentName = nil
+			main.currentTournamentFightersRemaining = nil
+			main.currentTournamentWinnerName = nil
+			main.endlessRandomFightsUntilTournament = 100
+			writeObsCountdown()
+			if smokeMode then
+				smokePostTournamentMatchSeen = true
+			end
+		end
+
+		local function tierBaseOf(ref)
+			local record = start.f_getCharRecord(ref)
+			local tier = tostring(start.f_getRecordTier(record) or record.tier or 'U'):upper()
+			if tier == 'Z' then
+				return 'Z'
+			end
+			return tier:match('^([UFDCBASX])[%+%-]*$')
+		end
+
+		local function tierLadderUnsafeChar(ref, data)
+			local rawParts = {
+				data and data.char,
+				data and data.def,
+				data and data.name,
+				data and data.displayname,
+				data and data.recordKey,
+				start.f_getCharRecordKey ~= nil and start.f_getCharRecordKey(ref) or nil,
+			}
+			local parts = {}
+			for _, value in ipairs(rawParts) do
+				if value ~= nil and tostring(value) ~= '' then
+					table.insert(parts, tostring(value))
+				end
+			end
+			local key = table.concat(parts, ' '):lower()
+			return key:find('cheapies_pack', 1, true) ~= nil
+				or key:find('alsiel', 1, true) ~= nil
+				or key:find('0%-5%-apresses') ~= nil
+				or key:find('0.5 a presses', 1, true) ~= nil
+				or key:find('amanojaku', 1, true) ~= nil
+		end
+
+		local function tierPool(base)
+			local pool = {}
+			local seen = {}
+			local orders = main.t_orderChars.default or start.f_getOrderChars()
+			for _, order in pairs(orders) do
+				if type(order) == 'table' then
+					for _, ref in ipairs(order) do
+						local data = start.f_getCharData(ref)
+						if data ~= nil and data.char ~= 'randomselect' and (data.hidden == nil or data.hidden <= 1) and not seen[ref] and tierBaseOf(ref) == base and not tierLadderUnsafeChar(ref, data) then
+							table.insert(pool, ref)
+							seen[ref] = true
+						end
+					end
+			end
+		end
+		return pool
+	end
+
+	local function pickPair(pool)
+		return main.f_pickTwoFromPool(pool)
+	end
+
+
+		local tierShuffleStatePath = 'save/random_tier_ladder_state.json'
+		-- U gets the most fights since a large wave of new fighters is being
+		-- added and needs to clear U quickly. The next tier is random, but never
+		-- the current tier.
+		-- U is a one-time opening block. After its configured matches finish,
+		-- never select U again during the normal random tier rotation.
+		local tierChoices = {'C', 'B', 'D', 'A', 'S', 'Z', 'X', 'F'}
+		-- Pick weights: X and Z are rare (X about 1 in 32, Z about 1 in 63;
+		-- every other tier about 1 in 6).
+		local tierWeights = {F = 10, D = 10, C = 10, B = 10, A = 10, S = 10, X = 2, Z = 1}
+		-- One-time skip: "avoidNext" in the state file (e.g. "F") keeps that
+		-- tier out of the next pick only, then clears itself.
+		local avoidNext = nil
+		local function pickRandomBase(exclude)
+			local avoid = avoidNext
+			local total = 0
+			for _, tier in ipairs(tierChoices) do
+				if tier ~= exclude and tier ~= avoid then
+					total = total + (tierWeights[tier] or 10)
+				end
+			end
+			local roll = math.random() * total
+			for _, tier in ipairs(tierChoices) do
+				if tier ~= exclude and tier ~= avoid then
+					roll = roll - (tierWeights[tier] or 10)
+					if roll <= 0 then
+						avoidNext = nil
+						return tier
+					end
+				end
+			end
+			avoidNext = nil
+			return 'C'
+		end
+		local function saveShuffleState(base, fightsDone)
+			pcall(jsonEncode, {base = base, fightsDone = fightsDone, avoidNext = avoidNext}, tierShuffleStatePath)
+		end
+		local function tierBaseValid(value)
+			for _, base in ipairs(tierBases) do
+				if base == value then
+					return true
+				end
+			end
+			return false
+		end
+
+		local currentBase = nil
+		local ok, loaded = pcall(jsonDecode, tierShuffleStatePath)
+		if ok and type(loaded) == 'table' and tierBaseValid(loaded.base) then
+			currentBase = loaded.base
+			tierFightsDone = math.max(0, math.floor(tonumber(loaded.fightsDone) or 0))
+			if tierBaseValid(loaded.avoidNext) then
+				avoidNext = loaded.avoidNext
+			end
+			if tierFightsDone >= fightsPerTier then
+				tierFightsDone = 0
+			end
+		end
+		if currentBase == nil then
+			currentBase = pickRandomBase()
+		end
+		saveShuffleState(currentBase, tierFightsDone)
+
+		while not esc() do
+			if smokeMode and smokePostTournamentMatchSeen then
+				break
+			end
+			clearSelected()
+			resetGameParams()
+			setMatchNo(math.max(1, matchNo()))
+		start.p[1].teamMode = 0
+		start.p[2].teamMode = 0
+		start.p[1].numChars = 1
+		start.p[2].numChars = 1
+		start.p[1].t_selected = {}
+		start.p[1].t_selTemp = {}
+		start.p[2].t_selected = {}
+		start.p[2].t_selTemp = {}
+		start.p[1].teamEnd = true
+		start.p[1].selEnd = true
+		start.p[2].teamEnd = true
+		start.p[2].selEnd = true
+		main.t_availableChars = main.f_tableCopy(main.t_orderChars.default or start.f_getOrderChars())
+
+		local base = currentBase
+		local pool = tierPool(base)
+		-- Small pools (under 6 fighters) run out of fresh matchups fast --
+		-- only fight once before rerolling instead of the usual 3.
+		local effectiveFightsPerTier = f_effectiveFightsFor(base)
+		if #pool < 2 then
+			printConsole('randomtierladder: skipping ' .. tostring(base) .. ' tier, only ' .. tostring(#pool) .. ' eligible fighters')
+			currentBase = pickRandomBase(base)
+			tierFightsDone = 0
+				saveShuffleState(currentBase, tierFightsDone)
+		else
+			local p1ref, p2ref = pickPair(pool)
+			local p1data = p1ref and start.f_getCharData(p1ref)
+			local p2data = p2ref and start.f_getCharData(p2ref)
+			if p1data == nil or p2data == nil then
+				printConsole('randomtierladder: no ' .. tostring(base) .. ' tier pair available')
+				break
+			end
+			-- Final hard gate: suffixes may differ within a tier (A--- vs A+++),
+			-- but the base tier must be identical. Never allow A/B or D/C.
+			local p1base = tierBaseOf(p1ref)
+			local p2base = tierBaseOf(p2ref)
+			if p1base ~= base or p2base ~= base or p1base ~= p2base then
+				printConsole('randomtierladder: blocked cross-tier pair ' .. tostring(p1data.char) .. ' [' .. tostring(p1base) .. '] vs ' .. tostring(p2data.char) .. ' [' .. tostring(p2base) .. ']')
+				currentBase = pickRandomBase(base)
+				tierFightsDone = 0
+				saveShuffleState(currentBase, tierFightsDone)
+			else
+			printConsole('randomtierladder: ' .. tostring(base) .. ' tier fight - ' .. tostring(p1data.char) .. ' vs ' .. tostring(p2data.char))
+			-- Upcoming pair for the OBS fighter cards (scripts/obs_fighter_cards.py).
+			pcall(jsonEncode, {p1 = p1data.char, p2 = p2data.char, tier = base, t = os.time()}, 'save/next_fight.json')
+
+			local ok = launchFight{
+				p1char = {p1data.char},
+				p2char = {p2data.char},
+				p1ref = p1ref,
+				p2ref = p2ref,
+				p1teammode = 'single',
+				p2teammode = 'single',
+				p1numchars = 1,
+				p2numchars = 1,
+				p1pal = start.f_selectPal(p1ref),
+				p2pal = start.f_selectPal(p2ref),
+				ai = 8,
+				time = smokeMode and 1 or nil,
+				p1rounds = smokeMode and 1 or nil,
+				p2rounds = smokeMode and 1 or nil,
+				vsscreen = true,
+				victoryscreen = false,
+				winscreen = false,
+				continue = false,
+			}
+				if ok == false or getWinnerTeam() == -1 then
+					printConsole('randomtierladder: match aborted')
+					break
+				end
+				main.endlessRandomFightsUntilTournament = math.max(0, numberOr(main.endlessRandomFightsUntilTournament, 100) - 1)
+				writeObsCountdown()
+				tierFightsDone = tierFightsDone + 1
+				smokeFightsTotal = smokeFightsTotal + 1
+				printConsole('randomtierladder: ' .. tostring(base) .. ' tier fight ' .. tostring(tierFightsDone) .. '/' .. tostring(effectiveFightsPerTier) .. ' complete')
+				if tierFightsDone >= effectiveFightsPerTier then
+					currentBase = pickRandomBase(base)
+					tierFightsDone = 0
+				end
+				saveShuffleState(currentBase, tierFightsDone)
+				clearColor(0, 0, 0)
+				refresh()
+				if main.endlessRandomFightsUntilTournament <= 0 then
+					runRandomTierTournament()
+					if esc() then
+						break
+					end
+					if smokeMode and smokePostTournamentMatchSeen then
+						restoreMenu()
+						return
+					end
+				end
+				if smokeMode and smokeFightsTotal >= 4 then
+					break
+				end
+		end
+	end
+
+	restoreMenu()
+end
+
+function main.f_uTierGraduation()
+	main.f_saveBaseRemapInput()
+	start.f_selectReset(true)
+	setMatchNo(1)
+	main.cpuSide[1] = true
+	main.cpuSide[2] = true
+	local statsOverride = getCommandLineValue("-statsfile")
+	if statsOverride ~= nil then
+		start.statsFilePath = statsOverride
+	end
+	local baselinePath = getCommandLineValue("-utiergraduationbaseline") or 'save/utier_graduation_baseline_stats.json'
+	local fightsPerChar = 3
+
+	local function restoreMenu()
+		main.uTierGraduationStatus = nil
+		bgReset(motif[main.background].BGDef)
+		playBgm({source = "motif.title", interrupt = true})
+		fadeInInit(motif[main.group].fadein.FadeData)
+	end
+
+	local function fullPool()
+		local pool = {}
+		local seen = {}
+		local orders = main.t_orderChars.default or start.f_getOrderChars()
+		for _, order in pairs(orders) do
+			if type(order) == 'table' then
+				for _, ref in ipairs(order) do
+					local data = start.f_getCharData(ref)
+					if data ~= nil and data.char ~= 'randomselect' and (data.hidden == nil or data.hidden <= 1) and not seen[ref] then
+						table.insert(pool, ref)
+						seen[ref] = true
+					end
+				end
+			end
+			end
+		end
+		return pool
+	end
+
+	local allPool = fullPool()
+
+	-- Reads a ref's record from an arbitrary stats file path (temporarily swaps
+	-- start.statsFilePath, since start.f_getCharRecord always reads that path).
+	local function recordFrom(ref, path)
+		local saved = start.statsFilePath
+		start.statsFilePath = path
+		local record = start.f_getCharRecord(ref)
+		start.statsFilePath = saved
+		return record
+	end
+
+	local currentStatsPath = start.statsFilePath
+
+	-- A fighter is eligible if it had zero recorded wins/losses when this
+	-- graduation campaign began (per the baseline snapshot -- this is what
+	-- "U tier" means here), AND it hasn't yet reached fightsPerChar matches
+	-- in the current (possibly isolated) stats file. This is fully derived
+	-- from data on disk, so it self-heals across restarts/crashes with no
+	-- separate position counter to go stale, and it automatically picks up
+	-- any brand-new character (e.g. a freshly downloaded fighter added to
+	-- select.def) that's absent from the baseline snapshot.
+	local function eligiblePool()
+		local pool = {}
+		for _, ref in ipairs(allPool) do
+			local baseRecord = recordFrom(ref, baselinePath)
+			local bw = tonumber(baseRecord and baseRecord.wins) or 0
+			local bl = tonumber(baseRecord and baseRecord.losses) or 0
+			if bw == 0 and bl == 0 then
+				local record = recordFrom(ref, currentStatsPath)
+				local w = tonumber(record and record.wins) or 0
+				local l = tonumber(record and record.losses) or 0
+				if (w + l) < fightsPerChar then
+					table.insert(pool, ref)
+				end
+			end
+		end
+		table.sort(pool, function(a, b)
+			local da, db = start.f_getCharData(a), start.f_getCharData(b)
+			return tostring(da and da.char or a) < tostring(db and db.char or b)
+		end)
+		return pool
+	end
+
+	local startPool = eligiblePool()
+	printConsole('utiergraduation: pool ' .. tostring(#startPool) .. ' eligible of ' .. tostring(#allPool) .. ' fighters loaded')
+	if #startPool == 0 then
+		printConsole('utiergraduation: no U tier fighters remaining, nothing to do')
+		restoreMenu()
+		return
+	end
+	printConsole('utiergraduation: ' .. tostring(#startPool) .. ' U tier fighters to graduate, ' .. tostring(fightsPerChar) .. ' fights each')
+
+	-- U-tier fighters only ever fight each other, exactly like the tier
+	-- ladder locks every match to a single tier -- never fall back to the
+	-- full roster, no matter how small the remaining U-tier pool gets.
+	local function pickOpponent(selfRef, uPool)
+		if #uPool < 2 then
+			return nil
+		end
+		local ref = uPool[math.random(#uPool)]
+		for _ = 1, 80 do
+			if ref ~= selfRef and start.f_getCharData(ref) ~= nil then
+				return ref
+			end
+			ref = uPool[math.random(#uPool)]
+		end
+		if ref ~= selfRef then
+			return ref
+		end
+		return nil
+	end
+
+	while not esc() do
+		local uPool = eligiblePool()
+		if #uPool == 0 then
+			printConsole('utiergraduation: all U tier fighters graduated')
+			break
+		end
+		if #uPool < 2 then
+			printConsole('utiergraduation: only 1 U tier fighter left, waiting for another to pair with (no cross-tier fallback)')
+			break
+		end
+		clearSelected()
+		resetGameParams()
+		setMatchNo(math.max(1, matchNo()))
+		start.p[1].teamMode = 0
+		start.p[2].teamMode = 0
+		start.p[1].numChars = 1
+		start.p[2].numChars = 1
+		start.p[1].t_selected = {}
+		start.p[1].t_selTemp = {}
+		start.p[2].t_selected = {}
+		start.p[2].t_selTemp = {}
+		start.p[1].teamEnd = true
+		start.p[1].selEnd = true
+		start.p[2].teamEnd = true
+		start.p[2].selEnd = true
+		main.t_availableChars = main.f_tableCopy(main.t_orderChars.default or start.f_getOrderChars())
+
+		local p1ref = uPool[1]
+		local p2ref = pickOpponent(p1ref, uPool)
+		local p1data = p1ref and start.f_getCharData(p1ref)
+		local p2data = p2ref and start.f_getCharData(p2ref)
+		if p1data == nil or p2data == nil then
+			printConsole('utiergraduation: no opponent available, skipping a fighter')
+			break
+		else
+			local record = recordFrom(p1ref, currentStatsPath)
+			local fightsDone = (tonumber(record and record.wins) or 0) + (tonumber(record and record.losses) or 0)
+			printConsole('utiergraduation: [' .. tostring(#uPool) .. ' left] fight ' .. tostring(fightsDone + 1) .. '/' .. tostring(fightsPerChar) .. ' - ' .. tostring(p1data.char) .. ' vs ' .. tostring(p2data.char))
+			main.uTierGraduationStatus = string.format('U TIER GRADUATION [%d left]  %s  -  Fight %d/%d', #uPool, tostring(p1data.name or p1data.char), fightsDone + 1, fightsPerChar)
+			local fightOk = launchFight{
+				p1char = {p1data.char},
+				p2char = {p2data.char},
+				p1teammode = 'single',
+				p2teammode = 'single',
+				p1numchars = 1,
+				p2numchars = 1,
+				p1pal = start.f_selectPal(p1ref),
+				p2pal = start.f_selectPal(p2ref),
+				ai = 8,
+				time = 120,
+				vsscreen = false,
+				victoryscreen = false,
+				winscreen = false,
+				continue = false,
+			}
+			if fightOk == false or getWinnerTeam() == -1 then
+				printConsole('utiergraduation: match aborted')
+				break
+			end
+			clearColor(0, 0, 0)
+			refresh()
+		end
+	end
+
+	restoreMenu()
+end
+
+function main.f_kfmFaction()
+	main.f_saveBaseRemapInput()
+	start.f_selectReset(true)
+	setMatchNo(1)
+	main.cpuSide[1] = true
+	main.cpuSide[2] = true
+	local smokeMode = getCommandLineValue("-kfmfactionsmoke") ~= nil
+	local smokeAllMode = getCommandLineValue("-kfmfactionsmokeall") ~= nil
+
+	local function restoreMenu()
+		bgReset(motif[main.background].BGDef)
+		playBgm({source = "motif.title", interrupt = true})
+		fadeInInit(motif[main.group].fadein.FadeData)
+	end
+
+	local function factionPool()
+		local pool = {}
+		local seen = {}
+		local orders = main.t_orderChars.default or start.f_getOrderChars()
+		for _, order in pairs(orders) do
+			if type(order) == 'table' then
+				for _, ref in ipairs(order) do
+					local data = start.f_getCharData(ref)
+					local faction = start.f_getCharFaction ~= nil and start.f_getCharFaction(ref) or nil
+					if data ~= nil and data.char ~= 'randomselect' and (data.hidden == nil or data.hidden <= 1) and not seen[ref] and tostring(faction or ''):lower() == 'kfm' then
+						table.insert(pool, ref)
+						seen[ref] = true
+					end
+				end
+			end
+		end
+		return pool
+	end
+
+	local function pickPair(pool)
+		return main.f_pickTwoFromPool(pool)
+	end
+
+
+	local pool = factionPool()
+	if #pool < 2 then
+		printConsole('kfmfaction: not enough KFM faction fighters (' .. tostring(#pool) .. ' found)')
+		restoreMenu()
+		return
+	end
+	printConsole('kfmfaction: loaded ' .. tostring(#pool) .. ' KFM faction fighters')
+
+	local smokeIndex = 1
+	local smokePassed = 0
+	main.smokeEndAfterActiveFrames = (smokeMode or smokeAllMode) and 90 or nil
+	while not esc() do
+		clearSelected()
+		resetGameParams()
+		setMatchNo(math.max(1, matchNo()))
+		start.p[1].teamMode = 0
+		start.p[2].teamMode = 0
+		start.p[1].numChars = 1
+		start.p[2].numChars = 1
+		start.p[1].t_selected = {}
+		start.p[1].t_selTemp = {}
+		start.p[2].t_selected = {}
+		start.p[2].t_selTemp = {}
+		start.p[1].teamEnd = true
+		start.p[1].selEnd = true
+		start.p[2].teamEnd = true
+		start.p[2].selEnd = true
+		main.t_availableChars = main.f_tableCopy(main.t_orderChars.default or start.f_getOrderChars())
+
+		local p1ref, p2ref
+		if smokeAllMode then
+			p1ref = pool[smokeIndex]
+			p2ref = pool[(smokeIndex % #pool) + 1]
+			if p1ref == p2ref then
+				p2ref = pool[((smokeIndex + 1) % #pool) + 1]
+			end
+			smokeIndex = smokeIndex + 1
+		else
+			p1ref, p2ref = pickPair(pool)
+		end
+		local p1data = p1ref and start.f_getCharData(p1ref)
+		local p2data = p2ref and start.f_getCharData(p2ref)
+		if p1data == nil or p2data == nil then
+			printConsole('kfmfaction: no KFM faction pair available')
+			break
+		end
+		if smokeAllMode then
+			printConsole('kfmfaction smokeall: [' .. tostring(smokeIndex - 1) .. '/' .. tostring(#pool) .. '] ' .. tostring(p1data.char) .. ' vs ' .. tostring(p2data.char))
+		end
+
+		local ok = launchFight{
+			p1char = {p1data.char},
+			p2char = {p2data.char},
+			p1teammode = 'single',
+			p2teammode = 'single',
+			p1numchars = 1,
+			p2numchars = 1,
+			p1pal = start.f_selectPal(p1ref),
+			p2pal = start.f_selectPal(p2ref),
+			ai = 8,
+			p1rounds = smokeMode and 1 or nil,
+			p2rounds = smokeMode and 1 or nil,
+			vsscreen = main.motif.vsscreen,
+			victoryscreen = false,
+			winscreen = false,
+			continue = false,
+		}
+		if ok == false or getWinnerTeam() == -1 then
+			printConsole('kfmfaction: match aborted')
+			break
+		end
+		clearColor(0, 0, 0)
+		refresh()
+		if smokeAllMode then
+			smokePassed = smokePassed + 1
+			if smokeIndex > #pool then
+				printConsole('kfmfaction smokeall: completed ' .. tostring(smokePassed) .. ' fighters')
+				break
+			end
+		end
+		if smokeMode then
+			break
+		end
+	end
+
+	main.smokeEndAfterActiveFrames = nil
+	restoreMenu()
+end
+
+-- Base tier letter of a fighter's current record (U F D C B A S X Z).
+function main.f_refTierBase(ref)
+	local record = start.f_getCharRecord(ref)
+	local tier = tostring(start.f_getRecordTier(record) or (record and record.tier) or 'U'):upper()
+	local base = tier:sub(1, 1)
+	if base:match('^[UFDCBASXZ]$') then
+		return base
+	end
+	return 'U'
+end
+
 function main.f_oneVsAll()
+	return main.f_oneVsAllRun(false)
+end
+
+function main.f_oneVsAllTier()
+	return main.f_oneVsAllRun(true)
+end
+
+function main.f_oneVsAllRun(sameTier)
+	local label = sameTier and 'onevsalltier' or 'onevsall'
 	main.f_saveBaseRemapInput()
 	start.f_selectReset(true)
 	setMatchNo(1)
 	main.t_availableChars = main.f_tableCopy(main.t_orderChars.default or start.f_getOrderChars())
-	if not start.f_selectScreen() then
-		bgReset(motif[main.background].BGDef)
-		playBgm({source = "motif.title", interrupt = true})
-		fadeInInit(motif[main.group].fadein.FadeData)
-		return
+	local forcedP1 = getCommandLineValue("-onevsallchar")
+	if forcedP1 ~= nil then
+		local forcedRef = main.t_charDef[tostring(forcedP1):lower()]
+		if forcedRef == nil then
+			local normalized = tostring(forcedP1):lower():gsub('^chars/', ''):gsub('^/+', '')
+			for key, ref in pairs(main.t_charDef) do
+				local candidate = tostring(key):gsub('^chars/', ''):gsub('^/+', '')
+				if candidate == normalized or candidate:gsub('%.def$', '') == normalized:gsub('%.def$', '') then
+					forcedRef = ref
+					break
+				end
+			end
+		end
+		if forcedRef == nil or start.f_getCharData(forcedRef) == nil then
+			printConsole(label .. ': forced P1 character not found: ' .. tostring(forcedP1))
+			return
+		end
+		clearSelected()
+		selectChar(1, forcedRef, 1)
+		start.p[1].t_selected = {{ref = forcedRef, pal = 1, pn = start.f_getPlayerNo(1, 1)}}
+	else
+		if not start.f_selectScreen() then
+			bgReset(motif[main.background].BGDef)
+			playBgm({source = "motif.title", interrupt = true})
+			fadeInInit(motif[main.group].fadein.FadeData)
+			return
+		end
 	end
 
 	local selected = start.p[1].t_selected[1]
 	local p1ref = selected and selected.ref
 	local p1data = p1ref and start.f_getCharData(p1ref)
 	if p1data == nil then
-		printConsole('onevsall: no valid P1 character selected')
+		printConsole(label .. ': no valid P1 character selected')
 		return
 	end
 
@@ -3882,6 +5171,30 @@ function main.f_oneVsAll()
 	main.cpuSide[1] = true
 	main.cpuSide[2] = true
 	local function pickOpponent()
+		if sameTier then
+			-- Everyone in the fighter's tier right now (hidden/random entries excluded).
+			local base = main.f_refTierBase(p1ref)
+			local pool, seen = {}, {}
+			for _, order in pairs(main.t_orderChars.default or start.f_getOrderChars()) do
+				if type(order) == 'table' then
+					for _, ref in ipairs(order) do
+						local data = start.f_getCharData(ref)
+						if ref ~= p1ref and not seen[ref] and data ~= nil and data.char ~= 'randomselect'
+							and (data.hidden == nil or data.hidden <= 1) and main.f_refTierBase(ref) == base then
+							table.insert(pool, ref)
+							seen[ref] = true
+						end
+					end
+				end
+			end
+			if #pool == 0 then
+				printConsole(label .. ': no other fighters in ' .. base .. ' tier')
+				return nil
+			end
+			local ref = pool[math.random(#pool)]
+			printConsole(label .. ': ' .. tostring(p1data.char) .. ' [' .. base .. '] vs ' .. tostring(start.f_getCharData(ref).char) .. ' (' .. #pool .. ' in tier)')
+			return ref
+		end
 		for _ = 1, 80 do
 			local ref = start.f_randomChar(2)
 			if ref ~= nil and ref ~= p1ref and start.f_getCharData(ref) ~= nil then
@@ -3913,7 +5226,7 @@ function main.f_oneVsAll()
 		local p2ref = pickOpponent()
 		local p2data = p2ref and start.f_getCharData(p2ref)
 		if p2data == nil then
-			printConsole('onevsall: no random P2 characters available')
+			printConsole(label .. ': no random P2 characters available')
 			break
 		end
 
@@ -3933,7 +5246,7 @@ function main.f_oneVsAll()
 			continue = false,
 		}
 		if ok == false then
-			printConsole('onevsall: recovered from aborted matchup')
+			printConsole(label .. ': recovered from aborted matchup')
 		end
 		clearColor(0, 0, 0)
 		refresh()
@@ -3951,6 +5264,7 @@ function main.f_normalizeTournamentKey(value)
 	local s = tostring(value):lower()
 	s = s:gsub('\\', '/')
 	s = s:gsub('^chars/', '')
+	s = s:gsub('^/+', '')
 	s = s:gsub('%.def$', '')
 	s = s:gsub('^%s+', ''):gsub('%s+$', '')
 	return s
@@ -3984,7 +5298,7 @@ function main.f_tournamentTierIndex()
 		if type(roster) == 'table' then
 			for _, info in pairs(roster) do
 				if type(info) == 'table' then
-					for _, key in ipairs({info.key, info.token, info.name, info.displayName, info.originalName}) do
+					for _, key in pairs({info.key, info.token, info.char, info.def, info.recordKey, info.name, info.displayName, info.originalName}) do
 						add(key, info.tier)
 					end
 					if type(info.aliases) == 'table' then
@@ -4009,7 +5323,7 @@ function main.f_tournamentCharTier(ref, tierIndex)
 	if data == nil then
 		return nil
 	end
-	for _, key in ipairs({data.recordKey, data.char, data.def, data.name, data.displayname}) do
+	for _, key in pairs({ref, data.recordKey, data.char, data.def, data.name, data.displayname}) do
 		local tier = tierIndex[main.f_normalizeTournamentKey(key)]
 		if tier ~= nil then
 			return tier
@@ -4027,7 +5341,7 @@ function main.f_tournamentPool(tierLetter)
 		if type(order) == 'table' then
 			for _, ref in ipairs(order) do
 				local data = start.f_getCharData(ref)
-				if data ~= nil and data.char ~= 'randomselect' and data.hidden == 0 and not seen[ref] then
+				if data ~= nil and data.char ~= 'randomselect' and (data.hidden == nil or data.hidden <= 1) and not seen[ref] then
 					local tier = main.f_tournamentCharTier(ref, tierIndex)
 					if tier ~= nil and tier:sub(1, 1):upper() == tierLetter:upper() then
 						table.insert(chars, ref)
@@ -4042,7 +5356,7 @@ function main.f_tournamentPool(tierLetter)
 		chars[i], chars[j] = chars[j], chars[i]
 	end
 	local pool = {}
-	local poolLimit = getCommandLineValue("-endlessrandomsmoke") ~= nil and 2 or 16
+	local poolLimit = (getCommandLineValue("-endlessrandomsmoke") ~= nil or getCommandLineValue("-tierladdersmoke") ~= nil) and 2 or 16
 	for i = 1, math.min(poolLimit, #chars) do
 		table.insert(pool, chars[i])
 	end
@@ -4059,7 +5373,8 @@ function main.f_tierTournament(tierLetter, mode)
 	main.cpuSide[1] = true
 	main.cpuSide[2] = true
 	local bracket, available = main.f_tournamentPool(tierLetter)
-	local bracketSize = getCommandLineValue("-endlessrandomsmoke") ~= nil and 2 or 16
+	local smokeMode = getCommandLineValue("-endlessrandomsmoke") ~= nil or getCommandLineValue("-tierladdersmoke") ~= nil
+	local bracketSize = smokeMode and 2 or 16
 	if #bracket < 2 then
 		printConsole(mode .. ': not enough ' .. tierLetter .. '-tier fighters for a tournament (' .. available .. ' found)')
 		return
@@ -4112,7 +5427,10 @@ function main.f_tierTournament(tierLetter, mode)
 					p1pal = start.f_selectPal(p1ref),
 					p2pal = start.f_selectPal(p2ref),
 					ai = 8,
-					vsscreen = main.motif.vsscreen,
+					time = smokeMode and 1 or nil,
+					p1rounds = smokeMode and 1 or nil,
+					p2rounds = smokeMode and 1 or nil,
+					vsscreen = false,
 					victoryscreen = false,
 					winscreen = false,
 					continue = false,
@@ -4689,6 +6007,61 @@ main.f_loadingRefresh()
 if getCommandLineValue("-endlessrandom") ~= nil then
 	main.f_default()
 	main.menu.f = main.t_itemname.endlessrandom()
+	if main.menu.f ~= nil then
+		main.menu.f()
+	end
+	os.exit()
+end
+
+if getCommandLineValue("-tierladder") ~= nil then
+	main.f_default()
+	main.menu.f = main.t_itemname.tierladder()
+	if main.menu.f ~= nil then
+		main.menu.f()
+	end
+	os.exit()
+end
+
+if getCommandLineValue("-randomtierladder") ~= nil then
+	main.f_default()
+	main.menu.f = main.t_itemname.randomtierladder()
+	if main.menu.f ~= nil then
+		main.menu.f()
+	end
+	os.exit()
+end
+
+if getCommandLineValue("-utiergraduation") ~= nil then
+	printConsole('utiergraduation: launch')
+	main.f_default()
+	main.menu.f = main.t_itemname.utiergraduation()
+	if main.menu.f ~= nil then
+		main.menu.f()
+	end
+	os.exit()
+end
+
+if getCommandLineValue("-onevsalltier") ~= nil then
+	main.f_default()
+	main.menu.f = main.t_itemname.onevsalltier()
+	if main.menu.f ~= nil then
+		main.menu.f()
+	end
+	os.exit()
+end
+
+if getCommandLineValue("-onevsall") ~= nil then
+	main.f_default()
+	main.menu.f = main.t_itemname.onevsall()
+	if main.menu.f ~= nil then
+		main.menu.f()
+	end
+	os.exit()
+end
+
+if getCommandLineValue("-kfmfaction") ~= nil then
+	main.f_default()
+	main.menu.f = main.t_itemname.kfmfaction()
 	if main.menu.f ~= nil then
 		main.menu.f()
 	end
