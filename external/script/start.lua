@@ -5509,7 +5509,7 @@ function launchFight(data)
 			end
 			local p1tier = tierLetter(data.p1ref)
 			local p2tier = tierLetter(data.p2ref)
-			if p1tier == nil or p2tier == nil or p1tier ~= p2tier then
+			if not main.f_sameTierLock(p1tier, p2tier, getCommandLineValue('-tierlockoverride') ~= nil) then
 				printConsole('launchFight: BLOCKED randomtierladder cross-tier pair [' .. p1tier .. '] vs [' .. p2tier .. ']')
 				return false
 			end

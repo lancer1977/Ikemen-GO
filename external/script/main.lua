@@ -4225,14 +4225,9 @@ function main.f_tierLadder()
 			end
 		end
 
-		local function tierBaseOf(ref)
-			local record = start.f_getCharRecord(ref)
-			local tier = tostring(start.f_getRecordTier(record) or record.tier or 'U'):upper()
-			if tier == 'Z' then
-				return 'Z'
+			local function tierBaseOf(ref)
+				return main.f_tierLetter(start.f_getRecordTier(start.f_getCharRecord(ref)))
 			end
-			return tier:match('^([UFDCBASX])[%+%-]*$')
-		end
 
 		local function tierLadderUnsafeChar(ref, data)
 			local rawParts = {
@@ -4571,14 +4566,9 @@ function main.f_randomTierLadder()
 			end
 		end
 
-		local function tierBaseOf(ref)
-			local record = start.f_getCharRecord(ref)
-			local tier = tostring(start.f_getRecordTier(record) or record.tier or 'U'):upper()
-			if tier == 'Z' then
-				return 'Z'
+			local function tierBaseOf(ref)
+				return main.f_tierLetter(start.f_getRecordTier(start.f_getCharRecord(ref)))
 			end
-			return tier:match('^([UFDCBASX])[%+%-]*$')
-		end
 
 		local function tierLadderUnsafeChar(ref, data)
 			local rawParts = {
@@ -4732,7 +4722,9 @@ function main.f_randomTierLadder()
 			-- but the base tier must be identical. Never allow A/B or D/C.
 			local p1base = tierBaseOf(p1ref)
 			local p2base = tierBaseOf(p2ref)
-			if p1base ~= base or p2base ~= base or p1base ~= p2base then
+			local override = getCommandLineValue('-tierlockoverride') ~= nil
+			local locked = main.f_sameTierLock(start.f_getRecordTier(start.f_getCharRecord(p1ref)), start.f_getRecordTier(start.f_getCharRecord(p2ref)), override)
+			if not override and (not locked or p1base ~= base or p2base ~= base) then
 				printConsole('randomtierladder: blocked cross-tier pair ' .. tostring(p1data.char) .. ' [' .. tostring(p1base) .. '] vs ' .. tostring(p2data.char) .. ' [' .. tostring(p2base) .. ']')
 				currentBase = pickRandomBase(base)
 				tierFightsDone = 0
@@ -5104,16 +5096,24 @@ function main.f_kfmFaction()
 	restoreMenu()
 end
 
--- Base tier letter of a fighter's current record (U F D C B A S X Z).
-function main.f_refTierBase(ref)
-	local record = start.f_getCharRecord(ref)
-	local tier = tostring(start.f_getRecordTier(record) or (record and record.tier) or 'U'):upper()
-	local base = tier:sub(1, 1)
-	if base:match('^[UFDCBASXZ]$') then
-		return base
+	-- Shared tier-lock primitives. Suffixes are intentionally ignored.
+	function main.f_tierLetter(tier)
+		local group, suffix = tostring(tier or 'U'):upper():match('^([UFDCBASXZ])([+%-]*)$')
+		if group == nil or #suffix > 3 or ((group == 'U' or group == 'Z') and suffix ~= '') then return nil end
+		return group
 	end
-	return 'U'
-end
+
+	function main.f_sameTierLock(a, b, override)
+		if override == true then return true end
+		local left, right = main.f_tierLetter(a), main.f_tierLetter(b)
+		return left ~= nil and left == right, left, right
+	end
+
+	-- Base tier letter of a fighter's current record (U F D C B A S X Z).
+	function main.f_refTierBase(ref)
+		local record = start.f_getCharRecord(ref)
+		return main.f_tierLetter(start.f_getRecordTier(record) or (record and record.tier) or 'U') or 'U'
+	end
 
 function main.f_oneVsAll()
 	return main.f_oneVsAllRun(false)
