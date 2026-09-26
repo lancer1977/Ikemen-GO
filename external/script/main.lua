@@ -689,6 +689,7 @@ end
 
 main.pauseMenu = false
 require('external.script.debug')
+local tierlock = require('external.script.tierlock')
 
 loadDebugFont(gameOption('Debug.Font'), gameOption('Debug.FontScale'))
 
@@ -5096,18 +5097,14 @@ function main.f_kfmFaction()
 	restoreMenu()
 end
 
-	-- Shared tier-lock primitives. Suffixes are intentionally ignored.
-	function main.f_tierLetter(tier)
-		local group, suffix = tostring(tier or 'U'):upper():match('^([UFDCBASXZ])([+%-]*)$')
-		if group == nil or #suffix > 3 or ((group == 'U' or group == 'Z') and suffix ~= '') then return nil end
-		return group
-	end
+-- Shared tier-lock primitives. Suffixes are intentionally ignored.
+function main.f_tierLetter(tier)
+	return tierlock.letter(tier)
+end
 
-	function main.f_sameTierLock(a, b, override)
-		if override == true then return true end
-		local left, right = main.f_tierLetter(a), main.f_tierLetter(b)
-		return left ~= nil and left == right, left, right
-	end
+function main.f_sameTierLock(a, b, override)
+	return tierlock.same(a, b, override)
+end
 
 	-- Base tier letter of a fighter's current record (U F D C B A S X Z).
 	function main.f_refTierBase(ref)
