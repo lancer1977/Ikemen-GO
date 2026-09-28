@@ -5498,12 +5498,19 @@ function launchFight(data)
 		-- Absolute isolation guard for randomtierladder. The selected refs are
 		-- authoritative; no fight may proceed when their tier letters differ.
 		if gameMode() == 'randomtierladder' and data.p1ref ~= nil and data.p2ref ~= nil then
-			local p1record = start.f_getCharRecord(data.p1ref)
-			local p2record = start.f_getCharRecord(data.p2ref)
-			local p1tier = main.f_tierLetter(start.f_getRecordTier(p1record) or (p1record and p1record.tier) or 'U')
-			local p2tier = main.f_tierLetter(start.f_getRecordTier(p2record) or (p2record and p2record.tier) or 'U')
-			if not main.f_sameTierLock(p1tier, p2tier, getCommandLineValue('-tierlockoverride') ~= nil) then
-				printConsole('launchFight: BLOCKED randomtierladder cross-tier pair [' .. tostring(p1tier) .. '] vs [' .. tostring(p2tier) .. ']')
+			local function tierLetter(ref)
+				local record = start.f_getCharRecord(ref)
+				local tier = tostring(start.f_getRecordTier(record) or record.tier or 'U'):upper()
+				local group, suffix = tier:match('^([UFDCBASXZ])([+%-]*)$')
+				if group == nil or #suffix > 3 or ((group == 'U' or group == 'Z') and suffix ~= '') then
+					return nil
+				end
+				return group
+			end
+			local p1tier = tierLetter(data.p1ref)
+			local p2tier = tierLetter(data.p2ref)
+			if p1tier == nil or p2tier == nil or p1tier ~= p2tier then
+				printConsole('launchFight: BLOCKED randomtierladder cross-tier pair [' .. p1tier .. '] vs [' .. p2tier .. ']')
 				return false
 			end
 		end
