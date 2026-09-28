@@ -4226,9 +4226,9 @@ function main.f_tierLadder()
 			end
 		end
 
-			local function tierBaseOf(ref)
-				return main.f_tierLetter(start.f_getRecordTier(start.f_getCharRecord(ref)))
-			end
+		local function tierBaseOf(ref)
+			return main.f_tierLetter(start.f_getRecordTier(start.f_getCharRecord(ref)))
+		end
 
 		local function tierLadderUnsafeChar(ref, data)
 			local rawParts = {
@@ -4567,9 +4567,9 @@ function main.f_randomTierLadder()
 			end
 		end
 
-			local function tierBaseOf(ref)
-				return main.f_tierLetter(start.f_getRecordTier(start.f_getCharRecord(ref)))
-			end
+		local function tierBaseOf(ref)
+			return main.f_tierLetter(start.f_getRecordTier(start.f_getCharRecord(ref)))
+		end
 
 		local function tierLadderUnsafeChar(ref, data)
 			local rawParts = {
@@ -5106,11 +5106,11 @@ function main.f_sameTierLock(a, b, override)
 	return tierlock.same(a, b, override)
 end
 
-	-- Base tier letter of a fighter's current record (U F D C B A S X Z).
-	function main.f_refTierBase(ref)
-		local record = start.f_getCharRecord(ref)
-		return main.f_tierLetter(start.f_getRecordTier(record) or (record and record.tier) or 'U') or 'U'
-	end
+-- Base tier letter of a fighter's current record (U F D C B A S X Z).
+function main.f_refTierBase(ref)
+	local record = start.f_getCharRecord(ref)
+	return main.f_tierLetter(start.f_getRecordTier(record) or (record and record.tier) or 'U') or 'U'
+end
 
 function main.f_oneVsAll()
 	return main.f_oneVsAllRun(false)
