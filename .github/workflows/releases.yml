@@ -160,7 +160,7 @@ jobs:
           if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$BUILD_WINDOWS_INPUT" = "true" ]; then
             build_windows=true
           fi
-          base_matrix='[{"runner_os":"linux","runs_on":["ubuntu-22.04"],"goos":"linux","goarch":"amd64","bin":"Ikemen_GO_Linux","glibc":"2.13","target":"","build_target":"Linux"},{"runner_os":"macos","runs_on":["macos-14"],"goos":"darwin","goarch":"arm64","bin":"Ikemen_GO_MacOSARM","glibc":"","target":"10.7","build_target":"MacOSARM"},{"runner_os":"android","runs_on":["ubuntu-22.04"],"goos":"android","goarch":"arm64","bin":"ikemen-go.apk","glibc":"","target":"","build_target":"Android"}]'
+          base_matrix='[{"runner_os":"linux","runs_on":["ubuntu-22.04"],"goos":"linux","goarch":"amd64","bin":"Ikemen_GO_Linux","glibc":"2.13","target":"","build_target":"Linux"},{"runner_os":"macos","runs_on":["macos-15"],"goos":"darwin","goarch":"arm64","bin":"Ikemen_GO_MacOSARM","glibc":"","target":"10.7","build_target":"MacOSARM"},{"runner_os":"android","runs_on":["ubuntu-22.04"],"goos":"android","goarch":"arm64","bin":"ikemen-go.apk","glibc":"","target":"","build_target":"Android"}]'
           windows_cfg='{"runner_os":"windows","runs_on":["self-hosted","windows","ikemen-windows"],"goos":"windows","goarch":"amd64","bin":"Ikemen_GO.exe","glibc":"","target":"","build_target":"Win64"}'
           matrix_json="$(jq -cn --argjson base "$base_matrix" --argjson windows "$windows_cfg" --arg enabled "$build_windows" 'if $enabled == "true" then [$windows] + $base else $base end')"
           echo "buildMatrix=$matrix_json" >> "$GITHUB_OUTPUT"
