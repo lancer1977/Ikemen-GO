@@ -70,27 +70,27 @@ targetOS="${1:-}"
 currentOS="Unknown"
 OUTDIR="bin"         # may be overridden below
 LIBDIR="lib"         # runtime libs live here at repo root
-BUILDDIR="build"
+BUILDDIR="$REPO_ROOT/build"
 DELAYLIB_DIR="$BUILDDIR/delaylib"
 FFMPEG_SRCDIR="$BUILDDIR/ffmpeg-src"
 
 # Screenpack assets
 SCREENPACK_REPO="${SCREENPACK_REPO:-https://github.com/ikemen-engine/Ikemen-GO-Screenpack.git}"
 SCREENPACK_REF="${SCREENPACK_REF:-master}"
-SCREENPACK_DIR="$REPO_ROOT/$BUILDDIR/screenpack"
+SCREENPACK_DIR="$BUILDDIR/screenpack"
 
 # Android APK packaging (ikemen-droid)
 BUILD_ANDROID_APK="${BUILD_ANDROID_APK:-1}"  # 1=yes, 0=no
 # ANDROID_APK_REPO can be a git URL (default) OR a local directory path to an existing ikemen-droid checkout.
 ANDROID_APK_REPO="${ANDROID_APK_REPO:-https://github.com/Jesuszilla/ikemen-droid.git}"
 ANDROID_APK_REF="${ANDROID_APK_REF:-main}"
-ANDROID_APK_DIR="$REPO_ROOT/$BUILDDIR/android-apk/ikemen-droid"
+ANDROID_APK_DIR="$BUILDDIR/android-apk/ikemen-droid"
 ANDROID_APK_OUT="${ANDROID_APK_OUT:-$REPO_ROOT/bin/ikemen-go.apk}"
 
 # FFmpeg config
 FFMPEG_REV="${FFMPEG_REV:-release/7.1}"
 # Always default to build/ffmpeg under the repo root (absolute path).
-FFMPEG_PREFIX="${FFMPEG_PREFIX:-$REPO_ROOT/$BUILDDIR/ffmpeg}"
+FFMPEG_PREFIX="${FFMPEG_PREFIX:-$BUILDDIR/ffmpeg}"
 BUILD_FFMPEG="${BUILD_FFMPEG:-auto}"   # auto|yes|no
 # Native libxmp support is opt-in.  The default build uses sound_xm_stub.go;
 # set BUILD_LIBXMP=1 to require the headers/library and compile with the tag.
