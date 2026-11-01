@@ -38,6 +38,11 @@ on:
         type: boolean
         required: false
         default: false
+      buildWindows:
+        description: 'Build the optional Windows release artifact.'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -51,20 +56,15 @@ concurrency:
 # ---------------------------------------------------------------------------
 # Job graph (fixes #10: tag-before-validation ordering)
 #
-#   tag ──▶ build (matrix: windows, linux, macos, android — ALL required;
-#            │      fail-fast:false only means "don't cancel siblings", not
-#            │      "some legs are advisory" — no leg currently has
-#            │      continue-on-error, so `needs.build.result` is 'success'
-#            │      only when every platform succeeds. Judgment call: if this
-#            │      repo ever wants a genuinely best-effort/advisory platform,
-#            │      that is a separate scoping decision — this change
-#            │      preserves the current "all four are required" behavior
-#            │      rather than inventing a new advisory tier.)
+#   tag ──▶ build (matrix: linux, macos, android are required;
+#            │      windows is included only when buildWindows is enabled by
+#            │      dispatch input or IKEMEN_BUILD_WINDOWS repository variable,
+#            │      and its failure is advisory.)
 #            │
 #            ▼
-#          move-tag (needs: [tag, build] — was needs: [tag] only. This is the
-#            │        actual fix: the tag can no longer move until the whole
-#            │        required build matrix has succeeded. Captures the
+#          move-tag (needs: [tag, build]. The tag can move after all required
+#            │        builds succeed, independently of optional Windows.
+#            │        Captures the
 #            │        pre-move nightly SHA so it can be restored if promotion
 #            │        fails downstream.)
 #            │
@@ -79,11 +79,11 @@ concurrency:
 #
 # | Case                                            | tag | build | move-tag | release | Result |
 # |--------------------------------------------------|-----|-------|----------|---------|--------|
-# | Push to develop/ci-test, all platforms succeed    | ok  | ok    | runs, ok | runs    | nightly tag + release move to new SHA, with checksums/manifest attached |
-# | Push to develop/ci-test, one platform build fails | ok  | fail  | skipped (`needs.build.result != 'success'`) | skipped (`needs.build.result != 'success'`) | `nightly` untouched; still points at last known-good SHA |
-# | Push to develop/ci-test, matrix cancelled         | ok  | cancelled | skipped | skipped | `nightly` untouched; no partial/ambiguous tag state |
+# | Push, required builds succeed; Windows disabled  | ok  | ok    | runs, ok | runs    | nightly tag + release move to new SHA, required artifacts attached |
+# | Push, required build fails                      | ok  | fail  | skipped  | skipped | `nightly` untouched; still points at last known-good SHA |
+# | Windows enabled and fails; required builds pass | ok  | ok    | runs, ok | runs    | required release publishes; absent Windows artifact |
 # | workflow_dispatch, publishRelease=false (diagnostic) | ok | ok (or as configured) | skipped (`if` requires `publishRelease == 'true'` on dispatch) | skipped (same gate) | Build/manifest artifacts produced for inspection; no tag/release mutation — unchanged from today |
-# | workflow_dispatch with explicit tag / publishRelease=true | ok | ok | runs (nightly path) or n/a (tagged path uses `release` job's tagged branch directly) | runs | Tag moved only after build succeeds; release published; rollback on failure as above |
+# | workflow_dispatch with explicit tag / publishRelease=true | ok | ok | runs (nightly path) or n/a (tagged path uses `release` job's tagged branch directly) | runs | Tag moved only after required builds succeed; release published; rollback on failure as above |
 # ---------------------------------------------------------------------------
 
 jobs:
@@ -98,6 +98,7 @@ jobs:
       releaseTag: ${{ steps.meta.outputs.releaseTag }}
       releaseKind: ${{ steps.meta.outputs.releaseKind }}
       buildTime: ${{ steps.meta.outputs.buildTime }}
+      buildMatrix: ${{ steps.meta.outputs.buildMatrix }}
       #previousTag: ${{ steps.previousTag.outputs.tag }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -119,6 +120,8 @@ jobs:
           DISPATCH_TAG: ${{ github.event.inputs.tag }}
           EVENT_NAME: ${{ github.event_name }}
           REF_NAME: ${{ github.ref_name }}
+          BUILD_WINDOWS_INPUT: ${{ github.event.inputs.buildWindows }}
+          BUILD_WINDOWS_VAR: ${{ vars.IKEMEN_BUILD_WINDOWS }}
         run: |
           set -euo pipefail
 
@@ -153,6 +156,14 @@ jobs:
           echo "releaseTag=$release_tag" >> "$GITHUB_OUTPUT"
           echo "releaseKind=$release_kind" >> "$GITHUB_OUTPUT"
           echo "buildTime=$(date '+%Y.%m.%d')" >> "$GITHUB_OUTPUT"
+          build_windows="$BUILD_WINDOWS_VAR"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$BUILD_WINDOWS_INPUT" = "true" ]; then
+            build_windows=true
+          fi
+          base_matrix='[{"runner_os":"linux","runs_on":["ubuntu-22.04"],"goos":"linux","goarch":"amd64","bin":"Ikemen_GO_Linux","glibc":"2.13","target":"","build_target":"Linux"},{"runner_os":"macos","runs_on":["macos-14"],"goos":"darwin","goarch":"arm64","bin":"Ikemen_GO_MacOSARM","glibc":"","target":"10.7","build_target":"MacOSARM"},{"runner_os":"android","runs_on":["ubuntu-22.04"],"goos":"android","goarch":"arm64","bin":"ikemen-go.apk","glibc":"","target":"","build_target":"Android"}]'
+          windows_cfg='{"runner_os":"windows","runs_on":["self-hosted","windows","ikemen-windows"],"goos":"windows","goarch":"amd64","bin":"Ikemen_GO.exe","glibc":"","target":"","build_target":"Win64"}'
+          matrix_json="$(jq -cn --argjson base "$base_matrix" --argjson windows "$windows_cfg" --arg enabled "$build_windows" 'if $enabled == "true" then [$windows] + $base else $base end')"
+          echo "buildMatrix=$matrix_json" >> "$GITHUB_OUTPUT"
 
   build:
     name: prepare release
@@ -163,40 +174,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cfg:
-          - runner_os: windows
-            runs_on: '["self-hosted","windows","ikemen-windows"]'
-            goos: windows
-            goarch: amd64
-            bin: Ikemen_GO.exe
-            glibc: ''
-            target: ''
-            build_target: Win64
-          - runner_os: linux
-            runs_on: '["ubuntu-22.04"]'
-            goos: linux
-            goarch: amd64
-            bin: Ikemen_GO_Linux
-            glibc: '2.13'
-            target: ''
-            build_target: Linux
-          - runner_os: macos
-            runs_on: '["macos-14"]' # macos-13
-            goos: darwin
-            goarch: arm64 # amd64
-            bin: Ikemen_GO_MacOSARM # Ikemen_GO_MacOS
-            glibc: ''
-            target: '10.7'
-            build_target: MacOSARM # MacOS
-          - runner_os: android
-            runs_on: '["ubuntu-22.04"]'
-            goos: android
-            goarch: arm64
-            bin: ikemen-go.apk
-            glibc: ''
-            target: ''
-            build_target: Android
-    runs-on: ${{ fromJSON(matrix.cfg.runs_on) }}
+        cfg: ${{ fromJSON(needs.tag.outputs.buildMatrix) }}
+    continue-on-error: ${{ matrix.cfg.runner_os == 'windows' }}
+    runs-on: ${{ matrix.cfg.runs_on }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
