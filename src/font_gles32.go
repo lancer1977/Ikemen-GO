@@ -25,7 +25,7 @@ type Font_GLES32 struct {
 	windowWidth  int
 	windowHeight int
 	textures     []*TextureAtlas
-	color        color
+	color        colorValue
 	shaderPalFX  ShaderPalFX
 }
 
