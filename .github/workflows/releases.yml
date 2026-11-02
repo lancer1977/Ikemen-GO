@@ -1,6 +1,7 @@
 on:
   push:
     branches: [ develop, ci-test ]
+    paths-ignore: ['docs/**', '**/*.md', '.mfd/**']
   workflow_dispatch:
     inputs:
       tag:
