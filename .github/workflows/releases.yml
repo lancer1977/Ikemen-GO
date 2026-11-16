@@ -531,7 +531,7 @@ jobs:
           name: release-${{ matrix.cfg.runner_os }}
           path: release-files/*
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 1
 
   move-tag:
     name: move nightly tag
