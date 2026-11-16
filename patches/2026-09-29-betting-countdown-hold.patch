@@ -1,0 +1,109 @@
+diff --git a/src/fightscreen.go b/src/fightscreen.go
+index d8b7214d..b62232e5 100644
+--- a/src/fightscreen.go
++++ b/src/fightscreen.go
+@@ -2203,7 +2203,17 @@ func saltyBetCurrentMatchKey() string {
+ 	return strings.Join(keys, "::")
+ }
+ 
+-func saltyBetCountdownRemaining() (int32, bool) {
++// Betting countdown: 30 s counting down, then a 5 s hold (owner, 2026-09-29):
++// the display stays at 0, the fighters are unfrozen once and play their
++// time-over lose pose (common state 170), then the one-shot reset starts the fight.
++const saltyBetCountdownSecs = 30
++const saltyBetHoldSecs = 5
++
++var saltyBetHoldKey string // match whose hold has already put the fighters in state 170
++
++// saltyBetCountdownElapsed: ticks since the countdown started, or -1 when no
++// countdown is running for the current match.
++func saltyBetCountdownElapsed() int32 {
+ 	matchKey := saltyBetCurrentMatchKey()
+ 	if matchKey != "" && matchKey != saltyBetCountdownMatchKey {
+ 		saltyBetCountdownStart = -1
+@@ -2211,16 +2221,16 @@ func saltyBetCountdownRemaining() (int32, bool) {
+ 		saltyBetCountdownDoneKey = ""
+ 	}
+ 	if matchKey != "" && matchKey == saltyBetCountdownDoneKey {
+-		return 0, false
++		return -1
+ 	}
+ 	if sys.roundState() < 1 || sys.roundState() > 2 {
+-		return 0, false
++		return -1
+ 	}
+ 	if saltyBetCountdownStart < 0 {
+ 		saltyBetCountdownStart = int32(sys.tickCount)
+ 	}
+-	remaining := int32(30) - (int32(sys.tickCount)-saltyBetCountdownStart)/60
+-	if remaining <= 0 {
++	elapsed := int32(sys.tickCount) - saltyBetCountdownStart
++	if elapsed >= (saltyBetCountdownSecs+saltyBetHoldSecs)*60 {
+ 		if matchKey != "" {
+ 			saltyBetCountdownDoneKey = matchKey
+ 		}
+@@ -2228,11 +2238,49 @@ func saltyBetCountdownRemaining() (int32, bool) {
+ 			sys.roundResetFlg = true
+ 			sys.roundResetMatchStart = true
+ 		}
++		return -1
++	}
++	return elapsed
++}
++
++func saltyBetCountdownRemaining() (int32, bool) {
++	elapsed := saltyBetCountdownElapsed()
++	if elapsed < 0 {
+ 		return 0, false
+ 	}
++	remaining := int32(saltyBetCountdownSecs) - elapsed/60
++	if remaining < 0 {
++		remaining = 0 // hold: stays at 0
++	}
+ 	return remaining, true
+ }
+ 
++// saltyBetHolding: the 5 s after the count hit 0.
++func saltyBetHolding() bool {
++	elapsed := saltyBetCountdownElapsed()
++	return elapsed >= saltyBetCountdownSecs*60
++}
++
++// saltyBetStartHold puts every fighter into its time-over lose pose once.
++func saltyBetStartHold() {
++	key := saltyBetCountdownMatchKey
++	if key == saltyBetHoldKey {
++		return
++	}
++	saltyBetHoldKey = key
++	for _, p := range sys.chars {
++		if len(p) == 0 || p[0] == nil {
++			continue
++		}
++		c := p[0]
++		anim := int32(-1)
++		if !c.selfAnimExist(BytecodeInt(170)).ToB() {
++			anim = 0 // no lose pose: stand instead of vanishing
++		}
++		c.selfState(170, anim, -1, 0, "")
++	}
++}
++
+ func saltyBetCountdownActive() bool {
+ 	_, ok := saltyBetCountdownRemaining()
+ 	return ok
+diff --git a/src/system.go b/src/system.go
+index bc92c9bb..f155da8d 100644
+--- a/src/system.go
++++ b/src/system.go
+@@ -2695,6 +2695,10 @@ func (s *System) action() {
+ 		// after the one-shot F4-style reset.
+ 		if !saltyBetCountdownActive() {
+ 			s.charList.action()
++		} else if saltyBetHolding() {
++			// last 5 s of the betting window: play the time-over lose pose
++			saltyBetStartHold()
++			s.charList.action()
+ 		}
+ 
+ 		// The following must be placed after char action or they will lag behind 1 frame
