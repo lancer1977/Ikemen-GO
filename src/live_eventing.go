@@ -359,7 +359,7 @@ func liveTimestampUTC() string {
 
 func (s *System) writeLiveStatus() {
 	path := s.liveStatusPath()
-	if path == "" || (!s.middleOfMatch() && !s.matchOver()) {
+	if path == "" {
 		return
 	}
 

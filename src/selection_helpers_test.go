@@ -6,7 +6,7 @@ func TestSelectedCharKeys_UsesP1SelectionOrderAndBasenames(t *testing.T) {
 	prevSys := sys
 	defer func() { sys = prevSys }()
 
-	sys = System{}
+	sys = *newTestSystem()
 	sys.sel.charlist = []SelectChar{
 		{def: "chars/ryu/ryu.def"},
 		{def: "chars/ken/ken.def"},
@@ -19,7 +19,7 @@ func TestSelectedCharKeys_UsesP1SelectionOrderAndBasenames(t *testing.T) {
 }
 
 func TestLiveCharacterForSelection_RequiresMatchingSideMemberAndSlot(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	live := &Char{teamside: 1, memberNo: 2, selectNo: 3, name: "Ken"}
 	s.chars[0] = []*Char{live}
 

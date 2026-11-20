@@ -168,7 +168,7 @@ func (gs *GameState) LoadState(stateID int) {
 
 	sys.arenaLoadMap[stateID] = arena.NewArena()
 	a := sys.arenaLoadMap[stateID]
-	gsp := &sys.loadPool
+	gsp := sys.loadPool
 
 	sys.SystemStateVars = gs.SystemStateVars
 	sys.frameCounter = gs.frame
@@ -271,7 +271,7 @@ func (gs *GameState) SaveState(stateID int) {
 
 	sys.arenaSaveMap[stateID] = arena.NewArena()
 	a := sys.arenaSaveMap[stateID]
-	gsp := &sys.savePool
+	gsp := sys.savePool
 
 	gs.cgi = sys.cgi
 	gs.saved = true
@@ -502,8 +502,8 @@ type GameStatePool struct {
 	curStateID         int
 }
 
-func NewGameStatePool() GameStatePool {
-	return GameStatePool{
+func NewGameStatePool() *GameStatePool {
+	return &GameStatePool{
 		gameStatePool: sync.Pool{
 			New: func() interface{} {
 				return NewGameState()

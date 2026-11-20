@@ -22,7 +22,7 @@ func TestNewCharGlobalInfo(t *testing.T) {
 			t.Fatalf("newCharGlobalInfo palInfo[%d] = %#v", i, pal)
 		}
 	}
-	if gi.constants == nil || gi.states == nil || gi.callFuncs == nil || gi.animTable == nil || gi.fnt == nil {
+	if gi.constants == nil || gi.states == nil || gi.callFuncs == nil || gi.animTable.anims == nil || gi.fnt == nil {
 		t.Fatalf("newCharGlobalInfo should initialize maps/tables: %#v", gi)
 	}
 }

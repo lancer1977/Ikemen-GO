@@ -47,7 +47,7 @@ func TestNewLayoutAndRead_DefaultsAndWindowNormalization(t *testing.T) {
 		t.Fatalf("Layout.Read normalized window = %#v", l.window)
 	}
 
-	l = *newLayout(4)
+	l = newLayout(4)
 	l.Read("alt.", IniSection{
 		"alt.projection": "perspective",
 	})
@@ -55,13 +55,13 @@ func TestNewLayoutAndRead_DefaultsAndWindowNormalization(t *testing.T) {
 		t.Fatalf("Layout.Read perspective projection = %v, want perspective", l.projection)
 	}
 
-	l = *newLayout(1)
+	l = newLayout(1)
 	l.Read("missing.", IniSection{})
 	if l.window != sys.scrrect {
 		t.Fatalf("Layout.Read missing window = %#v, want %#v", l.window, sys.scrrect)
 	}
 
-	l = *newLayout(2)
+	l = newLayout(2)
 	l.Read("bad.", IniSection{
 		"bad.projection": "sideways",
 	})

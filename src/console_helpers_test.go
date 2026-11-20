@@ -41,7 +41,7 @@ func TestConsoleHelpersAppendAndPrint(t *testing.T) {
 	if string(out) != "hello there\nworld\n" {
 		t.Fatalf("printToConsole() stdout = %q, want %q", string(out), "hello there\nworld\n")
 	}
-	if len(sys.consoleText) != 2 || sys.consoleText[0] != "world" || sys.consoleText[1] != "third" {
+	if len(sys.consoleText) != 2 || sys.consoleText[0] != "hello there" || sys.consoleText[1] != "world" {
 		t.Fatalf("printToConsole() consoleText = %#v, want tail append", sys.consoleText)
 	}
 }

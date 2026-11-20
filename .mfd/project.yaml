@@ -1,0 +1,6 @@
+project: Ikemen-GO
+repo: lancer1977/Ikemen-GO
+integration_branch: develop
+default_branch: develop
+dev_site: ~/apps/ikemen-dev via deploy-dev.yml
+prod: nightly/tagged GitHub releases via releases.yml

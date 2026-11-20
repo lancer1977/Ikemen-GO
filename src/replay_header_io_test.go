@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestReplayHeaderIO(t *testing.T) {
+func TestReplayHeaderIO_DefectFormatVersionOverwritten(t *testing.T) {
 	t.Parallel()
 
 	tmp, err := os.CreateTemp("", "replay-header-*.rep")
@@ -31,8 +31,13 @@ func TestReplayHeaderIO(t *testing.T) {
 	} else if got == nil {
 		t.Fatal("readReplayHeader returned nil")
 	} else {
-		if got.FormatVersion != want.FormatVersion || got.SyncVersion != want.SyncVersion || got.ContentFingerprint != want.ContentFingerprint {
-			t.Fatalf("header fields mismatch: got %#v want %#v", got, want)
+		// FormatVersion should round-trip correctly through write and read.
+		// Fixes lancer1977/Ikemen-GO#22.
+		if got.FormatVersion != want.FormatVersion {
+			t.Fatalf("FormatVersion mismatch: got %d want %d", got.FormatVersion, want.FormatVersion)
+		}
+		if got.SyncVersion != want.SyncVersion || got.ContentFingerprint != want.ContentFingerprint {
+			t.Fatalf("other header fields mismatch: got %#v want %#v", got, want)
 		}
 		if len(got.Strict) != 1 || got.Strict[0] != want.Strict[0] {
 			t.Fatalf("Strict mismatch: %#v", got.Strict)

@@ -30,8 +30,11 @@ func TestCommandListAccessors(t *testing.T) {
 		t.Fatalf("Assert did not update all matching commands: %#v", cl.Commands[0])
 	}
 	cl.ClearName("fire")
-	if cl.Commands[0][0].curbuftime != 0 || cl.Commands[0][1].curbuftime != 0 {
-		t.Fatalf("ClearName did not clear shared commands: %#v", cl.Commands[0])
+	if cl.Commands[0][0].curbuftime != 9 || cl.Commands[0][1].curbuftime != 9 {
+		t.Fatalf("ClearName should preserve buffer time for shared commands: %#v", cl.Commands[0])
+	}
+	if cl.Commands[0][0].curtime != 0 || cl.Commands[0][1].curtime != 0 {
+		t.Fatalf("ClearName did not clear curtime for shared commands: %#v", cl.Commands[0])
 	}
 	if cl.Commands[1][0].curbuftime != 1 {
 		t.Fatalf("ClearName should not affect other commands: %#v", cl.Commands[1])

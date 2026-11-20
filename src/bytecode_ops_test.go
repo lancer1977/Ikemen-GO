@@ -116,8 +116,8 @@ func TestBytecodeExpPowerHandlesFloatAndVersionedIntegerBranches(t *testing.T) {
 	}
 
 	base = BytecodeInt(2)
-	sys.cgi[0].ikemenver = [2]int{0, 0}
-	sys.cgi[0].mugenver = [2]int{0, 0}
+	sys.cgi[0].ikemenver = [3]uint16{0, 0, 0}
+	sys.cgi[0].mugenver = [2]uint16{0, 0}
 	(BytecodeExp{}).pow(&base, BytecodeInt(3), 0)
 	if base.ToI() != 8 {
 		t.Fatalf("pow() old-version integer branch = %#v, want 8", base)

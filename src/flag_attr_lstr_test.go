@@ -11,8 +11,8 @@ func TestFlagLStrAndAttrLStrEncodeExpectedSymbols(t *testing.T) {
 		t.Fatalf("attrLStr(0) = %q, want empty", got)
 	}
 
-	// ST_S + AT_AN + AT_AA encodes as "S, NA"
-	attr := int32(ST_S | AT_AN | AT_AA)
+	// ST_S + AT_NA encodes as "S, NA"
+	attr := int32(ST_S) | int32(AT_NA)
 	if got := attrLStr(attr); got != "S, NA" {
 		t.Fatalf("attrLStr = %q, want S, NA", got)
 	}

@@ -21,12 +21,12 @@ func TestToLValueConvertsNumbersPointersAndFallbackScalars(t *testing.T) {
 		t.Fatalf("toLValue(json float) = %#v, want 12.5", got)
 	}
 
-	cmd := NewCommandList(nil)
-	if got := toLValue(L, cmd); got.Type() != lua.LTUserData {
+	rect := &Rect{}
+	if got := toLValue(L, rect); got.Type() != lua.LTUserData {
 		t.Fatalf("toLValue(pointer userdata) = %s, want userdata", got.Type())
 	}
 
-	bg := &bgMusic{bgmusic: "intro.ogg", bgmloop: true, bgmvolume: 80, bgmloopstart: 12, bgmloopend: 34, bgmstartposition: 5}
+	bg := &bgMusic{bgmusic: "intro.ogg", bgmloop: 1, bgmvolume: 80, bgmloopstart: 12, bgmloopend: 34, bgmstartposition: 5}
 	tbl, ok := toLValue(L, bg).(*lua.LTable)
 	if !ok || tbl.RawGetString("bgm").String() != "intro.ogg" || tbl.RawGetString("volume").String() != "80" {
 		t.Fatalf("toLValue(bgMusic) = %#v", tbl)

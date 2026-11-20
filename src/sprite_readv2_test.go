@@ -66,8 +66,12 @@ func TestSpriteReadV2(t *testing.T) {
 		defer func() { sys = oldSys }()
 		sys.mainThreadTask = make(chan func(), 1)
 
+		// Prepend 4-byte header as per readV2 PNG format (offset+4)
+		pngData := make([]byte, 4+buf.Len())
+		copy(pngData[4:], buf.Bytes())
+
 		s := &Sprite{Size: [2]uint16{1, 1}, rle: -10}
-		if err := s.readV2(bytes.NewReader(buf.Bytes()), 0, uint32(buf.Len())); err != nil {
+		if err := s.readV2(bytes.NewReader(pngData), 0, uint32(len(pngData))); err != nil {
 			t.Fatal(err)
 		}
 		if len(sys.mainThreadTask) != 1 {
@@ -90,8 +94,12 @@ func TestSpriteReadV2(t *testing.T) {
 		defer func() { sys = oldSys }()
 		sys.mainThreadTask = make(chan func(), 1)
 
+		// Prepend 4-byte header as per readV2 PNG format (offset+4)
+		pngData := make([]byte, 4+buf.Len())
+		copy(pngData[4:], buf.Bytes())
+
 		s := &Sprite{Size: [2]uint16{1, 1}, rle: -11}
-		if err := s.readV2(bytes.NewReader(buf.Bytes()), 0, uint32(buf.Len())); err != nil {
+		if err := s.readV2(bytes.NewReader(pngData), 0, uint32(len(pngData))); err != nil {
 			t.Fatal(err)
 		}
 		if len(sys.mainThreadTask) != 1 {

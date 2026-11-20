@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func TestUIRegisterCommandAddsOnceAndSkipsWhitespace(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 
 	if err := s.uiRegisterCommand("   ", CommandSpec{Cmd: "a"}); err != nil {
 		t.Fatalf("uiRegisterCommand() whitespace name returned error: %v", err)
@@ -31,7 +31,7 @@ func TestUIRegisterCommandAddsOnceAndSkipsWhitespace(t *testing.T) {
 }
 
 func TestUIApplyCommandRegistryAddsMissingCommandsOnly(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	s.uiCommandRegistry = map[string]CommandSpec{
 		"jump": {Cmd: "a", Time: 12},
 		"kick": {Cmd: "b", Time: 8},

@@ -1,23 +1,22 @@
 package main
 
 import (
-	"io"
 	"testing"
 )
 
-type fakeStreamSeeker struct {
+type fakeStreamSeekerLooper struct {
 	length   int
 	position int
 }
 
-func (f *fakeStreamSeeker) Stream(samples [][2]float64) (int, bool) { return 0, false }
-func (f *fakeStreamSeeker) Err() error                              { return nil }
-func (f *fakeStreamSeeker) Len() int                                { return f.length }
-func (f *fakeStreamSeeker) Position() int                           { return f.position }
-func (f *fakeStreamSeeker) Seek(p int) error                        { f.position = p; return nil }
+func (f *fakeStreamSeekerLooper) Stream(samples [][2]float64) (int, bool) { return 0, false }
+func (f *fakeStreamSeekerLooper) Err() error                              { return nil }
+func (f *fakeStreamSeekerLooper) Len() int                                { return f.length }
+func (f *fakeStreamSeekerLooper) Position() int                           { return f.position }
+func (f *fakeStreamSeekerLooper) Seek(p int) error                        { f.position = p; return nil }
 
 func TestNewStreamLooper(t *testing.T) {
-	base := &fakeStreamSeeker{length: 100}
+	base := &fakeStreamSeekerLooper{length: 100}
 
 	sl := newStreamLooper(base, 2, -5, 200).(*StreamLooper)
 	if sl.loopstart != 0 || sl.loopend != 100 {
@@ -29,7 +28,9 @@ func TestNewStreamLooper(t *testing.T) {
 		t.Fatalf("newStreamLooper should widen invalid loop end: %#v", sl)
 	}
 
-	if _, ok := newStreamLooper(base, 1, 0, 0).(io.Seeker); ok {
-		t.Fatal("unexpected interface assertion")
+	// A zero loopend is invalid and must widen to the full stream length.
+	sl = newStreamLooper(base, 1, 0, 0).(*StreamLooper)
+	if sl.loopcount != 1 || sl.loopstart != 0 || sl.loopend != 100 {
+		t.Fatalf("newStreamLooper should widen a zero loop end: %#v", sl)
 	}
 }

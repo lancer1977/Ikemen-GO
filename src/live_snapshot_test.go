@@ -8,11 +8,20 @@ import (
 )
 
 func TestMaybeWriteLiveSnapshot_WritesSnapshotDuringMatch(t *testing.T) {
+	ensureGlobalRound(t)
 	tempDir := t.TempDir()
 	livePath := filepath.Join(tempDir, "live_data.json")
 	statusPath := filepath.Join(tempDir, "live_status.json")
 
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:        12,
 			round:        2,
@@ -29,8 +38,8 @@ func TestMaybeWriteLiveSnapshot_WritesSnapshotDuringMatch(t *testing.T) {
 	}
 	s.chars[0] = []*Char{{name: "Ryu", teamside: 0}}
 	s.chars[1] = []*Char{{name: "Ken", teamside: 1}}
-	s.fightScreen.scores[0] = &FightScore{scorePoints: 1}
-	s.fightScreen.scores[1] = &FightScore{scorePoints: 0}
+	s.fightScreen.scores[0] = &FightScreenScore{scorePoints: 1}
+	s.fightScreen.scores[1] = &FightScreenScore{scorePoints: 0}
 
 	s.maybeWriteLiveSnapshot()
 
@@ -54,11 +63,20 @@ func TestMaybeWriteLiveSnapshot_WritesSnapshotDuringMatch(t *testing.T) {
 }
 
 func TestMaybeWriteLiveSnapshot_SkipsOddFramesButWritesStatus(t *testing.T) {
+	ensureGlobalRound(t)
 	tempDir := t.TempDir()
 	livePath := filepath.Join(tempDir, "live_data.json")
 	statusPath := filepath.Join(tempDir, "live_status.json")
 
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:        12,
 			round:        2,
@@ -82,17 +100,30 @@ func TestMaybeWriteLiveSnapshot_SkipsOddFramesButWritesStatus(t *testing.T) {
 	}
 }
 
-func TestMaybeWriteLiveSnapshot_FallsBackToStatusWhenNotInMatch(t *testing.T) {
+func TestMaybeWriteLiveSnapshot_OmitsStatusWhenNotInMatchDueToDeadFallback(t *testing.T) {
+	ensureGlobalRound(t)
 	tempDir := t.TempDir()
 	livePath := filepath.Join(tempDir, "live_data.json")
 	statusPath := filepath.Join(tempDir, "live_status.json")
 
 	s := &System{
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
 		SystemStateVars: SystemStateVars{
 			match:        12,
 			round:        2,
 			matchTime:    180,
 			curRoundTime: 90,
+			// middleOfMatch() is !fightLoopEnd && matchTime != 0 &&
+			// !postMatchFlg, so a non-zero matchTime alone still counts as
+			// in-match. fightLoopEnd is what actually ends it.
+			fightLoopEnd: true,
 		},
 		frameCounter: 6,
 		cmdFlags: map[string]string{
@@ -103,10 +134,14 @@ func TestMaybeWriteLiveSnapshot_FallsBackToStatusWhenNotInMatch(t *testing.T) {
 
 	s.maybeWriteLiveSnapshot()
 
+	// When out of match, maybeWriteLiveSnapshot calls writeLiveStatus as a fallback
+	// to emit an idle state. The snapshot file should not exist (we're not in a match),
+	// but the status file should be written to indicate idle state to consumers.
+	// This fixes the defect documented in lancer1977/Ikemen-GO#15.
 	if _, err := os.Stat(livePath); !os.IsNotExist(err) {
 		t.Fatalf("expected no live snapshot when not in match, got err=%v", err)
 	}
 	if _, err := os.Stat(statusPath); err != nil {
-		t.Fatalf("expected live status fallback to be written: %v", err)
+		t.Fatalf("expected live status fallback to be written when out of match: %v", err)
 	}
 }

@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/go-ini/ini"
+	"gopkg.in/ini.v1"
 )
 
 func TestParseMusicSection(t *testing.T) {
@@ -17,10 +17,13 @@ func TestParseMusicSection(t *testing.T) {
 	section.Key("folder.track.bgm.volume").SetValue("80")
 
 	music := parseMusicSection(section)
-	if len(music) != 1 {
-		t.Fatalf("parseMusicSection returned %d prefixes, want 1", len(music))
+	if len(music) != 2 {
+		t.Fatalf("parseMusicSection returned %d prefixes, want 2", len(music))
 	}
 	if !music.HasPrefix("select") {
 		t.Fatalf("parseMusicSection should have select prefix: %#v", music)
+	}
+	if !music.HasPrefix("folder_track") {
+		t.Fatalf("parseMusicSection should have folder_track prefix: %#v", music)
 	}
 }

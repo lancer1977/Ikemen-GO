@@ -3,11 +3,15 @@ package main
 import "testing"
 
 func TestRectRotate_RotatesAroundCenter(t *testing.T) {
-	points := RectRotate(0, 0, 2, 2, 1, 1, 90)
+	// RectRotate expects angle in radians; Rad() converts degrees to radians
+	points := RectRotate(0, 0, 2, 2, 1, 1, Rad(90))
 	if len(points) != 4 {
 		t.Fatalf("unexpected point count: %d", len(points))
 	}
-	if points[0] != [2]float32{2, 0} || points[2] != [2]float32{0, 2} {
+	const tolerance = 1e-6
+	p0x, p0y := points[0][0], points[0][1]
+	p2x, p2y := points[2][0], points[2][1]
+	if Abs(p0x-2) > tolerance || Abs(p0y-0) > tolerance || Abs(p2x-0) > tolerance || Abs(p2y-2) > tolerance {
 		t.Fatalf("unexpected rotated rectangle points: %#v", points)
 	}
 }

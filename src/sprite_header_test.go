@@ -15,6 +15,7 @@ func TestSpriteReadHeader(t *testing.T) {
 		uint16(44),
 		uint16(55),
 		uint16(66),
+		uint16(66), // link value
 	} {
 		if err := binary.Write(&buf, binary.LittleEndian, v); err != nil {
 			t.Fatal(err)

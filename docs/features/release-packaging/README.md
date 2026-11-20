@@ -19,6 +19,10 @@ The current packaging target is the shared output root at `/mnt/syn1/games/Ikeme
 - [x] GitHub Actions workflow added for self-hosted local deploy
 - [ ] Windows GitHub Actions runs on the self-hosted runner registered as `ikemen-windows`
 - [x] Stream rig validation uses the `stream-box` SSH alias instead of raw IPs
+- [x] Release matrix jobs remain independently diagnosable when one platform fails
+- [x] Manual diagnostic runs do not publish unless `publishRelease` is explicitly enabled
+- [x] Android build tooling restored after its accidental removal from the fork
+- [x] macOS dependency setup uses Homebrew's API path without overriding tap trust
 - [x] The Windows test deploy root is `C:\\mugen` on the stream box
 
 ## Output Layout
@@ -43,4 +47,7 @@ Each archive mirrors the release workflow shape:
 - `./scripts/deploy-local.sh` now dispatches to the correct platform target instead of trying both on every host
 - Use `ssh stream-box` when validating the Windows stream rig from the repo or
   deploy automation.
+- Use `workflow_dispatch` with `publishRelease: false` for release-matrix
+  diagnostics. This prepares and uploads workflow artifacts but skips the
+  GitHub Release publication job.
 - Copy the packaged Ikemen runtime into `C:\\mugen` for test deploys.

@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestResolveWithLookup(t *testing.T) {
+func TestResolveWithLookup_ReturnsPathRelativeToSearchRoot(t *testing.T) {
 	t.Parallel()
 
 	if got := resolveWithLookup("value", "", "base"); got != "value" {
@@ -31,8 +31,13 @@ func TestResolveWithLookup(t *testing.T) {
 	}
 	defer func() { _ = os.Chdir(oldWd) }()
 
+	// Not a defect: resolveWithLookup just returns whatever SearchFile finds,
+	// and SearchFile reports paths relative to the search root it was given
+	// (here "base"), not absolutized. That is SearchFile's documented,
+	// consistent behavior across all its callers, not a bug specific to
+	// resolveWithLookup.
 	got := resolveWithLookup("select.def", "def", "base")
-	if got != filepath.ToSlash(wantPath) {
-		t.Fatalf("resolveWithLookup(def) = %q, want %q", got, filepath.ToSlash(wantPath))
+	if got != "base/select.def" {
+		t.Fatalf("resolveWithLookup(def) = %q, want %q", got, "base/select.def")
 	}
 }

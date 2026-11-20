@@ -13,7 +13,9 @@ func TestActivateNextTurnsFightersPromotesPreloadedMemberIntoActiveSlot(t *testi
 	sys.tmode = [2]TeamMode{TM_Turns, TM_Single}
 	sys.effectiveLoss = [2]bool{true, false}
 	sys.numTurns = [2]int32{2, 0}
-	sys.wins = [2]int32{1, 0}
+	// activateNextTurnsFighters checks wins[team^1] (= wins[1]) against the preloaded char's memberNo.
+	// With memberNo=1 at slot 2, wins[1] must equal 1 for promotion to proceed.
+	sys.wins = [2]int32{0, 1}
 	sys.turnsPreloadMember = [2]int{1, -1}
 	sys.sel.selected[0] = [][2]int{{0, 0}, {1, 7}}
 	sys.cfg.Config.TurnsLoading = true
@@ -52,8 +54,12 @@ func TestActivateNextTurnsFightersPromotesPreloadedMemberIntoActiveSlot(t *testi
 	if active.teamside != -1 || !active.scf(SCF_disabled) || !active.scf(SCF_standby) {
 		t.Fatalf("demoted fighter should be inactive and disabled, got %#v", active)
 	}
-	if sys.cgi[0].states[10].playerNo != 0 || sys.cgi[2].states[20].playerNo != 2 {
-		t.Fatalf("state owners were not rebound to their slots: cgi0=%#v cgi2=%#v", sys.cgi[0].states[10], sys.cgi[2].states[20])
+	// After swapping chars[0] and chars[2], the CGI structs also swap (system.go:5803).
+	// So cgi[0] now contains the old cgi[2].states (which had key 20),
+	// and cgi[2] now contains the old cgi[0].states (which had key 10).
+	// rebindCgiStateOwners then updates playerNo for all states to match their slot.
+	if sys.cgi[0].states[20].playerNo != 0 || sys.cgi[2].states[10].playerNo != 2 {
+		t.Fatalf("state owners were not rebound to their slots: cgi0=%#v cgi2=%#v", sys.cgi[0].states[20], sys.cgi[2].states[10])
 	}
 	if len(sys.charList.creationOrder) == 0 || sys.charList.idMap[preloaded.id] != preloaded {
 		t.Fatalf("promoted fighter should be present in charList, got creationOrder=%#v idMap=%#v", sys.charList.creationOrder, sys.charList.idMap)

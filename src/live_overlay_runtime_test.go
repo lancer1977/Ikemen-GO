@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func TestBuildLiveOverlayRuntime(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	s.frameCounter = 123
 
 	if got := s.buildLiveOverlayRuntime(LiveOverlayEffect{Kind: "unknown"}); got != nil {

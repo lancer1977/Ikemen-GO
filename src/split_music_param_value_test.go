@@ -10,6 +10,8 @@ func TestSplitMusicParamValue(t *testing.T) {
 	if path != "sound/title.ogg" {
 		t.Fatalf("splitMusicParamValue path = %q", path)
 	}
+	// splitMusicParamValue now strips commas before tokenising, so comma-separated
+	// format is correctly parsed alongside space-separated format.
 	if !reflect.DeepEqual(extras, []string{"loop=1", "vol=80"}) {
 		t.Fatalf("splitMusicParamValue extras = %#v", extras)
 	}

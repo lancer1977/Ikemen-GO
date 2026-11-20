@@ -1,6 +1,7 @@
 on:
   push:
     branches: [ develop, ci-test ]
+    paths-ignore: ['docs/**', '**/*.md', '.mfd/**']
   workflow_dispatch:
     inputs:
       tag:
@@ -33,33 +34,79 @@ on:
         type: boolean
         required: false
         default: true
+      publishRelease:
+        description: 'Publish the prepared artifacts as a GitHub Release.'
+        type: boolean
+        required: false
+        default: false
+      buildWindows:
+        description: 'Build the optional Windows release artifact.'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
-  checks: write
-  contents: write
+  contents: read
 
 name: releases
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || 'nightly' }}
-  cancel-in-progress: true
+  cancel-in-progress: false
+
+# ---------------------------------------------------------------------------
+# Job graph (fixes #10: tag-before-validation ordering)
+#
+#   tag ──▶ build (matrix: linux, macos, android are required;
+#            │      windows is included only when buildWindows is enabled by
+#            │      dispatch input or IKEMEN_BUILD_WINDOWS repository variable,
+#            │      and its failure is advisory.)
+#            │
+#            ▼
+#          move-tag (needs: [tag, build]. The tag can move after all required
+#            │        builds succeed, independently of optional Windows.
+#            │        Captures the
+#            │        pre-move nightly SHA so it can be restored if promotion
+#            │        fails downstream.)
+#            │
+#            ▼
+#          release (needs: [tag, build, move-tag] — publishes the GitHub
+#                    Release. For nightly, if this job fails AFTER move-tag
+#                    already moved the tag, a failure-handler step restores
+#                    `nightly` to the pre-move SHA so the tag is never left
+#                    pointing at a revision without a published release.)
+#
+# Decision table:
+#
+# | Case                                            | tag | build | move-tag | release | Result |
+# |--------------------------------------------------|-----|-------|----------|---------|--------|
+# | Push, required builds succeed; Windows disabled  | ok  | ok    | runs, ok | runs    | nightly tag + release move to new SHA, required artifacts attached |
+# | Push, required build fails                      | ok  | fail  | skipped  | skipped | `nightly` untouched; still points at last known-good SHA |
+# | Windows enabled and fails; required builds pass | ok  | ok    | runs, ok | runs    | required release publishes; absent Windows artifact |
+# | workflow_dispatch, publishRelease=false (diagnostic) | ok | ok (or as configured) | skipped (`if` requires `publishRelease == 'true'` on dispatch) | skipped (same gate) | Build/manifest artifacts produced for inspection; no tag/release mutation — unchanged from today |
+# | workflow_dispatch with explicit tag / publishRelease=true | ok | ok | runs (nightly path) or n/a (tagged path uses `release` job's tagged branch directly) | runs | Tag moved only after required builds succeed; release published; rollback on failure as above |
+# ---------------------------------------------------------------------------
 
 jobs:
   tag:
     name: prepare tag
     if: ${{ github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       version: ${{ steps.meta.outputs.version }}
       releaseTag: ${{ steps.meta.outputs.releaseTag }}
       releaseKind: ${{ steps.meta.outputs.releaseKind }}
       buildTime: ${{ steps.meta.outputs.buildTime }}
+      buildMatrix: ${{ steps.meta.outputs.buildMatrix }}
       #previousTag: ${{ steps.previousTag.outputs.tag }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       #- name: Get previous tag
       #  id: previousTag
@@ -70,20 +117,35 @@ jobs:
       - name: Set version
         id: meta
         shell: bash
+        env:
+          DISPATCH_TAG: ${{ github.event.inputs.tag }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          BUILD_WINDOWS_INPUT: ${{ github.event.inputs.buildWindows }}
+          BUILD_WINDOWS_VAR: ${{ vars.IKEMEN_BUILD_WINDOWS }}
         run: |
           set -euo pipefail
 
-          ref_name="${GITHUB_REF_NAME}"
+          ref_name="$REF_NAME"
+          dispatch_tag="${DISPATCH_TAG:-}"
 
-          if [ "${{ github.event.inputs.tag }}" != "" ]; then
-            version="${{ github.event.inputs.tag }}"
-            release_tag="${{ github.event.inputs.tag }}"
+          if [ -n "$dispatch_tag" ]; then
+            if [[ ! "$dispatch_tag" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([.-][A-Za-z0-9.-]+)?$ ]]; then
+              echo "Tag must be a semantic version containing only letters, digits, dots, and hyphens." >&2
+              exit 1
+            fi
+            version="$dispatch_tag"
+            release_tag="$dispatch_tag"
             release_kind="tagged"
-          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && \
+          elif [ "$EVENT_NAME" = "workflow_dispatch" ] && \
                [ "$ref_name" != "develop" ] && \
                [ "$ref_name" != "ci-test" ]; then
-            version="$ref_name"
-            release_tag="$ref_name"
+            release_tag="$(printf '%s' "$ref_name" | sed -E 's/[^A-Za-z0-9._-]+/-/g; s/^-+//; s/-+$//')"
+            if [ -z "$release_tag" ]; then
+              echo "Branch name does not produce a safe release artifact slug." >&2
+              exit 1
+            fi
+            version="$release_tag"
             release_kind="branch"
           else
             version="nightly"
@@ -95,69 +157,35 @@ jobs:
           echo "releaseTag=$release_tag" >> "$GITHUB_OUTPUT"
           echo "releaseKind=$release_kind" >> "$GITHUB_OUTPUT"
           echo "buildTime=$(date '+%Y.%m.%d')" >> "$GITHUB_OUTPUT"
-
-      - name: Move nightly tag to this commit
-        if: ${{ steps.meta.outputs.releaseKind == 'nightly' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          tag="${{ steps.meta.outputs.releaseTag }}"
-
-          git fetch --force --tags origin
-          git tag -fa "$tag" "$GITHUB_SHA" -m "$tag: $GITHUB_SHA"
-          git push --force origin "refs/tags/$tag:refs/tags/$tag"
+          build_windows="$BUILD_WINDOWS_VAR"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$BUILD_WINDOWS_INPUT" = "true" ]; then
+            build_windows=true
+          fi
+          base_matrix='[{"runner_os":"linux","runs_on":["ubuntu-22.04"],"goos":"linux","goarch":"amd64","bin":"Ikemen_GO_Linux","glibc":"2.13","target":"","build_target":"Linux"},{"runner_os":"macos","runs_on":["macos-15"],"goos":"darwin","goarch":"arm64","bin":"Ikemen_GO_MacOSARM","glibc":"","target":"10.7","build_target":"MacOSARM"},{"runner_os":"android","runs_on":["ubuntu-22.04"],"goos":"android","goarch":"arm64","bin":"ikemen-go.apk","glibc":"","target":"","build_target":"Android"}]'
+          windows_cfg='{"runner_os":"windows","runs_on":["self-hosted","windows","ikemen-windows"],"goos":"windows","goarch":"amd64","bin":"Ikemen_GO.exe","glibc":"","target":"","build_target":"Win64"}'
+          matrix_json="$(jq -cn --argjson base "$base_matrix" --argjson windows "$windows_cfg" --arg enabled "$build_windows" 'if $enabled == "true" then [$windows] + $base else $base end')"
+          echo "buildMatrix=$matrix_json" >> "$GITHUB_OUTPUT"
 
   build:
     name: prepare release
     if: ${{ github.actor != 'dependabot[bot]' }}
     needs: tag
+    permissions:
+      contents: read
     strategy:
+      fail-fast: false
       matrix:
-        cfg:
-          - runner_os: windows
-            runs_on: '["self-hosted","windows","ikemen-windows"]'
-            goos: windows
-            goarch: amd64
-            bin: Ikemen_GO.exe
-            glibc: ''
-            target: ''
-            build_target: Win64
-          - runner_os: linux
-            runs_on: '["ubuntu-22.04"]'
-            goos: linux
-            goarch: amd64
-            bin: Ikemen_GO_Linux
-            glibc: '2.13'
-            target: ''
-            build_target: Linux
-          - runner_os: macos
-            runs_on: '["macos-14"]' # macos-13
-            goos: darwin
-            goarch: arm64 # amd64
-            bin: Ikemen_GO_MacOSARM # Ikemen_GO_MacOS
-            glibc: ''
-            target: '10.7'
-            build_target: MacOSARM # MacOS
-          - runner_os: android
-            runs_on: '["ubuntu-22.04"]'
-            goos: android
-            goarch: arm64
-            bin: ikemen-go.apk
-            glibc: ''
-            target: ''
-            build_target: Android
-    runs-on: ${{ fromJSON(matrix.cfg.runs_on) }}
+        cfg: ${{ fromJSON(needs.tag.outputs.buildMatrix) }}
+    continue-on-error: ${{ matrix.cfg.runner_os == 'windows' }}
+    runs-on: ${{ matrix.cfg.runs_on }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           ref: ${{ github.sha }}
+          persist-credentials: false
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: '1.20.x'
           cache: true
@@ -167,7 +195,7 @@ jobs:
 
       - name: Setup MSYS2 (Windows)
         if: ${{ matrix.cfg.runner_os == 'windows' }}
-        uses: msys2/setup-msys2@v2
+        uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2
         with:
           msystem: MINGW64
           update: true
@@ -185,7 +213,7 @@ jobs:
             mingw-w64-x86_64-yasm
             mingw-w64-x86_64-libxmp
       - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.1
+        uses: humbletim/setup-vulkan-sdk@c25f41106918cde0bf347e6f201277392b3a9e9d # v1.2.1
         with:
           vulkan-query-version: 1.4.304.1
           vulkan-components: Vulkan-Headers, Vulkan-Loader
@@ -199,16 +227,11 @@ jobs:
               build-essential pkg-config git yasm nasm curl ca-certificates libxmp-dev libsdl2-dev
           fi
           if [ "$RUNNER_OS" = "macOS" ]; then
-            # Avoid update, disable analytics, prefer taps over API, and retry.
+            # Use Homebrew's API-backed install path. Forcing tap mode can fail
+            # when hosted-runner tap trust metadata changes.
             export HOMEBREW_NO_ANALYTICS=1
             export HOMEBREW_NO_AUTO_UPDATE=1
-            export HOMEBREW_NO_INSTALL_FROM_API=1
-            brew update-reset || true
-            ( brew install --quiet pkg-config git nasm libxmp sdl2 molten-vk ) || (
-              echo "First attempt failed; retrying with API mode..." >&2
-              unset HOMEBREW_NO_INSTALL_FROM_API
-              brew install --quiet pkg-config git nasm libxmp sdl2 molten-vk
-            )
+            brew install --quiet pkg-config git nasm libxmp sdl2 molten-vk
           fi
 
       - name: Generate LICENSES.txt
@@ -358,6 +381,9 @@ jobs:
         if: ${{ matrix.cfg.runner_os != 'android' || (github.event_name != 'workflow_dispatch' || github.event.inputs.buildAndroidApk != 'false') }}
         id: artifacts
         shell: bash
+        env:
+          RELEASE_KIND: ${{ needs.tag.outputs.releaseKind }}
+          RELEASE_TAG: ${{ needs.tag.outputs.releaseTag }}
         run: |
           echo "Preparing files for deployment"
           mkdir -p deploy
@@ -373,11 +399,11 @@ jobs:
             cp -av LICENSES.txt deploy/ 2>/dev/null || true
 
             cd deploy
-            if [ "${{ needs.tag.outputs.releaseKind }}" = "nightly" ]; then
+            if [ "$RELEASE_KIND" = "nightly" ]; then
               ARTIFACT_NAME=Ikemen_GO-dev-android.zip
               echo "artifact=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
             else
-              ARTIFACT_NAME=Ikemen_GO-${{ needs.tag.outputs.releaseTag }}-android.zip
+              ARTIFACT_NAME="Ikemen_GO-${RELEASE_TAG}-android.zip"
               echo "artifact=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
             fi
             zip -r ../$ARTIFACT_NAME *
@@ -447,11 +473,11 @@ jobs:
           EOF
           fi
 
-          if [ "${{ needs.tag.outputs.releaseKind }}" = "nightly" ]; then
+          if [ "$RELEASE_KIND" = "nightly" ]; then
             ARTIFACT_NAME=Ikemen_GO-dev-${{ matrix.cfg.runner_os }}.zip
             echo "artifact=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
           else
-            ARTIFACT_NAME=Ikemen_GO-${{ needs.tag.outputs.releaseTag }}-${{ matrix.cfg.runner_os }}.zip
+            ARTIFACT_NAME="Ikemen_GO-${RELEASE_TAG}-${{ matrix.cfg.runner_os }}.zip"
             echo "artifact=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
           fi
           if [ "$RUNNER_OS" = "Windows" ]; then
@@ -476,22 +502,103 @@ jobs:
             cp -v "${{ steps.artifacts_ffmpeg.outputs.artifact_ffsrc }}" release-files/
           fi
 
+      - name: Record provenance manifest (source SHA + artifact checksums)
+        if: ${{ steps.artifacts.outputs.artifact != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release-files
+          manifest="MANIFEST-${{ matrix.cfg.runner_os }}.txt"
+          {
+            echo "source_sha=${GITHUB_SHA}"
+            echo "runner_os=${{ matrix.cfg.runner_os }}"
+            echo "build_target=${{ matrix.cfg.build_target }}"
+            echo "release_kind=${{ needs.tag.outputs.releaseKind }}"
+            echo "release_tag=${{ needs.tag.outputs.releaseTag }}"
+            echo "workflow_run=${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}"
+            echo "---sha256sums---"
+            for f in *; do
+              [ "$f" = "$manifest" ] && continue
+              sha256sum "$f"
+            done
+          } > "$manifest"
+          cat "$manifest"
+
       - name: Upload release artifacts
         if: ${{ steps.artifacts.outputs.artifact != '' }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: release-${{ matrix.cfg.runner_os }}
           path: release-files/*
           if-no-files-found: error
+          retention-days: 1
+
+  move-tag:
+    name: move nightly tag
+    # Gated on `needs.build.result == 'success'` — the whole point of #10.
+    # The nightly tag must never move (or be created) until every required
+    # platform in the build matrix has actually succeeded. A failed or
+    # cancelled build leaves this job (and the tag) untouched.
+    if: ${{ needs.tag.outputs.releaseKind == 'nightly' && needs.build.result == 'success' && (github.event_name != 'workflow_dispatch' || github.event.inputs.publishRelease == 'true') }}
+    needs: [tag, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      previousSha: ${{ steps.move.outputs.previousSha }}
+      moved: ${{ steps.move.outputs.moved }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Move nightly tag to this commit
+        id: move
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ needs.tag.outputs.releaseTag }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          tag="$RELEASE_TAG"
+
+          git fetch --force --tags origin
+
+          # Record the last known-good SHA (if the tag already exists) so a
+          # downstream release-publish failure can restore it instead of
+          # leaving `nightly` pointing at a revision with no published
+          # release evidence.
+          previous_sha=""
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            previous_sha="$(git rev-list -n1 "refs/tags/$tag")"
+          fi
+          echo "previousSha=$previous_sha" >> "$GITHUB_OUTPUT"
+
+          git tag -fa "$tag" "$GITHUB_SHA" -m "$tag: $GITHUB_SHA"
+          git push --force origin "refs/tags/$tag:refs/tags/$tag"
+          echo "moved=true" >> "$GITHUB_OUTPUT"
 
   release:
     name: publish release
-    if: ${{ github.actor != 'dependabot[bot]' }}
-    needs: [tag, build]
+    if: ${{ always() && github.actor != 'dependabot[bot]' && (github.event_name != 'workflow_dispatch' || github.event.inputs.publishRelease == 'true') && needs.tag.result == 'success' && needs.build.result == 'success' && (needs.move-tag.result == 'success' || needs.move-tag.result == 'skipped') }}
+    needs: [tag, move-tag, build]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
+      - name: Checkout (for tag rollback if promotion fails)
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
       - name: Download release artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           pattern: release-*
           path: release-assets
@@ -507,11 +614,12 @@ jobs:
         if: ${{ needs.tag.outputs.releaseKind == 'nightly' }}
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.IKEMEN_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
-          # The nightly tag has already been force-moved in the prepare tag job.
+          # The nightly tag has already been force-moved in the move-tag job,
+          # which only runs after the required build matrix succeeded.
           # Delete only the GitHub Release object so GitHub republishes it with fresh metadata.
           # Do NOT pass --cleanup-tag here, because that would delete the moved nightly tag too.
           if gh release view nightly --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
@@ -520,7 +628,7 @@ jobs:
 
       - name: Update dev release
         if: ${{ needs.tag.outputs.releaseKind == 'nightly' }}
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
@@ -549,7 +657,7 @@ jobs:
 
       - name: Create Release
         if: ${{ needs.tag.outputs.releaseKind != 'nightly' }}
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
@@ -575,3 +683,48 @@ jobs:
           skipIfReleaseExists: false
           tag: ${{ needs.tag.outputs.releaseTag }}
           updateOnlyUnreleased: false
+
+      - name: Restore last known-good nightly tag on promotion failure
+        # move-tag already moved `nightly` to this commit before this job ran
+        # (that's the fix: it only got the chance to because build succeeded).
+        # If release publication itself then fails, don't leave `nightly`
+        # pointing at a revision whose release metadata never actually
+        # published — best-effort restore it to the SHA it pointed at before
+        # this run, so a broken promotion never becomes a silently-broken
+        # nightly ref. This can't be made a single atomic operation against
+        # the GitHub API (tag move and release publish are separate calls),
+        # so this is the closest available approximation: revert what we can
+        # revert (the tag) when what depended on it (the release) failed.
+        if: ${{ failure() && needs.tag.outputs.releaseKind == 'nightly' && needs.move-tag.result == 'success' && needs.move-tag.outputs.moved == 'true' && needs.move-tag.outputs.previousSha != '' }}
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ needs.tag.outputs.releaseTag }}
+          PREVIOUS_SHA: ${{ needs.move-tag.outputs.previousSha }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch --force --tags origin
+          git tag -fa "$RELEASE_TAG" "$PREVIOUS_SHA" \
+            -m "$RELEASE_TAG: restored to last known-good $PREVIOUS_SHA after a failed promotion of $GITHUB_SHA"
+          git push --force origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+
+      - name: Delete dangling nightly tag on promotion failure (no prior nightly existed)
+        # Same trigger as the restore step above, but for the case where
+        # `nightly` did not exist before this run (previousSha is empty) —
+        # there is nothing known-good to restore to, so leaving the freshly
+        # created tag in place would point `nightly` at a revision with no
+        # published release. Remove it instead of leaving it dangling.
+        if: ${{ failure() && needs.tag.outputs.releaseKind == 'nightly' && needs.move-tag.result == 'success' && needs.move-tag.outputs.moved == 'true' && needs.move-tag.outputs.previousSha == '' }}
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ needs.tag.outputs.releaseTag }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git push --delete origin "refs/tags/$RELEASE_TAG" || true

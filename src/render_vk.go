@@ -460,7 +460,7 @@ func (t *Texture_VK) SetPixelData(textureData []float32) {
 	}
 	size := uint32(len(textureData) * 4)
 	const m = 0x7fffffff
-	bufferOffset := gfx.(*Renderer_VK).CopyToStagingBuffer(size, (*[m]byte)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&textureData)).Data))[:size])
+	bufferOffset := gfx.(*Renderer_VK).CopyToStagingBuffer(size, (*[m]byte)(unsafe.Pointer(unsafe.SliceData(textureData)))[:size])
 
 	imageExtent := vk.Extent3D{
 		Width:  uint32(t.width),
@@ -1866,12 +1866,6 @@ func (r *Renderer_VK) CreateSwapchainRenderPass(sweapchain *VulkanSwapchainInfo)
 	return renderInfo, nil
 }
 
-type sliceHeader struct {
-	Data uintptr
-	Len  int
-	Cap  int
-}
-
 func (r *Renderer_VK) CreateSpriteProgram() (*VulkanProgramInfo, error) {
 	program := &VulkanProgramInfo{}
 	var uniformBufferMemory vk.DeviceMemory
@@ -1900,7 +1894,7 @@ func (r *Renderer_VK) CreateSpriteProgram() (*VulkanProgramInfo, error) {
 		return nil, err
 	}
 	VertShader2 := make([]uint32, len(VertShader)/4)
-	vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&VertShader2)).Data), VertShader)
+	vk.Memcopy(unsafe.Pointer(unsafe.SliceData(VertShader2)), VertShader)
 	vertShader, err := r.CreateShader(r.device, VertShader2)
 	if err != nil {
 		return nil, err
@@ -1912,7 +1906,7 @@ func (r *Renderer_VK) CreateSpriteProgram() (*VulkanProgramInfo, error) {
 		return nil, err
 	}
 	FragShader2 := make([]uint32, len(FragShader)/4)
-	vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&FragShader2)).Data), FragShader)
+	vk.Memcopy(unsafe.Pointer(unsafe.SliceData(FragShader2)), FragShader)
 	fragShader, err := r.CreateShader(r.device, FragShader2)
 	if err != nil {
 		return nil, err
@@ -2266,7 +2260,7 @@ func (r *Renderer_VK) CreateShadowMapProgram() (*VulkanProgramInfo, error) {
 		return nil, err
 	}
 	VertShader2 := make([]uint32, len(VertShader)/4)
-	vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&VertShader2)).Data), VertShader)
+	vk.Memcopy(unsafe.Pointer(unsafe.SliceData(VertShader2)), VertShader)
 	vertShader, err := r.CreateShader(r.device, VertShader2)
 	if err != nil {
 		return nil, err
@@ -2277,7 +2271,7 @@ func (r *Renderer_VK) CreateShadowMapProgram() (*VulkanProgramInfo, error) {
 		return nil, err
 	}
 	FragShader2 := make([]uint32, len(FragShader)/4)
-	vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&FragShader2)).Data), FragShader)
+	vk.Memcopy(unsafe.Pointer(unsafe.SliceData(FragShader2)), FragShader)
 	fragShader, err := r.CreateShader(r.device, FragShader2)
 	if err != nil {
 		return nil, err
@@ -2716,7 +2710,7 @@ func (r *Renderer_VK) CreateModelProgram() (*VulkanProgramInfo, error) {
 		return nil, err
 	}
 	VertShader2 := make([]uint32, len(VertShader)/4)
-	vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&VertShader2)).Data), VertShader)
+	vk.Memcopy(unsafe.Pointer(unsafe.SliceData(VertShader2)), VertShader)
 	vertShader, err := r.CreateShader(r.device, VertShader2)
 	if err != nil {
 		return nil, err
@@ -2728,7 +2722,7 @@ func (r *Renderer_VK) CreateModelProgram() (*VulkanProgramInfo, error) {
 		return nil, err
 	}
 	FragShader2 := make([]uint32, len(FragShader)/4)
-	vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&FragShader2)).Data), FragShader)
+	vk.Memcopy(unsafe.Pointer(unsafe.SliceData(FragShader2)), FragShader)
 	fragShader, err := r.CreateShader(r.device, FragShader2)
 	if err != nil {
 		return nil, err
@@ -3335,7 +3329,7 @@ func (r *Renderer_VK) CreateFullScreenShaderProgram(externalShaders [][][]byte) 
 		pipelineCreateInfos = make([]vk.GraphicsPipelineCreateInfo, 0, len(externalShaders[0])+1)
 		for i := range externalShaders[0] {
 			VertShader2 := make([]uint32, len(externalShaders[0][i])/4)
-			vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&VertShader2)).Data), externalShaders[0][i])
+			vk.Memcopy(unsafe.Pointer(unsafe.SliceData(VertShader2)), externalShaders[0][i])
 			vertShader, err := r.CreateShader(r.device, VertShader2)
 			if err != nil {
 				return nil, err
@@ -3343,7 +3337,7 @@ func (r *Renderer_VK) CreateFullScreenShaderProgram(externalShaders [][][]byte) 
 			defer vk.DestroyShaderModule(r.device, vertShader, nil)
 
 			FragShader2 := make([]uint32, len(externalShaders[1][i])/4)
-			vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&FragShader2)).Data), externalShaders[1][i])
+			vk.Memcopy(unsafe.Pointer(unsafe.SliceData(FragShader2)), externalShaders[1][i])
 			fragShader, err := r.CreateShader(r.device, FragShader2)
 			if err != nil {
 				return nil, err
@@ -3385,7 +3379,7 @@ func (r *Renderer_VK) CreateFullScreenShaderProgram(externalShaders [][][]byte) 
 		return nil, err
 	}
 	VertShader2 := make([]uint32, len(VertShader)/4)
-	vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&VertShader2)).Data), VertShader)
+	vk.Memcopy(unsafe.Pointer(unsafe.SliceData(VertShader2)), VertShader)
 	vertShader, err := r.CreateShader(r.device, VertShader2)
 	if err != nil {
 		return nil, err
@@ -3397,7 +3391,7 @@ func (r *Renderer_VK) CreateFullScreenShaderProgram(externalShaders [][][]byte) 
 		return nil, err
 	}
 	FragShader2 := make([]uint32, len(FragShader)/4)
-	vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&FragShader2)).Data), FragShader)
+	vk.Memcopy(unsafe.Pointer(unsafe.SliceData(FragShader2)), FragShader)
 	fragShader, err := r.CreateShader(r.device, FragShader2)
 	if err != nil {
 		return nil, err
@@ -3452,7 +3446,7 @@ func (r *Renderer_VK) CreatePanoramaToCubeMapProgram() (*VulkanProgramInfo, erro
 		return nil, err
 	}
 	VertShader2 := make([]uint32, len(VertShader)/4)
-	vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&VertShader2)).Data), VertShader)
+	vk.Memcopy(unsafe.Pointer(unsafe.SliceData(VertShader2)), VertShader)
 	vertShader, err := r.CreateShader(r.device, VertShader2)
 	if err != nil {
 		return nil, err
@@ -3464,7 +3458,7 @@ func (r *Renderer_VK) CreatePanoramaToCubeMapProgram() (*VulkanProgramInfo, erro
 		return nil, err
 	}
 	FragShader2 := make([]uint32, len(FragShader)/4)
-	vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&FragShader2)).Data), FragShader)
+	vk.Memcopy(unsafe.Pointer(unsafe.SliceData(FragShader2)), FragShader)
 	fragShader, err := r.CreateShader(r.device, FragShader2)
 	if err != nil {
 		return nil, err
@@ -3683,7 +3677,7 @@ func (r *Renderer_VK) CreateCubemapFilteringProgram() (*VulkanProgramInfo, error
 		return nil, err
 	}
 	VertShader2 := make([]uint32, len(VertShader)/4)
-	vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&VertShader2)).Data), VertShader)
+	vk.Memcopy(unsafe.Pointer(unsafe.SliceData(VertShader2)), VertShader)
 	vertShader, err := r.CreateShader(r.device, VertShader2)
 	if err != nil {
 		return nil, err
@@ -3695,7 +3689,7 @@ func (r *Renderer_VK) CreateCubemapFilteringProgram() (*VulkanProgramInfo, error
 		return nil, err
 	}
 	FragShader2 := make([]uint32, len(FragShader)/4)
-	vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&FragShader2)).Data), FragShader)
+	vk.Memcopy(unsafe.Pointer(unsafe.SliceData(FragShader2)), FragShader)
 	fragShader, err := r.CreateShader(r.device, FragShader2)
 	if err != nil {
 		return nil, err
@@ -3923,7 +3917,7 @@ func (r *Renderer_VK) CreateLutProgram() (*VulkanProgramInfo, error) {
 		return nil, err
 	}
 	VertShader2 := make([]uint32, len(VertShader)/4)
-	vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&VertShader2)).Data), VertShader)
+	vk.Memcopy(unsafe.Pointer(unsafe.SliceData(VertShader2)), VertShader)
 	vertShader, err := r.CreateShader(r.device, VertShader2)
 	if err != nil {
 		return nil, err
@@ -3935,7 +3929,7 @@ func (r *Renderer_VK) CreateLutProgram() (*VulkanProgramInfo, error) {
 		return nil, err
 	}
 	FragShader2 := make([]uint32, len(FragShader)/4)
-	vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&FragShader2)).Data), FragShader)
+	vk.Memcopy(unsafe.Pointer(unsafe.SliceData(FragShader2)), FragShader)
 	fragShader, err := r.CreateShader(r.device, FragShader2)
 	if err != nil {
 		return nil, err
@@ -6087,7 +6081,7 @@ func (r *Renderer_VK) SetVertexData(values ...float32) {
 	if offset == 0 {
 		vk.CmdBindVertexBuffers(r.commandBuffers[0], 0, 1, []vk.Buffer{r.vertexBuffers[bufferIndex].buffer}, []vk.DeviceSize{0})
 	}
-	vk.Memcopy(unsafe.Pointer(uintptr(r.vertexBuffers[bufferIndex].data)+offset), (*[m]byte)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&values)).Data))[:len(values)*4])
+	vk.Memcopy(unsafe.Pointer(uintptr(r.vertexBuffers[bufferIndex].data)+offset), (*[m]byte)(unsafe.Pointer(unsafe.SliceData(values)))[:len(values)*4])
 	r.vertexBufferOffset += uintptr(len(values) * 4)
 }
 
@@ -6120,7 +6114,7 @@ func (r *Renderer_VK) SetVertexData2(cmd vk.CommandBuffer, values ...float32) {
 	if offset == 0 {
 		vk.CmdBindVertexBuffers(cmd, 0, 1, []vk.Buffer{r.vertexBuffers[bufferIndex].buffer}, []vk.DeviceSize{0})
 	}
-	vk.Memcopy(unsafe.Pointer(uintptr(r.vertexBuffers[bufferIndex].data)+offset), (*[m]byte)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&values)).Data))[:len(values)*4])
+	vk.Memcopy(unsafe.Pointer(uintptr(r.vertexBuffers[bufferIndex].data)+offset), (*[m]byte)(unsafe.Pointer(unsafe.SliceData(values)))[:len(values)*4])
 	r.vertexBufferOffset += uintptr(len(values) * 4)
 }
 
@@ -6180,7 +6174,7 @@ func (r *Renderer_VK) SetModelIndexData(bufferIndex uint32, values ...uint32) {
 	var stagingData unsafe.Pointer
 	vk.MapMemory(r.device, stagingBufferMemory, 0, vk.DeviceSize(r.modelIndexBuffers[bufferIndex].size), 0, &stagingData)
 	const m = 0x7fffffff
-	vk.Memcopy(stagingData, (*[m]byte)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&values)).Data))[:r.modelIndexBuffers[bufferIndex].size])
+	vk.Memcopy(stagingData, (*[m]byte)(unsafe.Pointer(unsafe.SliceData(values)))[:r.modelIndexBuffers[bufferIndex].size])
 	cmd := r.BeginSingleTimeCommands()
 	bufferCopy := []vk.BufferCopy{{
 		SrcOffset: 0,
@@ -7772,7 +7766,7 @@ func (r *Renderer_VK) createCustomSpriteProgram(fragSpv []byte) (*VulkanProgramI
 		return nil, err
 	}
 	VertShader2 := make([]uint32, len(VertShader)/4)
-	vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&VertShader2)).Data), VertShader)
+	vk.Memcopy(unsafe.Pointer(unsafe.SliceData(VertShader2)), VertShader)
 	vertShader, err := r.CreateShader(r.device, VertShader2)
 	if err != nil {
 		return nil, err
@@ -7780,7 +7774,7 @@ func (r *Renderer_VK) createCustomSpriteProgram(fragSpv []byte) (*VulkanProgramI
 	defer vk.DestroyShaderModule(r.device, vertShader, nil)
 
 	FragShader2 := make([]uint32, len(fragSpv)/4)
-	vk.Memcopy(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&FragShader2)).Data), fragSpv)
+	vk.Memcopy(unsafe.Pointer(unsafe.SliceData(FragShader2)), fragSpv)
 	fragShader, err := r.CreateShader(r.device, FragShader2)
 	if err != nil {
 		return nil, err
@@ -8151,9 +8145,9 @@ func (r *Renderer_VK) ResolveBackBuffer() Texture {
 
 	blit := []vk.ImageBlit{{
 		SrcSubresource: vk.ImageSubresourceLayers{AspectMask: vk.ImageAspectFlags(vk.ImageAspectColorBit), LayerCount: 1},
-		SrcOffsets:     [2]vk.Offset3D{{0, 0, 0}, {int32(sys.scrrect[2]), int32(sys.scrrect[3]), 1}},
+		SrcOffsets:     [2]vk.Offset3D{{X: 0, Y: 0, Z: 0}, {X: int32(sys.scrrect[2]), Y: int32(sys.scrrect[3]), Z: 1}},
 		DstSubresource: vk.ImageSubresourceLayers{AspectMask: vk.ImageAspectFlags(vk.ImageAspectColorBit), LayerCount: 1},
-		DstOffsets:     [2]vk.Offset3D{{0, 0, 0}, {int32(sys.scrrect[2]), int32(sys.scrrect[3]), 1}},
+		DstOffsets:     [2]vk.Offset3D{{X: 0, Y: 0, Z: 0}, {X: int32(sys.scrrect[2]), Y: int32(sys.scrrect[3]), Z: 1}},
 	}}
 	vk.CmdBlitImage(cmd, r.mainRenderTarget.texture.img, vk.ImageLayoutTransferSrcOptimal, r.grabTexture.img, vk.ImageLayoutTransferDstOptimal, 1, blit, vk.FilterNearest)
 

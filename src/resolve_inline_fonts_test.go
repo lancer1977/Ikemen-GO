@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"gopkg.in/ini.v1"
+)
 
 func TestResolveInlineFontsNilInput(t *testing.T) {
 	t.Parallel()
@@ -18,7 +22,7 @@ func TestResolveInlineFontsNilInput(t *testing.T) {
 func TestResolveInlineFontsSkipsNonFontKeys(t *testing.T) {
 	t.Parallel()
 
-	f := NewIniFile()
+	f := ini.Empty()
 	sec, err := f.NewSection("General")
 	if err != nil {
 		t.Fatalf("NewSection: %v", err)
@@ -38,7 +42,7 @@ func TestResolveInlineFontsSkipsNonFontKeys(t *testing.T) {
 func TestResolveInlineFontsSkipsFilesSection(t *testing.T) {
 	t.Parallel()
 
-	f := NewIniFile()
+	f := ini.Empty()
 	sec, err := f.NewSection("Files")
 	if err != nil {
 		t.Fatalf("NewSection: %v", err)
@@ -58,7 +62,7 @@ func TestResolveInlineFontsSkipsFilesSection(t *testing.T) {
 func TestResolveInlineFontsSkipsMusicSection(t *testing.T) {
 	t.Parallel()
 
-	f := NewIniFile()
+	f := ini.Empty()
 	sec, err := f.NewSection("Music")
 	if err != nil {
 		t.Fatalf("NewSection: %v", err)
@@ -78,11 +82,9 @@ func TestResolveInlineFontsSkipsMusicSection(t *testing.T) {
 func TestResolveInlineFontsSkipsDefaultSection(t *testing.T) {
 	t.Parallel()
 
-	f := NewIniFile()
-	sec, err := f.NewSection("")
-	if err != nil {
-		t.Fatalf("NewSection: %v", err)
-	}
+	f := ini.Empty()
+	// Get the default section and add a font key to it
+	sec := f.Section(ini.DEFAULT_SECTION)
 	sec.NewKey("font", "select.fnt")
 
 	called := false
@@ -98,7 +100,7 @@ func TestResolveInlineFontsSkipsDefaultSection(t *testing.T) {
 func TestResolveInlineFontsSkipsEmptyFontValue(t *testing.T) {
 	t.Parallel()
 
-	f := NewIniFile()
+	f := ini.Empty()
 	sec, err := f.NewSection("General")
 	if err != nil {
 		t.Fatalf("NewSection: %v", err)
@@ -118,7 +120,7 @@ func TestResolveInlineFontsSkipsEmptyFontValue(t *testing.T) {
 func TestResolveInlineFontsSkipsAlreadyIndexedFont(t *testing.T) {
 	t.Parallel()
 
-	f := NewIniFile()
+	f := ini.Empty()
 	sec, err := f.NewSection("General")
 	if err != nil {
 		t.Fatalf("NewSection: %v", err)
@@ -138,7 +140,7 @@ func TestResolveInlineFontsSkipsAlreadyIndexedFont(t *testing.T) {
 func TestResolveInlineFontsUsesHeightFromEighthField(t *testing.T) {
 	t.Parallel()
 
-	f := NewIniFile()
+	f := ini.Empty()
 	sec, err := f.NewSection("General")
 	if err != nil {
 		t.Fatalf("NewSection: %v", err)

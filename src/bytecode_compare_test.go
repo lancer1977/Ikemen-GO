@@ -10,22 +10,27 @@ func TestBytecodeExpComparisonHelpersHandleIntAndFloatBranches(t *testing.T) {
 	if !v.ToB() {
 		t.Fatalf("gt() int branch = %#v, want true", v)
 	}
+	v = BytecodeInt(7)
 	compare.ge(&v, BytecodeInt(7))
 	if !v.ToB() {
 		t.Fatalf("ge() int branch = %#v, want true", v)
 	}
+	v = BytecodeInt(7)
 	compare.lt(&v, BytecodeInt(8))
 	if !v.ToB() {
 		t.Fatalf("lt() int branch = %#v, want true", v)
 	}
+	v = BytecodeInt(7)
 	compare.le(&v, BytecodeInt(7))
 	if !v.ToB() {
 		t.Fatalf("le() int branch = %#v, want true", v)
 	}
+	v = BytecodeInt(7)
 	compare.eq(&v, BytecodeInt(7))
 	if !v.ToB() {
 		t.Fatalf("eq() int branch = %#v, want true", v)
 	}
+	v = BytecodeInt(7)
 	compare.ne(&v, BytecodeInt(8))
 	if !v.ToB() {
 		t.Fatalf("ne() int branch = %#v, want true", v)
@@ -36,14 +41,17 @@ func TestBytecodeExpComparisonHelpersHandleIntAndFloatBranches(t *testing.T) {
 	if !v.ToB() {
 		t.Fatalf("gt() float branch = %#v, want true", v)
 	}
+	v = BytecodeFloat(3.5)
 	compare.le(&v, BytecodeFloat(3.5))
 	if !v.ToB() {
 		t.Fatalf("le() float branch = %#v, want true", v)
 	}
+	v = BytecodeFloat(3.5)
 	compare.eq(&v, BytecodeFloat(3.5))
 	if !v.ToB() {
 		t.Fatalf("eq() float branch = %#v, want true", v)
 	}
+	v = BytecodeFloat(3.5)
 	compare.ne(&v, BytecodeFloat(4.5))
 	if !v.ToB() {
 		t.Fatalf("ne() float branch = %#v, want true", v)

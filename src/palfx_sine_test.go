@@ -7,12 +7,14 @@ import (
 
 func TestPalFXSineHelpers(t *testing.T) {
 	pfx := &PalFX{
-		sintime:   [4]int32{1, 1, 1, 1},
-		cycletime: [4]int32{2, 2, 2, 2},
-		sinadd:    [3]int32{10, 20, 30},
-		sinmul:    [3]int32{40, 50, 60},
-		sincolor:  256,
-		sinhue:    512,
+		PalFXDef: PalFXDef{
+			cycletime: [4]int32{2, 2, 2, 2},
+			sinadd:    [3]int32{10, 20, 30},
+			sinmul:    [3]int32{40, 50, 60},
+			sincolor:  256,
+			sinhue:    512,
+		},
+		sintime: [4]int32{1, 1, 1, 1},
 	}
 
 	color := [3]int32{1, 2, 3}

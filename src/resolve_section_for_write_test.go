@@ -10,15 +10,14 @@ func TestResolveSectionForWrite(t *testing.T) {
 	t.Parallel()
 
 	f := ini.Empty()
-	if got := resolveSectionForWrite(f, "select_screen"); got != "select_screen" {
-		t.Fatalf("missing section = %q", got)
+	if got := resolveSectionForWrite(f, "select_screen"); got != "select screen" {
+		t.Fatalf("missing section underscore fallback = %q, want %q", got, "select screen")
 	}
 
-	sec, err := f.NewSection("select screen")
+	_, err := f.NewSection("select screen")
 	if err != nil {
 		t.Fatalf("NewSection: %v", err)
 	}
-	sec.NameMapper = nil
 
 	if got := resolveSectionForWrite(f, "select_screen"); got != "select screen" {
 		t.Fatalf("underscore fallback = %q", got)

@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func TestLiveFightStageContext_UsesCurrentStageThenSelectedStageFallback(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	s.sel.selectedStageNo = 2
 	s.sel.stagelist = []SelectStage{
 		{def: "stages/first.def", name: "first", localcoord: [2]int32{100, 200}},
@@ -38,7 +38,7 @@ func TestLiveFightStageContext_UsesCurrentStageThenSelectedStageFallback(t *test
 }
 
 func TestLiveSelectedTeams_UsesSelectionAndActiveCharacterOverrides(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 	s.sel.charlist = []SelectChar{
 		{def: "chars/ryu/ryu.def", name: "Ryu", lifebarname: "RYU", author: "Capcom", localcoord: [2]int32{320, 240}, cns_scale: [2]float32{1, 1}},
 	}

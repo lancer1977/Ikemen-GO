@@ -6046,7 +6046,7 @@ func (sc allPalFX) Run(c *Char, _ []int32) bool {
 type bgPalFX palFX
 
 const (
-	bgPalFX_id byte = iota + palFX_last + 1
+	bgPalFX_id byte = iota + palFX_redirectid + 1
 	bgPalFX_index
 )
 
@@ -7333,7 +7333,7 @@ func isHitDefParam(paramID byte) bool {
 type hitDef afterImage
 
 const (
-	hitDef_attr = iota + afterImage_last + 1
+	hitDef_attr = iota + afterImage_redirectid + 1
 	hitDef_guardflag
 	hitDef_hitflag
 	hitDef_ground_type

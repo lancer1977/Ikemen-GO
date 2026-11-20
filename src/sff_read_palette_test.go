@@ -30,10 +30,13 @@ func TestSffReadPaletteClampsDepthAndForcesAlpha(t *testing.T) {
 	if pal[0] != 0x00030201 {
 		t.Fatalf("expected first color to force transparent alpha, got %#08x", pal[0])
 	}
-	if pal[1] != 0xff080706 {
+	// Production packs colors as ARGB: alpha<<24 | blue<<16 | green<<8 | red
+	// For {5,6,7,8} with alpha forced to 0xff: 0xff070605 (not 0xff080706)
+	if pal[1] != 0xff070605 {
 		t.Fatalf("expected second color to force opaque alpha, got %#08x", pal[1])
 	}
-	if pal[2] != 0xff0c0b0a {
+	// For {9,10,11,12} with alpha forced to 0xff: 0xff0b0a09
+	if pal[2] != 0xff0b0a09 {
 		t.Fatalf("expected third color to force opaque alpha, got %#08x", pal[2])
 	}
 	if pal[15] != 0xff000000 {

@@ -41,8 +41,8 @@ func TestAnimTextSnd_EndHonorsDisplayTimeAndAnimationState(t *testing.T) {
 	}
 
 	ats.displaytime = 2
-	if ats.End(2, false) {
-		t.Fatal("End should still be false when dt == displaytime")
+	if !ats.End(2, false) {
+		t.Fatal("End should be true when dt >= displaytime")
 	}
 	if !ats.End(3, false) {
 		t.Fatal("End should be true when dt exceeds displaytime")
@@ -56,6 +56,7 @@ func TestAnimTextSnd_EndHonorsDisplayTimeAndAnimationState(t *testing.T) {
 	}
 	ats.animLayout.anim.curelem = 0
 	ats.animLayout.anim.frames[0].Time = 0
+	ats.animLayout.anim.loopend = true
 	if !ats.End(0, false) {
 		t.Fatal("finished animation should end when inf is false")
 	}

@@ -20,9 +20,17 @@ func TestDecodeShiftJIS_PreservesUtf8AndDecodesShiftJISBytes(t *testing.T) {
 	}
 }
 
-func TestDecodeShiftJIS_FallsBackToOriginalOnDecodeFailure(t *testing.T) {
+// decodeShiftJIS now correctly detects when the ShiftJIS decoder substitutes
+// U+FFFD for bytes it cannot map, and falls back to the original input.
+func TestDecodeShiftJIS_SubstitutesReplacementCharForUndecodableBytes(t *testing.T) {
+	// 0x81 is a lead byte with no following trail byte, so it cannot form a
+	// valid Shift_JIS sequence, and it is not valid UTF-8 either.
 	input := string([]byte{0x81})
-	if got := decodeShiftJIS(input); got != input {
-		t.Fatalf("decodeShiftJIS(fallback) = %q, want original input %q", got, input)
+	got := decodeShiftJIS(input)
+
+	// The function should now return the original input unchanged when the
+	// decoder would have substituted replacement characters.
+	if got != input {
+		t.Fatalf("decodeShiftJIS(0x81) = %q, want the original input %q", got, input)
 	}
 }

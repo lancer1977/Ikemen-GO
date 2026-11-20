@@ -33,12 +33,12 @@ type VideoStream struct {
 	filteredFrame   *C.AVFrame
 	filterGraphDesc string
 	// sws (fallback) lazy-init tracking
-	targetW         C.int
-	targetH         C.int
-	swsAlg          InterpolationAlgorithm
-	lastSrcW        C.int
-	lastSrcH        C.int
-	lastSrcFmt      C.int
+	targetW    C.int
+	targetH    C.int
+	swsAlg     InterpolationAlgorithm
+	lastSrcW   C.int
+	lastSrcH   C.int
+	lastSrcFmt C.int
 }
 
 // AspectRatio returns the fraction of the video
@@ -144,17 +144,21 @@ func (video *VideoStream) buildFilterGraphFromFrame(f *C.AVFrame) error {
 	}
 
 	// Prepare buffer source (input) and buffer sink (output)
-	nameBuf := C.CString("buffer"); defer C.free(unsafe.Pointer(nameBuf))
+	nameBuf := C.CString("buffer")
+	defer C.free(unsafe.Pointer(nameBuf))
 	bufSrc := C.avfilter_get_by_name(nameBuf)
-	nameBufSink := C.CString("buffersink"); defer C.free(unsafe.Pointer(nameBufSink))
+	nameBufSink := C.CString("buffersink")
+	defer C.free(unsafe.Pointer(nameBufSink))
 	bufSink := C.avfilter_get_by_name(nameBufSink)
 	if bufSrc == nil || bufSink == nil {
 		video.RemoveVideoFilterGraph()
 		return fmt.Errorf("missing buffer/buffersink filters in libavfilter")
 	}
 
-	nameIn := C.CString("in");  defer C.free(unsafe.Pointer(nameIn))
-	nameOut := C.CString("out"); defer C.free(unsafe.Pointer(nameOut))
+	nameIn := C.CString("in")
+	defer C.free(unsafe.Pointer(nameIn))
+	nameOut := C.CString("out")
+	defer C.free(unsafe.Pointer(nameOut))
 
 	var ret C.int
 	// Create buffer with a minimal arg string so pix_fmt is pinned

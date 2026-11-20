@@ -849,9 +849,7 @@ func (bgc *bgCtrl) read(is IniSection, idx int) error {
 		if is.ReadI32("invertall", &tmp) {
 			bgc.invall = tmp != 0
 		}
-		if is.ReadI32("invertblend", &bgc.invblend) {
-			bgc.invblend = bgc.invblend
-		}
+		is.ReadI32("invertblend", &bgc.invblend)
 		if is.ReadF32("color", &bgc.color) {
 			bgc.color = bgc.color / 256
 		}

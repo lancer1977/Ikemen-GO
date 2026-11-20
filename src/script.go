@@ -655,6 +655,7 @@ func isLuaArrayTable(t *lua.LTable) bool {
 		return false
 	}
 	isArray := true
+	keyCount := 0
 	t.ForEach(func(k, _ lua.LValue) {
 		if !isArray {
 			return
@@ -667,9 +668,14 @@ func isLuaArrayTable(t *lua.LTable) bool {
 		f := float64(num)
 		if f < 1 || f != math.Trunc(f) || int(f) > n {
 			isArray = false
+			return
 		}
+		keyCount++
 	})
-	return isArray
+	// A true Lua array must have exactly n keys (1..n with no gaps).
+	// If we found any non-numeric or out-of-range keys, isArray is false.
+	// Additionally, the count of valid keys must equal n.
+	return isArray && keyCount == n
 }
 
 func needsIniQuotes(s string) bool {

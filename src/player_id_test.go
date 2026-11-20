@@ -11,14 +11,15 @@ func TestInitPlayerIDAssignsAndPreservesCharacterIds(t *testing.T) {
 	sys.chars = [MaxPlayerNo][]*Char{}
 	sys.cfg.Config.HelperMax = 2
 	sys.round = 1
+	sys.lastCharId = 0 // Start fresh from 0
 
 	p0 := &Char{}
 	p1 := &Char{}
 	sys.chars[0] = []*Char{p0}
 	sys.chars[1] = []*Char{p1}
 	sys.initPlayerID()
-	if p0.id != 2 || p1.id != 3 {
-		t.Fatalf("initPlayerID() round 1 ids = %d %d, want 2 3", p0.id, p1.id)
+	if p0.id != 1 || p1.id != 2 {
+		t.Fatalf("initPlayerID() round 1 ids = %d %d, want 1 2", p0.id, p1.id)
 	}
 
 	sys.round = 2

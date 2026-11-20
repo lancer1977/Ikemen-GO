@@ -38,7 +38,7 @@ type character struct {
 	bearingV  int //glyph bearing vertical
 }
 
-type color struct {
+type colorValue struct {
 	r float32
 	g float32
 	b float32

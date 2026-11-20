@@ -64,7 +64,15 @@ func TestEffectDurationFrames_DefaultsToSixtyFps(t *testing.T) {
 
 func TestLiveOverlayPath_UsesConfiguredFileOrDefault(t *testing.T) {
 	s := &System{
-		cmdFlags: map[string]string{},
+		bgm:       newBgm(),
+		sel:       newSelect(),
+		loader:    newLoader(),
+		selMutex:  newTestRWMutex(),
+		loadMutex: newTestMutex(),
+		statePool: NewGameStatePool(),
+		savePool:  NewGameStatePool(),
+		loadPool:  NewGameStatePool(),
+		cmdFlags:  map[string]string{},
 	}
 
 	if got := s.liveOverlayPath(); got != defaultLiveOverlayPath {

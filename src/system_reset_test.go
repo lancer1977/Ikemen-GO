@@ -38,6 +38,6 @@ func TestLoaderResetRestoresRoundAndPreloadState(t *testing.T) {
 		t.Fatalf("loaderReset() turnsPreloadMember = %#v, want [-1 -1]", sys.turnsPreloadMember)
 	}
 	if sys.loader.state != LS_NotYet || sys.loader.err != nil || sys.loader.cancelCh != nil {
-		t.Fatalf("loaderReset() should leave loader reset, got %#v", sys.loader)
+		t.Fatalf("loaderReset() should leave loader reset, got state=%v err=%v cancelCh=%v", sys.loader.state, sys.loader.err, sys.loader.cancelCh)
 	}
 }

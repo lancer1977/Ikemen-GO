@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 func TestAtoiAndAtof_ParseCommonFormsAndOverflow(t *testing.T) {
 	if got := Atoi(" 42 "); got != 42 {
@@ -22,7 +25,7 @@ func TestAtoiAndAtof_ParseCommonFormsAndOverflow(t *testing.T) {
 	if got := Atof("-2.5e2"); got != -250 {
 		t.Fatalf("Atof(exp) = %v, want -250", got)
 	}
-	if got := Atof("1.2.3"); got != 1.2 {
+	if got := Atof("1.2.3"); math.Abs(float64(got-1.2)) > 1e-10 {
 		t.Fatalf("Atof(extra dot) = %v, want 1.2", got)
 	}
 }

@@ -29,9 +29,12 @@ func TestIsLuaArrayTable(t *testing.T) {
 		t.Fatal("string-keyed table should not be array-like")
 	}
 
+	// Verify sparse table with only key 2 is NOT identified as array-like.
+	// A true Lua array requires all keys 1..n with no gaps.
+	// Per lancer1977/Ikemen-GO#24, the function must count keys and verify count == n.
 	sparse := l.NewTable()
 	sparse.RawSetInt(2, lua.LString("b"))
 	if isLuaArrayTable(sparse) {
-		t.Fatal("sparse table should not be array-like")
+		t.Fatal("sparse table should not be identified as array-like")
 	}
 }

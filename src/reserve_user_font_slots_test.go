@@ -1,12 +1,16 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"gopkg.in/ini.v1"
+)
 
 func TestReserveUserFontSlots(t *testing.T) {
 	t.Parallel()
 
 	m := &Motif{
-		UserIniFile: NewIniFile(),
+		UserIniFile: ini.Empty(),
 		Fnt:         map[int]*Fnt{3: newFnt()},
 	}
 	files, err := m.UserIniFile.NewSection("Files")

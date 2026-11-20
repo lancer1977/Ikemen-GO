@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func TestLiveRosterKeyForSide(t *testing.T) {
-	s := &System{}
+	s := newTestSystem()
 
 	if got := s.liveRosterKeyForSide(-1); got != "" {
 		t.Fatalf("liveRosterKeyForSide(-1) = %q, want blank", got)

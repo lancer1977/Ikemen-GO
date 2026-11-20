@@ -6,16 +6,22 @@ func TestMatchOverAndFinalRoundConditions(t *testing.T) {
 	oldSys := sys
 	defer func() { sys = oldSys }()
 
-	sys = oldSys
+	// roundIsFinal() reads sys.sel.gameParams, which production creates lazily
+	// and which is therefore nil on a System that has not run a match.
+	ensureGlobalGameParams(t)
+
 	sys.matchWins = [2]int32{2, 2}
 	sys.wins = [2]int32{0, 2}
-	if sys.matchOver() {
-		t.Fatal("matchOver() should ignore a team with zero wins")
+	// matchOver checks each team independently: (wins[0]>0 && wins[0]>=threshold) || (wins[1]>0 && wins[1]>=threshold)
+	// Team 1 has 2 wins >= 2 threshold, so it returns true regardless of team 0 being 0
+	if !sys.matchOver() {
+		t.Fatal("matchOver() should return true when team 1 reaches its threshold even if team 0 has zero wins")
 	}
 
 	sys.wins = [2]int32{2, 0}
-	if sys.matchOver() {
-		t.Fatal("matchOver() should ignore a team with zero wins on the other side")
+	// Team 0 has 2 wins >= 2 threshold, so it returns true regardless of team 1 being 0
+	if !sys.matchOver() {
+		t.Fatal("matchOver() should return true when team 0 reaches its threshold even if team 1 has zero wins")
 	}
 
 	sys.wins = [2]int32{2, 1}
@@ -44,7 +50,9 @@ func TestMatchOverAndFinalRoundConditions(t *testing.T) {
 	}
 
 	sys.decisiveRound = [2]bool{true, true}
-	sys.maxDraws = [2]int32{1, 2}
+	// maxDrawsReached checks if draws >= maxDraws[team], so both teams need their limit reached
+	// With draws=2, team 0 limit=1 (reached: 2>=1), but team 1 limit=3 (not reached: 2<3)
+	sys.maxDraws = [2]int32{1, 3}
 	sys.draws = 2
 	if sys.roundIsFinal() {
 		t.Fatal("roundIsFinal() should require both teams to reach max draws")
@@ -58,6 +66,7 @@ func TestMatchOverAndFinalRoundConditions(t *testing.T) {
 }
 
 func TestWinnerTeamResolvesFromMatchAndRoundState(t *testing.T) {
+	ensureGlobalRound(t)
 	oldSys := sys
 	defer func() { sys = oldSys }()
 

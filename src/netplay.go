@@ -872,7 +872,7 @@ func writeReplayHeader(w io.Writer, header *ReplayHeader) error {
 	if _, err := w.Write([]byte(replayMagic)); err != nil {
 		return err
 	}
-	if err := binary.Write(w, binary.LittleEndian, uint16(replayFormatVersion)); err != nil {
+	if err := binary.Write(w, binary.LittleEndian, uint16(header.FormatVersion)); err != nil {
 		return err
 	}
 	if err := binary.Write(w, binary.LittleEndian, uint32(len(body))); err != nil {
@@ -920,7 +920,6 @@ func readReplayHeader(f *os.File) (*ReplayHeader, error) {
 	if err := json.Unmarshal(body, &header); err != nil {
 		return nil, err
 	}
-	header.FormatVersion = version
 	return &header, nil
 }
 

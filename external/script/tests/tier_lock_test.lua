@@ -1,0 +1,11 @@
+package.path = './?.lua;./?/init.lua;' .. package.path
+local tierlock = require('external.script.tierlock')
+assert(not tierlock.same('C', 'B'), 'C vs B must be rejected')
+assert(tierlock.same('C-', 'C+'), 'C- vs C+ must be allowed')
+assert(tierlock.same('C', 'B', true), 'override must allow C vs B')
+assert(tierlock.letter('U-') == nil, 'U- must return nil')
+assert(tierlock.letter('Z+') == nil, 'Z+ must return nil')
+assert(tierlock.letter('garbage') == nil, 'garbage must return nil')
+assert(not tierlock.same('U-', 'Z+'), 'invalid tiers must be rejected')
+assert(not tierlock.same(nil, nil), 'nil vs nil must be rejected')
+print('tier_lock_test: PASS')

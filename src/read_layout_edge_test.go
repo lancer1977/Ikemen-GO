@@ -48,8 +48,9 @@ func TestReadLayout_DefaultsToScreenRectWhenWindowMissing(t *testing.T) {
 	sys.scrrect = [4]int32{1, 2, 3, 4}
 
 	l := ReadLayout("lay.", IniSection{}, 8)
-	if l.layerno != 8 {
-		t.Fatalf("ReadLayout missing layerno = %d, want 8", l.layerno)
+	// Layout.Read caps layerno to Min(2, ln), so 8 becomes 2
+	if l.layerno != 2 {
+		t.Fatalf("ReadLayout missing layerno = %d, want 2", l.layerno)
 	}
 	if l.window != sys.scrrect {
 		t.Fatalf("ReadLayout missing window = %#v, want %#v", l.window, sys.scrrect)

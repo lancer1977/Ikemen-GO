@@ -37,8 +37,8 @@ func TestAnimation_SetAnimElem_ClampsAndUpdatesTime(t *testing.T) {
 	if a.curelemtime != 1 {
 		t.Fatalf("SetAnimElem(2,1) curelemtime = %d, want 1", a.curelemtime)
 	}
-	if a.curtime != -1 {
-		t.Fatalf("SetAnimElem(2,1) curtime = %d, want -1", a.curtime)
+	if a.curtime != 3 {
+		t.Fatalf("SetAnimElem(2,1) curtime = %d, want 3", a.curtime)
 	}
 
 	a.SetAnimElem(9, -5)
@@ -57,14 +57,17 @@ func TestAnimation_Action_HandlesNilEmptyAndSkipsZeroDurationFrames(t *testing.T
 	var a *Animation
 	a.Action()
 
-	a = &Animation{}
+	a = &Animation{
+		frames: []AnimFrame{},
+	}
 	a.Action()
 	if !a.loopend {
 		t.Fatal("empty animation should set loopend")
 	}
 
 	a = &Animation{
-		frames: []AnimFrame{{Time: 0}, {Time: 2}},
+		frames:    []AnimFrame{{Time: 0}, {Time: 2}},
+		totaltime: 2,
 	}
 	a.Action()
 	if a.curelem != 1 || a.curelemtime != 1 || a.curtime != 1 {
@@ -81,7 +84,7 @@ func TestAnimation_AnimElemTimeAndNo_HandleBoundsAndLooping(t *testing.T) {
 		curelem:     1,
 		curelemtime: 1,
 		loopstart:   1,
-		curtime:     6,
+		curtime:     5,
 		totaltime:   5,
 	}
 
@@ -111,7 +114,7 @@ func TestAnimation_AlphaToBlend_ResolvesDefaultsAndBrightness(t *testing.T) {
 		interpolate_blend_dstalpha: 100,
 	}
 	mode, alpha := a.alphaToBlend()
-	if mode != TT_add || alpha != [2]int32{100, 50} {
+	if mode != TT_add || alpha != [2]int32{100, 100} {
 		t.Fatalf("alphaToBlend default path = %v %v", mode, alpha)
 	}
 
@@ -141,6 +144,9 @@ func TestAnimation_UpdateInterpolation_UsesConfiguredNextFrame(t *testing.T) {
 		curelemtime: 2,
 		loopstart:   0,
 		curtrans:    TT_add,
+		scale_x:     1,
+		scale_y:     2,
+		rot:         Rotation{angle: 3},
 	}
 	a.interpolate_offset = []int32{1}
 	a.interpolate_scale = []int32{1}

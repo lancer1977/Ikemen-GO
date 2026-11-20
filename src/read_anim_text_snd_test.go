@@ -19,8 +19,9 @@ func TestReadAnimTextSnd_PopulatesSoundTextLayoutAndDisplaytime(t *testing.T) {
 	if ats.text.text != "Hello\\nWorld" {
 		t.Fatalf("text = %q, want %q", ats.text.text, "Hello\\nWorld")
 	}
-	if ats.animLayout.lay.layerno != 7 {
-		t.Fatalf("layerno = %d, want 7", ats.animLayout.lay.layerno)
+	// Layout.Read caps layerno to Min(2, ln), so 7 becomes 2
+	if ats.animLayout.lay.layerno != 2 {
+		t.Fatalf("layerno = %d, want 2", ats.animLayout.lay.layerno)
 	}
 	if ats.displaytime != 60 {
 		t.Fatalf("displaytime = %d, want 60", ats.displaytime)

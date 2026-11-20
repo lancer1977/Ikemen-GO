@@ -23,6 +23,10 @@ on:
         required: true
         default: /mnt/shared/Emu/ikemen
 
+concurrency:
+  group: ikemen-workflow-smoke-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   linux:
     name: Workflow smoke matrix (Linux)
