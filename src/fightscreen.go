@@ -2146,7 +2146,9 @@ func fightTierColor(tier string) (int32, int32, int32) {
 	case "A":
 		r, g, b = 255, 160, 0
 	case "B":
-		r, g, b = 224, 208, 0
+		r, g, b = 60, 210, 80
+	case "X":
+		r, g, b = 185, 0, 0
 	case "C":
 		r, g, b = 84, 188, 255
 	case "D":
@@ -2166,13 +2168,6 @@ func fightTierFrgba(tier string, fallback [4]float32) [4]float32 {
 
 func drawColoredFightTierText(x, y float32, layerno int16, tier string, fallback *FSText, font *Fnt) {
 	r, g, b := fightTierColor(tier)
-	rectX := x
-	if fallback.font[2] == 0 {
-		rectX -= 32
-	} else if fallback.font[2] < 0 {
-		rectX -= 64
-	}
-	FillRect([4]int32{int32(rectX), int32(y + 22), 64, 5}, uint32((r<<16)|(g<<8)|b), [2]int32{230, 0}, nil)
 	shadowPfx := newPalFX()
 	shadowPfx.setColor(0, 0, 0)
 	tierPfx := newPalFX()

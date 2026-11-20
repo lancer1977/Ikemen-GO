@@ -144,6 +144,7 @@ type SystemStateVars struct {
 	matchResetFlg bool
 	stageLoopNo   int
 	introSkipCall bool
+	introFrames   int32 // frames the current round's intro has run (for -autoskipintro)
 	preMatchTime  int32
 	loopBreak     bool
 	loopContinue  bool
@@ -2366,6 +2367,7 @@ func (s *System) resetRound() {
 	s.winwaittime = s.fightScreen.round.over_waittime + s.fightScreen.round.over_forcewintime
 	s.winskipped = false
 	s.intro = s.fightScreen.round.start_waittime + s.fightScreen.round.ctrl_time + 1
+	s.introFrames = 0
 	s.curRoundTime = s.maxRoundTime
 	s.curPlayTime = 0
 	// Mugen resets the starting ID between matches but not between rounds
@@ -2549,9 +2551,26 @@ func (s *System) posReset() {
 */
 
 // Skip character intros on button press and play the shutter effect
+// autoSkipIntroFrames returns the -autoskipintro limit in frames (0 = off).
+// With it, an intro that runs longer than the limit is skipped exactly as if
+// a button had been pressed -- even for characters that assert RoundNotSkip.
+// Unattended CPU-vs-CPU runs never press buttons, so long intros (e.g.
+// Vergil KA) would otherwise always play in full.
+func (s *System) autoSkipIntroFrames() int32 {
+	v, ok := s.cmdFlags["-autoskipintro"]
+	if !ok {
+		return 0
+	}
+	sec, err := strconv.ParseFloat(strings.TrimSpace(v), 64)
+	if err != nil || sec <= 0 {
+		return 0
+	}
+	return int32(sec * 60)
+}
+
 func (s *System) runIntroSkip() {
-	// If no intros to skip or not allowed to
-	if !s.gsf(GSF_intro) || s.gsf(GSF_roundnotskip) {
+	// If no intros to skip
+	if !s.gsf(GSF_intro) {
 		return
 	}
 
@@ -2560,8 +2579,17 @@ func (s *System) runIntroSkip() {
 		return
 	}
 
-	// Start shutter effect on button press
-	if s.fightScreen.round.shutterTimer == 0 && s.anyButton() {
+	s.introFrames++
+	limit := s.autoSkipIntroFrames()
+	forced := limit > 0 && s.introFrames >= limit
+
+	// Not allowed to skip (unless the auto-skip limit forces it)
+	if s.gsf(GSF_roundnotskip) && !forced {
+		return
+	}
+
+	// Start shutter effect on button press (or when the auto-skip limit is reached)
+	if s.fightScreen.round.shutterTimer == 0 && (s.anyButton() || forced) {
 		s.fightScreen.round.shutterTimer = s.fightScreen.round.shutter_time * 2 // Open + close time
 	}
 
